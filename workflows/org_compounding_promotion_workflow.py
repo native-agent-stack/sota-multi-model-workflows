@@ -46,26 +46,40 @@ research_convergence = kit.load_research_convergence_context()
 
 default_prefix = "DU" if target_lane == "IBKR_PAPER" else "PA"
 default_port = 4002 if target_lane == "IBKR_PAPER" else None
-trial_n = max(1, int(cfg.get("trial_n", 84)))
+raw_cm = cfg.get("candidate_metrics")
+metrics_src: dict[str, object] = dict(raw_cm) if isinstance(raw_cm, dict) else {}
+
+
+def _metric(key: str, default: object) -> object:
+    if key in metrics_src:
+        return metrics_src[key]
+    return cfg.get(key, default)
+
+
+live_trial_floor = kit.load_live_trial_n(default_floor=87)
+trial_n = max(live_trial_floor, int(_metric("trial_n", live_trial_floor)))  # type: ignore[arg-type]
 req_hlz = compute_hlz_t_hurdle(trial_n)
 
+# Fail closed (STAGE_1_PROTECTIVE_OVERLAY_ONLY) when empirical Stage-2/Stage-3 metrics are omitted!
 candidate_manifest = StrategyCandidateManifest(
     strategy_id=candidate_id,
-    study_end_date=str(cfg.get("study_end_date") or "2026-10-15"),
-    events_count=int(cfg.get("events_count", 320)),
-    distinct_dates=int(cfg.get("distinct_dates", 72)),
-    t_stat_date_clustered=float(cfg.get("t_stat_date_clustered", round(req_hlz + 0.35, 4))),
+    study_end_date=str(_metric("study_end_date", "2026-10-15")),
+    events_count=int(_metric("events_count", 0)),  # type: ignore[arg-type]
+    distinct_dates=int(_metric("distinct_dates", 0)),  # type: ignore[arg-type]
+    t_stat_date_clustered=float(_metric("t_stat_date_clustered", 0.0)),  # type: ignore[arg-type]
     trial_n=trial_n,
-    dsr_probability=float(cfg.get("dsr_probability", 0.97)),
-    cpcv_positive_fold_pct=float(cfg.get("cpcv_positive_fold_pct", 82.0)),
-    net_expectancy_1x_bps=float(cfg.get("net_expectancy_1x_bps", 16.5)),
-    net_expectancy_2x_impact_bps=float(cfg.get("net_expectancy_2x_impact_bps", 8.4)),
-    sim_engine_verified=bool(cfg.get("sim_engine_verified", True)),
-    max_initial_stop_pct=float(cfg.get("max_initial_stop_pct", 1.50)),
-    mega_cap_scratch_bps=float(cfg.get("mega_cap_scratch_bps", 10.0)),
+    dsr_probability=float(_metric("dsr_probability", 0.0)),  # type: ignore[arg-type]
+    cpcv_positive_fold_pct=float(_metric("cpcv_positive_fold_pct", 0.0)),  # type: ignore[arg-type]
+    net_expectancy_1x_bps=float(_metric("net_expectancy_1x_bps", 0.0)),  # type: ignore[arg-type]
+    net_expectancy_2x_impact_bps=float(_metric("net_expectancy_2x_impact_bps", 0.0)),  # type: ignore[arg-type]
+    sim_engine_verified=bool(_metric("sim_engine_verified", False)),
+    max_initial_stop_pct=float(_metric("max_initial_stop_pct", 1.50)),  # type: ignore[arg-type]
+    mega_cap_scratch_bps=float(_metric("mega_cap_scratch_bps", 10.0)),  # type: ignore[arg-type]
     broker_lane=target_lane,
-    account_prefix=str(cfg.get("account_prefix") or default_prefix),
-    broker_port=cfg.get("broker_port", default_port),
+    account_prefix=str(_metric("account_prefix", default_prefix)),
+    broker_port=_metric("broker_port", default_port),  # type: ignore[arg-type]
+    closed_roundtrips=int(_metric("closed_roundtrips", 0)),  # type: ignore[arg-type]
+    distinct_sessions=int(_metric("distinct_sessions", 0)),  # type: ignore[arg-type]
 )
 deterministic_gate = evaluate_promotion_gate(candidate_manifest)
 

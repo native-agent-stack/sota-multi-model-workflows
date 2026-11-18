@@ -13,6 +13,7 @@ import importlib
 import json
 import os
 import re
+import sqlite3
 import subprocess
 import sys
 import urllib.request
@@ -177,6 +178,24 @@ def agent_bin_argv(bin_path: Path | str, *args: str) -> list[str]:
     if os.name == "nt" and not p_str.lower().endswith((".exe", ".cmd", ".bat")):
         return [sys.executable, p_str, *args]
     return [p_str, *args]
+
+
+def load_live_trial_n(default_floor: int = 87, db_path: Path | None = None) -> int:
+    """Query live cumulative hypothesis trial count N from `~/.agents/bus/peer_bus.db` (`>= default_floor`)."""
+    target_db = db_path if db_path is not None else (Path.home() / ".agents" / "bus" / "peer_bus.db")
+    live_n = 0
+    if target_db.is_file():
+        try:
+            conn = sqlite3.connect(str(target_db), timeout=3.0)
+            try:
+                row = conn.execute("SELECT COUNT(*) FROM hypotheses").fetchone()
+                if row and row[0] is not None:
+                    live_n = int(row[0])
+            finally:
+                conn.close()
+        except Exception:  # noqa: BLE001
+            live_n = 0
+    return max(int(default_floor), live_n)
 
 
 def run_preflight_summary(live_org: bool = False) -> dict[str, Any]:

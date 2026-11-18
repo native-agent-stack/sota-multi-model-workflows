@@ -10,6 +10,8 @@ from typing import Any
 
 STUDY_WALL_DATE = dt.date(2026, 10, 15)
 MAX_STOP_ADR0022_PCT = 2.00
+MIN_STAGE3_CLOSED_ROUNDTRIPS = 30
+MIN_STAGE3_DISTINCT_SESSIONS = 10
 FORBIDDEN_IBKR_LIVE_PORTS = frozenset({4001, 7496})
 _STD_NORMAL = NormalDist(0.0, 1.0)
 
@@ -46,6 +48,8 @@ class StrategyCandidateManifest:
     broker_lane: str  # "ALPACA_PAPER" or "IBKR_PAPER"
     account_prefix: str  # "PA" or "DU"
     broker_port: int | None = None
+    closed_roundtrips: int = MIN_STAGE3_CLOSED_ROUNDTRIPS
+    distinct_sessions: int = MIN_STAGE3_DISTINCT_SESSIONS
 
 
 def evaluate_promotion_gate(c: StrategyCandidateManifest) -> dict[str, Any]:
@@ -104,17 +108,38 @@ def evaluate_promotion_gate(c: StrategyCandidateManifest) -> dict[str, Any]:
     if not stat_ok:
         failures.append(f"STATISTICAL_GATE_REJECTED:t={c.t_stat_date_clustered}<{req_t}_or_dsr={c.dsr_probability}")
 
-    hard_safety_ok = not any(f.startswith(("HARD_FIREWALL", "ADR0022", "PREWALL", "UNSANCTIONED")) for f in failures)
-    stage_reached = (
-        "STAGE_4_PAPER_EXECUTION_APPROVED"
-        if not failures
-        else ("STAGE_1_PROTECTIVE_OVERLAY_ONLY" if hard_safety_ok else "HARD_BLOCKED")
+    stage3_ok = (
+        not isinstance(c.closed_roundtrips, bool)
+        and c.closed_roundtrips >= MIN_STAGE3_CLOSED_ROUNDTRIPS
+        and not isinstance(c.distinct_sessions, bool)
+        and c.distinct_sessions >= MIN_STAGE3_DISTINCT_SESSIONS
     )
+    if not stage3_ok:
+        failures.append(
+            f"STAGE3_PAPER_SHADOW_INSUFFICIENT:roundtrips={c.closed_roundtrips}<{MIN_STAGE3_CLOSED_ROUNDTRIPS}"
+            f"_or_sessions={c.distinct_sessions}<{MIN_STAGE3_DISTINCT_SESSIONS}"
+        )
+
+    hard_safety_ok = not any(f.startswith(("HARD_FIREWALL", "ADR0022", "PREWALL", "UNSANCTIONED")) for f in failures)
+    only_stage3_pending = (
+        hard_safety_ok and len(failures) == 1 and failures[0].startswith("STAGE3_PAPER_SHADOW_INSUFFICIENT:")
+    )
+    if not hard_safety_ok:
+        stage_reached = "HARD_BLOCKED"
+    elif not failures:
+        stage_reached = "STAGE_4_PAPER_EXECUTION_APPROVED"
+    elif only_stage3_pending:
+        stage_reached = "STAGE_3_PAPER_SHADOW_ACCUMULATING"
+    else:
+        stage_reached = "STAGE_1_PROTECTIVE_OVERLAY_ONLY"
+
     return {
         "strategy_id": c.strategy_id,
         "approved_for_autonomous_alpha": len(failures) == 0,
         "hard_safety_verified": hard_safety_ok,
         "required_hlz_t_hurdle": req_t,
+        "closed_roundtrips": c.closed_roundtrips,
+        "distinct_sessions": c.distinct_sessions,
         "stage_reached": stage_reached,
         "failures": failures,
     }

@@ -29,7 +29,8 @@
           "strategy_id": {"type": "string"},
           "broker_lane": {"type": "string", "enum": ["ALPACA_PAPER", "IBKR_PAPER"]},
           "live_org": {"type": "boolean"},
-          "fast_deterministic_only": {"type": "boolean"}
+          "fast_deterministic_only": {"type": "boolean"},
+          "candidate_metrics": {"type": "object"}
         }
       },
       "when_to_use": "End-to-end 5-stage quantitative promotion workflow (Meridian Sim -> Pre-Wall <=2026-10-15 -> Alpaca 200/min & IBKR :4002 Paper -> Empirical-Bayes Shrinkage -> SHA-256 Broker Manifest + 4-invariant sota-org-doctor)."

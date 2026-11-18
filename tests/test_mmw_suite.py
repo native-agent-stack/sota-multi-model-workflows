@@ -370,6 +370,13 @@ class TestMultiModelWorkflows(unittest.TestCase):
         )
         self.assertTrue(evaluate_promotion_gate(base)["approved_for_autonomous_alpha"])
 
+        # Stage-3 paper shadow (<30 closed roundtrips or <10 distinct sessions) blocks Stage-4 approval
+        stage3_pending = evaluate_promotion_gate(dataclasses.replace(base, closed_roundtrips=12, distinct_sessions=5))
+        self.assertFalse(stage3_pending["approved_for_autonomous_alpha"])
+        self.assertTrue(stage3_pending["hard_safety_verified"])
+        self.assertEqual(stage3_pending["stage_reached"], "STAGE_3_PAPER_SHADOW_ACCUMULATING")
+        self.assertTrue(any(f.startswith("STAGE3_PAPER_SHADOW_INSUFFICIENT") for f in stage3_pending["failures"]))
+
         # IBKR_PAPER with broker_port=None must fail closed
         ibkr_none_port = dataclasses.replace(base, broker_port=None)
         res_none_port = evaluate_promotion_gate(ibkr_none_port)
@@ -511,8 +518,47 @@ class TestMultiModelWorkflows(unittest.TestCase):
             if isinstance(res, types.CoroutineType):
                 asyncio.run(res)
         out = json.loads(buf.getvalue())
+        # Omitted empirical candidate_metrics must fail closed to STAGE_1_PROTECTIVE_OVERLAY_ONLY (never synthesize passing defaults)
         self.assertTrue(out["deterministic_promotion_gate"]["hard_safety_verified"])
+        self.assertFalse(out["deterministic_promotion_gate"]["approved_for_autonomous_alpha"])
+        self.assertEqual(out["deterministic_promotion_gate"]["stage_reached"], "STAGE_1_PROTECTIVE_OVERLAY_ONLY")
+        self.assertGreaterEqual(out["deterministic_promotion_gate"]["required_hlz_t_hurdle"], compute_hlz_t_hurdle(87))
         rec_mock.assert_called_once()
+
+        # Explicit passing Stage-2 + Stage-3 candidate_metrics reach STAGE_4_PAPER_EXECUTION_APPROVED
+        ns_explicit = {
+            **ns,
+            "args": {
+                "strategy_id": "SOTA_PROMO_EXPLICIT_02",
+                "broker_lane": "IBKR_PAPER",
+                "fast_deterministic_only": True,
+                "candidate_metrics": {
+                    "events_count": 340,
+                    "distinct_dates": 80,
+                    "t_stat_date_clustered": 4.85,
+                    "trial_n": 90,
+                    "dsr_probability": 0.98,
+                    "cpcv_positive_fold_pct": 85.0,
+                    "net_expectancy_1x_bps": 19.0,
+                    "net_expectancy_2x_impact_bps": 9.5,
+                    "sim_engine_verified": True,
+                    "closed_roundtrips": 35,
+                    "distinct_sessions": 14,
+                },
+            },
+        }
+        buf2 = io.StringIO()
+        with (
+            mock.patch.object(kit, "run_preflight_summary", return_value={"sota_doctor": {"status": "PASS"}}),
+            mock.patch.object(kit, "record_workflow_run"),
+            redirect_stdout(buf2),
+        ):
+            res2 = eval(code, ns_explicit)
+            if isinstance(res2, types.CoroutineType):
+                asyncio.run(res2)
+        out2 = json.loads(buf2.getvalue())
+        self.assertTrue(out2["deterministic_promotion_gate"]["approved_for_autonomous_alpha"])
+        self.assertEqual(out2["deterministic_promotion_gate"]["stage_reached"], "STAGE_4_PAPER_EXECUTION_APPROVED")
 
         def _triggers(sample: str) -> list[str]:
             return [label for label, rx in merge_gate.SECRET_PATTERNS if rx.search(sample)]
