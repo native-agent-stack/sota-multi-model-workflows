@@ -39,7 +39,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 21,
+    "adrCount": 22,
     "records": [
       {
         "id": "ADR-0001",
@@ -362,6 +362,23 @@
           "https://github.com/native-agent-stack/sota-multi-model-workflows",
           "https://github.com/stablyai/orca",
           "https://github.com/tobi/qmd"
+        ]
+      },
+      {
+        "id": "ADR-0022",
+        "layer": "Multi-Model Task Suitability Routing, Auth-Aware Dispatch & Evaluation (`L3` x `L5` x `L6` x `L8` x `L10` x `L11`)",
+        "title": "`v3.9.9` Smart Task-to-Model Suitability Router (`smart-route` / `--worker auto`), Claude Code Best Practices & 413-Star Eval Convergence",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "E4 (`8` Task Suitability Profiles, `sota-cc-hub smart-route` + `--worker auto`, `20/20` Unit Suite & Live `413`-Star Audit Verified)",
+        "file": "docs/adr/ADR-0022-v399-smart-task-model-suitability-router-auto-assign-and-413star-eval-convergence.md",
+        "githubUrls": [
+          "https://github.com/NVIDIA/SkillEvaluator",
+          "https://github.com/elementalsouls/Claude-BugHunter",
+          "https://github.com/native-agent-stack/cc-sota-harness",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/parallel-web/parallel-search-evals",
+          "https://github.com/stablyai/orca"
         ]
       }
     ]

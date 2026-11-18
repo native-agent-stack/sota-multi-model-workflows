@@ -1267,7 +1267,11 @@ class TestMultiModelWorkflows(unittest.TestCase):
             return [await fn(it) for it in items]
 
         ns: dict[str, object] = {
-            "args": {"goal": "Verify v3.10.0 Grand SOTA Workflow", "repo": "sota-multi-model-workflows", "layer": "all"},
+            "args": {
+                "goal": "Verify v3.10.0 Grand SOTA Workflow",
+                "repo": "sota-multi-model-workflows",
+                "layer": "all",
+            },
             "WORKSPACES": (str(ROOT),),
             "log": lambda *a: logs_captured.append(" ".join(str(x) for x in a)),
             "phase": lambda _name: None,
@@ -1279,6 +1283,7 @@ class TestMultiModelWorkflows(unittest.TestCase):
             coro = eval(code_obj, ns)
             if coro is not None:
                 import asyncio
+
                 asyncio.run(coro)
             rec17.assert_called_once()
         fr = ns.get("final_receipt")
@@ -1349,9 +1354,48 @@ class TestMultiModelWorkflows(unittest.TestCase):
             cch.CC_LEAD_CENTRAL_CONTRACT["live_authenticated_worker_routes"],
             ("cc-lead", "codex", "antigravity", "opencode", "dsh"),
         )
-        en_rt = nwe.select_workflow_and_skills(goal="Audit pre-wall DSH route", repo="cc-sota-harness")["runtime_enactments"]
+        en_rt = nwe.select_workflow_and_skills(goal="Audit pre-wall DSH route", repo="cc-sota-harness")[
+            "runtime_enactments"
+        ]
         self.assertTrue(en_rt["deepseek_dsh_prewall"].startswith("dsh headless "))
         self.assertIn("--thinking=high -p", en_rt["pi_omp_role_worker"])
+
+    def test_v399_smart_task_model_suitability_router_and_auto_assign(self) -> None:
+        from sota_mmw import cc_lead_hub as cch
+
+        self.assertEqual(len(cch.SMART_TASK_SUITABILITY_MATRIX), 8)
+        r_quant = cch.smart_route_task(
+            "Run CPCV DSR pre-wall DuckDB sweep on H096 collar",
+            repo="sota-compounding-lab",
+        )
+        self.assertEqual(r_quant["suitability_class"], "prewall_quant_sweep_and_gpu_batch")
+        self.assertEqual(r_quant["recommended_surface"], "noesis")
+        self.assertTrue(r_quant["live_authenticated_route"])
+
+        r_ast = cch.smart_route_task(
+            "Run ast-grep multi-file codemod refactor with codebase-memory",
+            repo="sota-multi-model-workflows",
+        )
+        self.assertEqual(r_ast["suitability_class"], "ast_graph_multifile_codemod_refactor")
+        self.assertEqual(r_ast["selected_worker"], "opencode")
+        self.assertEqual(r_ast["selected_model"], "kimi-k3.1-pro")
+        self.assertTrue(r_ast["hephaestus_non_gpt_enforced"])
+
+        r_sec = cch.smart_route_task(
+            "Adversarial dimensional stop-loss math & Claude-BugHunter security audit",
+            repo="astrolabe",
+        )
+        self.assertEqual(r_sec["suitability_class"], "adversarial_math_security_and_bug_hunt")
+        self.assertEqual(r_sec["selected_worker"], "codex")
+        self.assertEqual(r_sec["selected_model"], "gpt-6.2-astra")
+
+        auto_env = cch.build_multi_model_assign_envelope(
+            repo="agy-sota-harness",
+            goal="Synthesize 18-clone upstream shelf EDGAR filings and parallel-search-evals diagram atlas",
+            worker="auto",
+        )
+        self.assertEqual(auto_env["worker"], "antigravity")
+        self.assertEqual(auto_env["smart_route"]["selected_model"], "gemini-4-carbon-high")
 
 
 if __name__ == "__main__":

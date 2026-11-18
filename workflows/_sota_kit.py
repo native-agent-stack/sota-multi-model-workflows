@@ -428,7 +428,9 @@ def run_preflight_summary(live_org: bool = False) -> dict[str, Any]:
     if org_bin.is_file():
         flag = "--live" if live_org else "--offline"
         try:
-            proc = subprocess.run(agent_bin_argv(org_bin, flag), capture_output=True, text=True, timeout=35, check=False)
+            proc = subprocess.run(
+                agent_bin_argv(org_bin, flag), capture_output=True, text=True, timeout=35, check=False
+            )
             try:
                 oj = json.loads(proc.stdout)
                 out["sota_org_doctor"] = {

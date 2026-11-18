@@ -131,9 +131,7 @@ SKILL_FAMILIES: dict[str, tuple[str, ...]] = {
     ),
 }
 
-CANONICAL_46_SOTA_SKILLS: tuple[str, ...] = tuple(
-    sorted({sk for grp in SKILL_FAMILIES.values() for sk in grp})
-)
+CANONICAL_46_SOTA_SKILLS: tuple[str, ...] = tuple(sorted({sk for grp in SKILL_FAMILIES.values() for sk in grp}))
 
 CANONICAL_14_LAYERS_MATRIX: dict[str, dict[str, Any]] = {
     "L0": {
@@ -175,7 +173,11 @@ CANONICAL_14_LAYERS_MATRIX: dict[str, dict[str, Any]] = {
         "name": "native-18-workflow-dags-and-enactor",
         "lane": "H2",
         "skills": ("sota-workflow", "orchestration", "planning-with-files"),
-        "workflows": ("sota-skills-adr-and-orca-grand-workflow", "multi-model-omc-memory-assign", "master-sota-harness"),
+        "workflows": (
+            "sota-skills-adr-and-orca-grand-workflow",
+            "multi-model-omc-memory-assign",
+            "master-sota-harness",
+        ),
         "repos": ("sota-multi-model-workflows", "agy-sota-harness"),
     },
     "L6": {
@@ -286,9 +288,7 @@ def probe_installed_sota_skills(home: Path | None = None) -> dict[str, Any]:
         "claude_code": h / ".claude" / "skills",
         "codex": h / ".codex" / "skills",
     }
-    present_canonical = sorted(
-        sk for sk in CANONICAL_46_SOTA_SKILLS if (agents_sk / sk / "SKILL.md").is_file()
-    )
+    present_canonical = sorted(sk for sk in CANONICAL_46_SOTA_SKILLS if (agents_sk / sk / "SKILL.md").is_file())
     missing_canonical = sorted(set(CANONICAL_46_SOTA_SKILLS) - set(present_canonical))
     mount_counts: dict[str, int] = {}
     for label, pdir in peer_mounts.items():
@@ -316,17 +316,17 @@ def discover_ecosystem_adr_index(home: Path | None = None) -> dict[str, Any]:
         # Handle ~/sota-dynamic-trail-c and ~/canon primary paths on Mac
         if repo_name == "canon" and not rdir.is_dir() and ((home or Path.home()) / "canon").is_dir():
             rdir = (home or Path.home()) / "canon"
-        if repo_name == "sota-dynamic-trail-c" and not rdir.is_dir() and ((home or Path.home()) / "sota-dynamic-trail-c").is_dir():
+        if (
+            repo_name == "sota-dynamic-trail-c"
+            and not rdir.is_dir()
+            and ((home or Path.home()) / "sota-dynamic-trail-c").is_dir()
+        ):
             rdir = (home or Path.home()) / "sota-dynamic-trail-c"
 
         adr_dir = rdir / "docs" / "adr"
         files: list[str] = []
         if adr_dir.is_dir():
-            files = sorted(
-                p.name
-                for p in adr_dir.glob("*.md")
-                if p.name.upper() not in _EXCLUDED_ADR_DOCS
-            )
+            files = sorted(p.name for p in adr_dir.glob("*.md") if p.name.upper() not in _EXCLUDED_ADR_DOCS)
         total_adrs += len(files)
         lane_meta = REPO_LANE_INDEX.get(repo_name, {})
         repo_adrs[repo_name] = {

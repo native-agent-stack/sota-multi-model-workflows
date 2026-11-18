@@ -549,6 +549,243 @@ def build_cc_lead_execution_plan(
     }
 
 
+SMART_TASK_SUITABILITY_MATRIX: dict[str, dict[str, Any]] = {
+    "architecture_adr_and_spec": {
+        "keywords": ("adr", "madr", "architecture", "spec", "charter", "umbrella", "governance", "manifest", "plan"),
+        "primary_worker": "cc-lead",
+        "primary_orca_agent": "claude",
+        "primary_model": "claude-fable-5-2",
+        "effort": "xhigh",
+        "challenger_worker": "codex",
+        "challenger_model": "gpt-6.2-astra",
+        "default_surface": "local",
+        "claude_best_practice": "oneModelPerConversation=True + 1h/600K cache + backnotprop/plannotator visual plan gate",
+    },
+    "adversarial_math_security_and_bug_hunt": {
+        "keywords": (
+            "audit",
+            "adversarial",
+            "security",
+            "vulnerability",
+            "bughunter",
+            "red-team",
+            "dimensional",
+            "overflow",
+            "nan",
+            "falsif",
+            "trailofbits",
+        ),
+        "primary_worker": "codex",
+        "primary_orca_agent": "codex",
+        "primary_model": "gpt-6.2-astra",
+        "effort": "xhigh",
+        "challenger_worker": "claude",
+        "challenger_model": "claude-opus-5-5",
+        "default_surface": "auto",
+        "claude_best_practice": "Cross-family OpenAI gpt-6.2-astra + Anthropic claude-opus-5-5 (Claude-BugHunter / Trail of Bits) 2-pass P0-P3 review",
+    },
+    "prewall_quant_sweep_and_gpu_batch": {
+        "keywords": (
+            "pre-wall",
+            "prewall",
+            "cpcv",
+            "dsr",
+            "hlz",
+            "duckdb",
+            "polars",
+            "parquet",
+            "h09",
+            "rvol",
+            "sweep",
+            "gpu",
+            "cuda",
+            "openvino",
+            "backtest",
+            "nautilus",
+            "hftbacktest",
+            "mintrl",
+        ),
+        "primary_worker": "dsh",
+        "primary_orca_agent": "codex",
+        "primary_model": "deepseek-v4-pro",
+        "effort": "high",
+        "challenger_worker": "codex",
+        "challenger_model": "gpt-6.2-astra",
+        "default_surface": "noesis",
+        "claude_best_practice": "Offload <=2026-10-15 heavy sweeps to Noesis-Carbon 56c + RTX 4090 ext4 to shield Mac RTH :8787/:8799/:4002 latency",
+    },
+    "long_horizon_1m_shelf_edgar_and_search_eval": {
+        "keywords": (
+            "upstream",
+            "shelf",
+            "1m",
+            "edgar",
+            "8-k",
+            "424b",
+            "filing",
+            "diagram",
+            "atlas",
+            "c4",
+            "likec4",
+            "archify",
+            "graphify",
+            "search-eval",
+            "starred",
+        ),
+        "primary_worker": "antigravity",
+        "primary_orca_agent": "antigravity",
+        "primary_model": "gemini-4-carbon-high",
+        "effort": "high",
+        "challenger_worker": "cc-lead",
+        "challenger_model": "claude-fable-5-2",
+        "default_surface": "auto",
+        "claude_best_practice": "Delegate >200K-token 18-clone shelf, SEC EDGAR, parallel-search-evals & visual/C4 synthesis to 1M-context Antigravity",
+    },
+    "ast_graph_multifile_codemod_refactor": {
+        "keywords": (
+            "ast",
+            "ast-grep",
+            "codemod",
+            "refactor",
+            "rename",
+            "call-chain",
+            "codebase-memory",
+            "hephaestus",
+            "tree-sitter",
+        ),
+        "primary_worker": "opencode",
+        "primary_orca_agent": "opencode",
+        "primary_model": "kimi-k3.1-pro",
+        "effort": "high",
+        "challenger_worker": "codex",
+        "challenger_model": "gpt-6.2-sol",
+        "default_surface": "auto",
+        "claude_best_practice": "Enforce hephaestusForbidsGptModels=True via OpenCode OMO kimi-k3.1-pro + codebase-memory-mcp impact graph",
+    },
+    "skill_quality_eval_and_trajectory_tuning": {
+        "keywords": (
+            "skill.md",
+            "skillopt",
+            "skillevaluator",
+            "promptfoo",
+            "gepa",
+            "trajectory",
+            "lesson",
+            "self-evolution",
+        ),
+        "primary_worker": "antigravity",
+        "primary_orca_agent": "antigravity",
+        "primary_model": "gemini-4-carbon-high",
+        "effort": "high",
+        "challenger_worker": "codex",
+        "challenger_model": "gpt-6.2-astra",
+        "default_surface": "local",
+        "claude_best_practice": "Pair NVIDIA/SkillEvaluator + Microsoft SkillOpt + transcript friction mining before promoting SKILL.md edits",
+    },
+    "live_cockpit_and_paper_broker_guard": {
+        "keywords": (
+            "8787",
+            "8799",
+            "4002",
+            "tradingview",
+            "boats",
+            "23/5",
+            "wave-2",
+            "blotter",
+            "alpaca",
+            "ibkr",
+            "stop",
+        ),
+        "primary_worker": "cc-lead",
+        "primary_orca_agent": "claude",
+        "primary_model": "claude-fable-5-2",
+        "effort": "xhigh",
+        "challenger_worker": "codex",
+        "challenger_model": "gpt-6.2-astra",
+        "default_surface": "local",
+        "claude_best_practice": "Enforce singleActiveBrokerHostOnly=True on portable_mac_m5_max + <=2.00% initial stop + paper-only firewall",
+    },
+    "parallel_worktree_feature_and_pytest": {
+        "keywords": ("implement", "feature", "fix", "pytest", "unit test", "cli", "endpoint", "parser"),
+        "primary_worker": "codex",
+        "primary_orca_agent": "codex",
+        "primary_model": "gpt-6.2-sol",
+        "effort": "high",
+        "challenger_worker": "claude",
+        "challenger_model": "claude-sonnet-5-5",
+        "default_surface": "auto",
+        "claude_best_practice": "Isolate implementation in child git worktrees with disjoint peer_bus path-glob leases & Red-Green-Refactor TDD",
+    },
+}
+
+
+def smart_route_task(
+    goal: str,
+    *,
+    repo: str = "cc-sota-harness",
+    surface: str = "auto",
+    prefer_authenticated_only: bool = True,
+) -> dict[str, Any]:
+    """Deterministically classify task suitability and select optimal live-authenticated model, worker, and surface."""
+    for rx, label in (
+        (_LIVE_ALPACA_RE, "live Alpaca endpoint"),
+        (_LIVE_BIN_RE, "live broker binary"),
+        (_LIVE_IBKR_PORT_RE, "live IBKR port"),
+    ):
+        if rx.search(goal):
+            raise PermissionError(f"Hard firewall refused {label} in goal")
+
+    g_low = f"{repo} {goal}".lower()
+    best_cls = "parallel_worktree_feature_and_pytest"
+    best_hits: list[str] = []
+    for cls_name, spec in SMART_TASK_SUITABILITY_MATRIX.items():
+        hits = [kw for kw in spec["keywords"] if kw in g_low]
+        if len(hits) > len(best_hits):
+            best_cls = cls_name
+            best_hits = hits
+
+    if not best_hits:
+        if repo in {"meridian", "sota-compounding-lab", "tsl", "trading-sota", "dsh-sota-harness"}:
+            best_cls = "prewall_quant_sweep_and_gpu_batch"
+        elif repo in {"sota-mover-ranker", "sota-dynamic-trail-c", "astrolabe"}:
+            best_cls = "live_cockpit_and_paper_broker_guard"
+        elif repo in {".github", "native-agent-stack", "canon"}:
+            best_cls = "architecture_adr_and_spec"
+
+    chosen = SMART_TASK_SUITABILITY_MATRIX[best_cls]
+    live_routes = set(CC_LEAD_CENTRAL_CONTRACT["live_authenticated_worker_routes"])
+    worker = str(chosen["primary_worker"])
+    if prefer_authenticated_only and worker not in live_routes:
+        worker = "codex"
+    assign_worker = "claude" if worker == "dsh" else worker
+    resolved_surface = str(chosen["default_surface"]) if surface == "auto" else surface
+    if resolved_surface == "auto":
+        resolved_surface = (
+            "noesis" if repo in {"meridian", "sota-compounding-lab", "tsl", "dsh-sota-harness"} else "local"
+        )
+
+    return {
+        "schema_version": "sota-smart-task-router.v1",
+        "repo": repo,
+        "suitability_class": best_cls,
+        "matched_signals": best_hits,
+        "selected_worker": worker,
+        "assign_compatible_worker": assign_worker,
+        "orca_agent": chosen["primary_orca_agent"],
+        "selected_model": chosen["primary_model"],
+        "effort": chosen["effort"],
+        "challenger_worker": chosen["challenger_worker"],
+        "challenger_model": chosen["challenger_model"],
+        "recommended_surface": resolved_surface,
+        "live_authenticated_route": worker in live_routes,
+        "hephaestus_non_gpt_enforced": not str(chosen["primary_model"]).startswith("gpt-")
+        if best_cls == "ast_graph_multifile_codemod_refactor"
+        else True,
+        "one_model_per_conversation": True,
+        "claude_best_practice": chosen["claude_best_practice"],
+    }
+
+
 def build_multi_model_assign_envelope(
     *,
     repo: str,
@@ -566,6 +803,12 @@ def build_multi_model_assign_envelope(
     ):
         if rx.search(goal):
             raise PermissionError(f"Hard firewall refused {label} in goal")
+    smart_decision: dict[str, Any] | None = None
+    if worker == "auto":
+        smart_decision = smart_route_task(goal, repo=repo, surface=surface)
+        worker = str(smart_decision["assign_compatible_worker"])
+        if surface == "auto":
+            surface = str(smart_decision["recommended_surface"])
     valid_workers = (
         "claude",
         "codex",
@@ -606,9 +849,14 @@ def build_multi_model_assign_envelope(
         "--paths",
         *paths,
     ]
-    release_cmd = ["orca", "orchestration", "worker-release", *(
-        ["--on", "100.110.115.22"] if use_noesis else []
-    ), "--dispatch", "<dispatch_id>"]
+    release_cmd = [
+        "orca",
+        "orchestration",
+        "worker-release",
+        *(["--on", "100.110.115.22"] if use_noesis else []),
+        "--dispatch",
+        "<dispatch_id>",
+    ]
     return {
         "schema_version": "sota-multi-model-assign.v1",
         "repo": repo,
@@ -620,6 +868,7 @@ def build_multi_model_assign_envelope(
         "assign_sha256": assign_sha256,
         "sota_bus_assign_argv": bus_cmd,
         "orca_worker_release_template": release_cmd,
+        "smart_route": smart_decision or smart_route_task(goal, repo=repo, surface=surface),
     }
 
 
@@ -704,14 +953,32 @@ def main(argv: list[str] | None = None) -> int:
     p_as.add_argument("--repo", required=True)
     p_as.add_argument(
         "--worker",
-        default="codex",
-        choices=("claude", "codex", "omp", "opencode", "muse", "grok", "antigravity", "cc-lead", "noesis-cc-lead"),
+        default="auto",
+        choices=(
+            "auto",
+            "claude",
+            "codex",
+            "omp",
+            "opencode",
+            "muse",
+            "grok",
+            "antigravity",
+            "cc-lead",
+            "noesis-cc-lead",
+        ),
     )
     p_as.add_argument("--surface", default="auto", choices=("auto", "local", "noesis"))
     p_as.add_argument("--goal", required=True)
     p_as.add_argument("--sender", default="cc-lead")
     p_as.add_argument("--paths", nargs="*", default=["*"])
     p_as.add_argument("--execute", action="store_true")
+
+    p_sr = sub.add_parser(
+        "smart-route", help="Classify task suitability & select optimal live-authenticated model + surface"
+    )
+    p_sr.add_argument("--repo", default="cc-sota-harness")
+    p_sr.add_argument("--goal", required=True)
+    p_sr.add_argument("--surface", default="auto", choices=("auto", "local", "noesis"))
 
     p_rl = sub.add_parser("release", help="Release a completed Orca supervised worker dispatch & sota-bus lease")
     p_rl.add_argument("--dispatch", required=True)
@@ -722,6 +989,10 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     trials_n, next_t, mesh = _load_live_bus_and_mesh()
+
+    if args.cmd == "smart-route":
+        print(json.dumps(smart_route_task(args.goal, repo=args.repo, surface=args.surface), indent=2))
+        return 0
 
     if args.cmd == "assign":
         env = build_multi_model_assign_envelope(
