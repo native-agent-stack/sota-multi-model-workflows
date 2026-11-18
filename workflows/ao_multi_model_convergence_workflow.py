@@ -39,6 +39,7 @@ phase("Phase 1: 8-Slot Multi-Model AO Preflight, Fleet Probe & Dual-Machine Rout
 
 peer_brief = kit.load_peer_brief(target_repo)
 preflight = kit.run_preflight_summary(live_org=False)
+research_convergence = kit.load_research_convergence_context()
 fleet_probe = probe_installed_multi_model_binaries()
 
 ws_bin = Path.home() / ".agents" / "bin" / "sota-workstation"
@@ -93,6 +94,13 @@ preflight_bundle = {
     },
     "multi_model_fleet": fleet_probe,
     "workstation_mesh": ws_summary,
+    "research_convergence": {
+        "schema_version": research_convergence["schema_version"],
+        "source": research_convergence["source"],
+        "feed_count": research_convergence["feed_count"],
+        "upstream_pin_count": research_convergence["upstream_pin_count"],
+        "mcp_tools": research_convergence["mcp_tools"],
+    },
     "preflight": preflight,
 }
 log(json.dumps(preflight_bundle, indent=2))
@@ -158,7 +166,8 @@ else:
                 "sota-deep-synthesizer",
                 f"{peer_brief}\n\nAO Route & Preflight:\n{json.dumps(preflight_bundle, indent=2)}\n"
                 f"Goal: {goal}\n"
-                f"Verify `~/Documents/{target_repo}` UPSTREAM.md / MADR 4.0 ADR parity, frozen test contracts, "
+                f"Verify `~/Documents/{target_repo}` UPSTREAM.md / MADR 4.0 ADR parity, ADR-0004 3-tier convergence "
+                f"(`sota_get_research_feeds` + `sota_get_converged_strategy_templates`), frozen test contracts, "
                 f"and emit the exact cross-family Orca dispatch command targeting `{route.reviewer_harness}` on `{route.workstation_host}`.",
             ),
             (
@@ -166,8 +175,9 @@ else:
                 "sota-falsifier",
                 f"{peer_brief}\n\nAO Route & Preflight:\n{json.dumps(preflight_bundle, indent=2)}\n"
                 f"Goal: {goal}\n"
-                "Red-team for single-model correlation, worktree/lease collision hazards, post-wall (`>2026-10-15`) leakage, "
-                "or live-broker/secret boundary gaps. Report only empirically grounded P0/P1 issues.",
+                "Red-team for single-model correlation, worktree/lease collision hazards, ADR-0004 / 7-feed PIT "
+                "(`sota_get_first_hand_incentives`, `RAW`/`ALL`, SEC `acceptanceDateTime`, FINRA `T-1`, `<=2026-10-15` wall) "
+                "leakage, or live-broker/secret boundary gaps. Report only empirically grounded P0/P1 issues.",
             ),
             (
                 f"AO Two-Pass Deterministic Gate Verifier ({target_repo})",

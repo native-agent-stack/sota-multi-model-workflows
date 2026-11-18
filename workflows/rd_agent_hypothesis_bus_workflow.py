@@ -44,9 +44,11 @@ phase("1. RD-Agent(Q) Factor Proposal (Pre-Wall <= 2026-10-15)")
 
 proposal = await agent(
     f"{peer_brief}\n\n"
-    f"Search `~/.agents/bin/sota-bus search 'early mover'` and `~/Documents/upstream/PINS.md` (read-only). "
-    f"Formulate one falsifiable microstructure hypothesis for `~/Documents/{repo_hint}` strictly inside `<= 2026-10-15` "
-    "with `max_stop_pct <= 2.00` (ADR-0022). Return structured JSON.",
+    f"Search `~/.agents/bin/sota-bus search 'early mover'`, `~/Documents/upstream/PINS.md` (read-only), and query "
+    f"`sota_get_research_feeds`, `sota_get_first_hand_incentives`, and `sota_get_converged_strategy_templates`. "
+    f"Formulate one falsifiable ADR-0004 3-tier microstructure hypothesis (`sota_converged_strategy.template.json`) "
+    f"for `~/Documents/{repo_hint}` strictly inside `<= 2026-10-15` with `max_stop_pct <= 2.00` (ADR-0022). "
+    "Return structured JSON.",
     schema=HYPOTHESIS_SCHEMA,
     role="RD-Agent Factor Proposer",
     type_name="sota-rd-proposer",
@@ -58,8 +60,10 @@ phase("2. Adversarial Microstructure, Dilution & Lookahead Red-Team")
 falsifier = agent(
     f"{peer_brief}\n\n"
     "You are an adversarial Quantitative Microstructure, Dilution & Lookahead Skeptic. "
-    "Reject any proposal that risks post-2026-10-15 data snooping, ignores trial multiplicity (HLZ t*(N) & DSR), "
-    "hits S-3/424B5 dilution traps, assumes zero spread/impact decay, or violates ADR-0022 (<=2.00% stop).",
+    "Reject any proposal that fails ADR-0004 3-tier convergence (64-hex input SHA-256 + 40-hex upstream SHAs + "
+    "converged template), risks post-2026-10-15 data snooping, mixes Adjustment.RAW vs ALL across splits, violates "
+    "SEC `acceptanceDateTime` (15m half-life + `424B*`/`S-3` dilution block) or FINRA `T-1` lag, ignores HLZ t*(N)/DSR, "
+    "assumes zero spread/impact decay, or violates ADR-0022 (<=2.00% stop).",
     role="Adversarial Quant Falsifier",
     type_name="sota-falsifier",
 )

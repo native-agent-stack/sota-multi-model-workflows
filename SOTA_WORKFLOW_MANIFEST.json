@@ -1,8 +1,8 @@
 {
-  "schemaVersion": "3.2.0",
+  "schemaVersion": "3.3.0",
   "repository": "https://github.com/native-agent-stack/sota-multi-model-workflows",
   "visibility": "PUBLIC",
-  "workflowCount": 12,
+  "workflowCount": 13,
   "workflows": [
     "master-sota-harness",
     "org-compounding-promotion",
@@ -15,7 +15,8 @@
     "cross-peer-orca-review",
     "skillopt-gepa-evolution",
     "dual-workstation-orca",
-    "multi-model-ao-convergence"
+    "multi-model-ao-convergence",
+    "research-convergence-landing"
   ],
   "supportedHarnesses": [
     "antigravity",
@@ -33,7 +34,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 10,
+    "adrCount": 11,
     "records": [
       {
         "id": "ADR-0001",
@@ -170,6 +171,23 @@
         "file": "docs/adr/ADR-0010-wsl-volume-reset-and-independent-restore.md",
         "githubUrls": [
           "https://github.com/microsoft/WSL"
+        ]
+      },
+      {
+        "id": "ADR-0011",
+        "layer": "Research Convergence, 7-Feed PIT DataFeed & Strategy Lifecycle (`L1\u2013L9` \u00d7 `T1\u2013T8`)",
+        "title": "End-to-End Research-Convergence, 7-Feed PIT DataFeed & Strategy Template Workflow",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "E4 (Unit Tested, 13/13 Workflows AST-Compiled & GitHub Actions Verified)",
+        "file": "docs/adr/ADR-0011-end-to-end-research-convergence-datafeed-and-strategy-workflow.md",
+        "githubUrls": [
+          "https://github.com/alpacahq/alpaca-py",
+          "https://github.com/dgunning/edgartools",
+          "https://github.com/native-agent-stack/sota-compounding-lab",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/native-agent-stack/sota-upstream-shelf-lock",
+          "https://github.com/nautechsystems/nautilus_trader"
         ]
       }
     ]

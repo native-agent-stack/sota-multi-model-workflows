@@ -40,17 +40,21 @@ audits = await parallel(
             "Stage 1-2 Sim & Pre-Wall Statistical Auditor",
             "sota-falsifier",
             f"{peer_brief}\n\nCandidate: `{candidate_id}` | Target Lane: `{target_lane}`\n"
-            "Verify Stage 1 queue-fill parity (`~/Documents/meridian`) and Stage 2 pre-wall isolation "
-            "(`<= 2026-10-15`, HLZ `t*(N)`, `CPCV`, `DSR >= 0.95`, 2x square-root impact survival). "
+            "Query `sota_get_research_feeds` and `sota_get_converged_strategy_templates`, then verify ADR-0004 3-tier "
+            "convergence (64-hex input SHA-256 + 40-hex upstream SHAs + `sota_converged_strategy.template.json`), "
+            "Stage 1 queue-fill parity (`~/Documents/meridian`), and Stage 2 pre-wall isolation (`<= 2026-10-15`, "
+            "`RAW`/`ALL` split parity, SEC `acceptanceDateTime` 15m decay + `424B*`/`S-3` block, FINRA `T-1`, "
+            "HLZ `t*(N)`, `CPCV`, `DSR >= 0.95`, 2x square-root impact survival). "
             "Never print credentials, account IDs, or dollar balances.",
         ),
         (
             "Stage 3-5 Paper Execution, EB Shrinkage & Firewall Verifier",
             "sota-code-verifier",
             f"{peer_brief}\n\nCandidate: `{candidate_id}` | Target Lane: `{target_lane}`\n"
-            "Run `uv run pytest -q` in `~/Documents/sota-compounding-lab` and verify `ADR-0022 <= 2.00%` stops, "
-            "paper-only routing (`PA...` <=200/min or `DU...` `:4002` <=3,000/min), Empirical-Bayes UCB shrinkage, "
-            "and 4-invariant `sota-org-doctor` compliance. Never print credentials or account IDs.",
+            "Run `uv run pytest -q` in `~/Documents/sota-compounding-lab`, cross-check `sota_get_first_hand_incentives` "
+            "and `sota_get_converged_strategy_templates`, and verify `ADR-0022 <= 2.00%` stops, paper-only routing "
+            "(`PA...` <=200/min or `DU...` `:4002` <=3,000/min), Empirical-Bayes UCB shrinkage, and 4-invariant "
+            "`sota-org-doctor` compliance. Never print credentials or account IDs.",
         ),
     ],
     lambda item: agent(item[2], schema=STAGE_SCHEMA, role=item[0], type_name=item[1]),

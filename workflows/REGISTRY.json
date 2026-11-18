@@ -1,6 +1,6 @@
 {
-  "version": "3.2.0",
-  "description": "Canonical v3.2.0 registry of 12 self-bootstrapping SOTA `run_workflow` & Multi-Model `AO` (`Agent Orchestrator`) scripts. Every script automatically loads live peer leases, handovers, lessons, HLZ trial multiplicity N, `sota-doctor` (11/11), `sota-org-doctor`, and `ECOSYSTEM_CONVERGENCE_LOCK.json` via `_sota_kit.py` and writes completion checkpoints back to `~/.agents/bus/peer_bus.db`.",
+  "version": "3.3.0",
+  "description": "Canonical v3.3.0 registry of 13 self-bootstrapping SOTA `run_workflow`, Multi-Model `AO` (`Agent Orchestrator`), and 7-Feed `sota-research-feeds.v2` Research-Convergence scripts. Every script automatically loads live peer leases, handovers, lessons, HLZ trial multiplicity N, `sota-doctor` (11/11), `sota-org-doctor`, `ECOSYSTEM_CONVERGENCE_LOCK.json`, and `ADR-0004` 3-tier Research-Convergence context via `_sota_kit.py` and writes completion checkpoints back to `~/.agents/bus/peer_bus.db`.",
   "workflows": [
     {
       "id": "master-sota-harness",
@@ -178,6 +178,37 @@
         }
       },
       "when_to_use": "8-slot Multi-Model Agent Orchestrator (AO) closed-loop workflow: isolated worktree + WAL lease, cross-vendor runtime routing across 7 model families, frozen-assertion verification, bounded CI/review reaction, and SHA-256 landing receipt."
+    },
+    {
+      "id": "research-convergence-landing",
+      "script_path": "~/.agents/workflows/research_convergence_landing_workflow.py",
+      "skill": "sota-workflow",
+      "agents": [
+        "sota-deep-synthesizer",
+        "self",
+        "sota-rd-proposer",
+        "sota-falsifier",
+        "sota-code-verifier"
+      ],
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "strategy_id": {"type": "string"},
+          "archetype": {
+            "type": "string",
+            "enum": [
+              "PRE_TRAVEL_EARLY_IGNITION",
+              "FIRST_HAND_SEC_EPISODIC_PIVOT",
+              "MEGA_CAP_NEAR_LOSSLESS_ORB",
+              "CLIMAX_VWAP_MEAN_REVERSION"
+            ]
+          },
+          "repo": {"type": "string"},
+          "broker_lane": {"type": "string", "enum": ["ALPACA_PAPER", "IBKR_PAPER"]},
+          "fast_deterministic_only": {"type": "boolean"}
+        }
+      },
+      "when_to_use": "End-to-end 4-phase Research-Convergence workflow: ADR-0004 18-repo upstream SHA + 7-feed sota-research-feeds.v2 PIT recon, converged strategy template scaffolding & pre-wall (<=2026-10-15) sim/backtest, parallel RAW/ALL + SEC acceptanceDateTime + FINRA T-1 falsifier & code gate, and :8787/:8799/:4002 paper-lane manifest landing."
     }
   ]
 }

@@ -75,8 +75,10 @@ phase("Stage 1: Prior Search & Immutable SHA-256 Pre-Registration")  # noqa: F82
 
 spec = await agent(  # noqa: F821
     f"{peer_brief}\n\nTarget repo: ~/Documents/{repo} | Candidate ID: {hyp_id}\nGoal: {hyp_prompt}\n"
-    '1. Search `~/.agents/bin/sota-bus search "' + hyp_id + '"` and check UPSTREAM.md.\n'
-    "2. Pre-register the immutable spec via `~/.agents/bin/sota-bus preregister` BEFORE reading check/OOS data.\n"
+    '1. Search `~/.agents/bin/sota-bus search "' + hyp_id + '"` and check UPSTREAM.md + `sota_get_research_feeds` + '
+    "`sota_get_first_hand_incentives` + `sota_get_converged_strategy_templates`.\n"
+    "2. Pre-register the immutable ADR-0004 3-tier spec (`sota_converged_strategy.template.json` + 64-hex input SHA-256 "
+    "+ 40-hex upstream SHAs) via `~/.agents/bin/sota-bus preregister` BEFORE reading check/OOS data.\n"
     "3. Respect pre-wall boundaries (strictly <=2026-10-15 across all SOTA research & compounding repos).",
     schema=SPEC_SCHEMA,
     role="RD-Agent Pre-Registration Architect",
@@ -89,7 +91,8 @@ phase("Stage 2: Pre-Wall Empirical Execution")  # noqa: F821
 emp_result = await agent(  # noqa: F821
     f"{peer_brief}\n\nExecute ONLY the pre-wall / fit+check empirical evaluation in ~/Documents/{repo} for:\n"
     f"{json.dumps(spec, indent=2)}\n"
-    "Record outcome via `~/.agents/bin/sota-bus outcome` so failed trials stay on the ledger and increment N. "
+    "Enforce 7-feed `sota-research-feeds.v2` PIT rules (`RAW` vs `ALL`, SEC `acceptanceDateTime` 15m decay + `424B*`/`S-3` "
+    "dilution block, FINRA `T-1`) and record outcome via `~/.agents/bin/sota-bus outcome` so failed trials increment N. "
     "Never touch live broker routes or print credentials/account IDs.",
     schema=RUN_SCHEMA,
     role="Empirical Study Runner",
@@ -102,8 +105,8 @@ phase("Stage 3: Adversarial Falsification & Keep/Discard Verdict")  # noqa: F821
 falsification = await agent(  # noqa: F821
     f"{peer_brief}\n\nAudit this candidate in ~/Documents/{repo}:\n"
     f"Locked Spec: {json.dumps(spec)}\nEmpirical Output: {json.dumps(emp_result)}\n\n"
-    "Challenge lookahead leakage, split-date contamination, outlier-day concentration, 2x-cost survival, "
-    "and HLZ t-hurdle compliance.",
+    "Challenge ADR-0004 3-tier convergence, RAW/ALL split contamination, SEC `acceptanceDateTime` & FINRA `T-1` "
+    "lookahead leakage, outlier-day concentration, 2x square-root impact survival, and HLZ t-hurdle / DSR >= 0.95.",
     schema=FALSIFY_SCHEMA,
     role="Adversarial Study Falsifier",
     type_name="sota-falsifier",

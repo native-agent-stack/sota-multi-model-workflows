@@ -39,11 +39,13 @@ seats = [
     (
         "Pre-Travel Early-Mover Factor Specialist",
         "sota-deep-synthesizer",
-        f"{peer_brief}\n\nRead cache/goal_loop/GOAL_LOOP_REPORT.md and project only top 8 movers + "
-        "ranked_lists.strict_pre_travel_early from cache/latest_scan.json in ~/Documents/sota-mover-ranker. "
-        "Summarize in <=5 concise bullets: (1) Active Pre-Wall Champion & OOS +8%/3d Lift (strictly <=2026-10-15), "
-        "(2) Live Pre-Travel Early-Stage common-stock candidates catching volume breaks before price extension, and "
-        "(3) Concrete microstructure factor threshold insight (vol_z, Pocket Pivot, close_pos, BJZZ dark-pool, OFI). "
+        f"{peer_brief}\n\nQuery `sota_get_research_feeds`, `sota_get_first_hand_incentives`, and "
+        "`sota_get_converged_strategy_templates`, then read cache/goal_loop/GOAL_LOOP_REPORT.md and project only top 8 "
+        "movers + ranked_lists.strict_pre_travel_early from cache/latest_scan.json in ~/Documents/sota-mover-ranker. "
+        "Summarize in <=5 concise bullets: (1) Active Pre-Wall Champion & ADR-0004 3-tier SHA/template convergence "
+        "(strictly <=2026-10-15), (2) Live Pre-Travel Early-Stage common-stock candidates + first-hand SEC 8-K/SC 13D "
+        "incentives catching volume breaks before price extension, and (3) Concrete microstructure factor threshold "
+        "insight (vol_z, Pocket Pivot, close_pos, BJZZ dark-pool, Lee-Ready OFI, SIP/BOATS). "
         "Never print account IDs, keys, or dollar balances.",
     ),
     (
@@ -59,13 +61,15 @@ seats = [
     (
         "Adversarial Microstructure & Overfitting Falsifier",
         "sota-falsifier",
-        f"{peer_brief}\n\nInspect cache/goal_loop/GOAL_LOOP_REPORT.md, cache/goal_loop/PAPER_FACTOR_GOAL_MANIFEST.md, "
-        "cache/paper_broker_e2e/REAL_PAPER_PERFORMANCE_MANIFEST.md, and ranked_lists.strict_pre_travel_early in cache/latest_scan.json "
-        "in ~/Documents/sota-mover-ranker. Challenge every optimistic claim in <=5 bullets: "
+        f"{peer_brief}\n\nInspect `sota_get_research_feeds`, `sota_get_first_hand_incentives`, "
+        "`sota_get_converged_strategy_templates`, cache/goal_loop/GOAL_LOOP_REPORT.md, "
+        "cache/goal_loop/PAPER_FACTOR_GOAL_MANIFEST.md, cache/paper_broker_e2e/REAL_PAPER_PERFORMANCE_MANIFEST.md, "
+        "and ranked_lists.strict_pre_travel_early in cache/latest_scan.json in ~/Documents/sota-mover-ranker. "
+        "Challenge every optimistic claim in <=5 bullets: "
         "(1) Sample-size & date-clustering fragility (flag any promoted strategy with <30 closed fills or single-day concentration), "
-        "(2) Multiple-testing DSR/PBO & 2x-slippage survival risk, "
-        "(3) Wide-NBBO spread / adverse-selection / after-hours liquidity traps on current candidates, and "
-        "(4) Any residual ETF/ADR/$10 SPAC/SEC S-3 or 424B5 dilution exposure. "
+        "(2) ADR-0004 3-tier convergence, HLZ/DSR/PBO & 2x-slippage survival risk, "
+        "(3) Wide-NBBO spread / adverse-selection / BOATS->SIP timestamp or RAW/ALL split traps on current candidates, and "
+        "(4) Any residual ETF/ADR/$10 SPAC/SEC `acceptanceDateTime` (`424B*`/`S-3` dilution) or FINRA `T-1` lag violation. "
         "Never print account IDs, keys, or dollar balances.",
     ),
 ]

@@ -3,5 +3,6 @@
 "src/sota_mmw/promotion_gate.py" = { upstream = "ml4t-diagnostic", how = "build-on", feature = "5-stage Sim->Backtest->Paper->FineTune->Alpaca/IBKR promotion validator" }
 "src/sota_mmw/peer_bus_schema.py" = { upstream = "cpython-stdlib", how = "build-on", feature = "SQLite WAL cross-peer leases, messages, and SHA-256 hypothesis ledger" }
 "src/sota_mmw/ao_lifecycle.py" = { upstream = "agent-orchestrator", how = "build-on", feature = "8-slot multi-model AO worktree isolation, cross-vendor review, and bounded CI reaction gate" }
-"workflows/*" = { upstream = "antigravity-sdk", how = "build-on", feature = "12 self-bootstrapping multi-model workflow DAGs" }
+"src/sota_mmw/research_convergence_contract.py" = { upstream = "edgartools", how = "build-on", feature = "7-feed sota-research-feeds.v2 PIT contract, 4 strategy archetypes, and ADR-0004 3-tier SHA convergence verifier" }
+"workflows/*" = { upstream = "antigravity-sdk", how = "build-on", feature = "13 self-bootstrapping multi-model & research-convergence workflow DAGs" }
 "scripts/*" = { upstream = "cpython-stdlib", how = "build-on", feature = "MADR 4.0 catalog verifier and zero-leak merge gate" }

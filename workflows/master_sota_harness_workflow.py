@@ -20,10 +20,10 @@ ws0 = kit.get_primary_workspace(globals())
 repo = str(cfg.get("repo") or (Path(ws0).name if ws0 else ""))
 mode = str(cfg.get("mode") or "quant-trading")
 
-# Phase 0: Deterministic Python Self-Bootstrap (Peer Bus + sota-doctor + sota-org-doctor + Umbrella Lock)
+# Phase 0: Deterministic Python Self-Bootstrap (Peer Bus + Research-Convergence + sota-doctor + sota-org-doctor)
 peer_brief = kit.load_peer_brief(repo)
 preflight = kit.run_preflight_summary(live_org=False)
-doctor_line = f"[v3.0.0 preflight: {json.dumps(preflight)}]"
+doctor_line = f"[v3.3.0 preflight: {json.dumps(preflight)}]"
 
 bootstrap_header = f"{doctor_line}\n{peer_brief}"
 log(bootstrap_header)  # noqa: F821
@@ -80,16 +80,18 @@ recon_pair = await parallel(  # noqa: F821
             "Upstream Shelf & AST Reconnaissance",
             "sota-deep-synthesizer",
             f"{bootstrap_header}\n\nGoal: {goal} | Mode: {mode} | Repo: {repo or 'workspace'}\n"
-            "Query `~/.agents/bin/sota-core` (shelf/symbol search) and `~/.agents/bin/sota-bus search` first. "
-            "Identify exact pinned upstream APIs (`~/Documents/upstream/PINS.md`), relevant SOTA skills, and active peer leases.",
+            "Query `~/.agents/bin/sota-core` (`sota_shelf_search` / `sota_symbol_lookup`) and `~/.agents/bin/sota-bus search` first. "
+            "Verify ADR-0004 3-tier convergence (64-hex input SHA-256, 18 `~/Documents/upstream/PINS.md` 40-hex SHAs, and "
+            "`sota_converged_strategy.template.json`), relevant SOTA skills, and active peer leases.",
         ),
         (
             "Domain, Market & MCP Telemetry Scout",
             "self",
             f"{bootstrap_header}\n\nGoal: {goal} | Mode: {mode} | Repo: {repo or 'workspace'}\n"
             "Load relevant skills (e.g. `sota-quant-research-protocol`, `early-mover-compounding-goal`, `sota-tdd-superpowers`) "
-            "and query applicable MCP tools (`agy-sota-core`, `sota-peer-bus`, `sota-mover-ranker-stdio`, `alpaca-sota-watchlists`). "
-            "Never print keys, account IDs, or balances.",
+            "and query applicable MCP tools (`sota_get_research_feeds`, `sota_get_first_hand_incentives`, "
+            "`sota_get_converged_strategy_templates` on `sota-mover-ranker-stdio`, plus `agy-sota-core`, `sota-peer-bus`, "
+            "and `alpaca-sota-watchlists`). Never print keys, account IDs, or balances.",
         ),
     ],
     lambda item: agent(  # noqa: F821
@@ -106,8 +108,9 @@ exec_out = await agent(  # noqa: F821
     f"{bootstrap_header}\n\nGoal: {goal}\n"
     f"Upstream/AST Recon: {json.dumps(recon_pair[0])}\n"
     f"Domain/MCP Recon: {json.dumps(recon_pair[1])}\n\n"
-    "Execute the minimal, upstream-first work required by the goal while respecting active peer leases, "
-    "temporal pre-walls (`<= 2026-10-15`), and the hard paper-only/secret firewall.",
+    "Execute the minimal, upstream-first work required by the goal while enforcing ADR-0004 3-tier convergence "
+    "(`sota_get_converged_strategy_templates` / `sota_converged_strategy.template.json`), active peer leases, "
+    "temporal pre-walls (`<= 2026-10-15`), and the hard paper-only/ADR-0022 (`<= 2.00%` stop)/secret firewall.",
     schema=EXEC_SCHEMA,
     role="SOTA Primary Executor",
     type_name="self",
@@ -122,8 +125,9 @@ audits = await parallel(  # noqa: F821
             "Adversarial Quant & Premortem Falsifier",
             "sota-falsifier",
             f"{bootstrap_header}\n\nGoal: {goal}\nExecution Output: {json.dumps(exec_out)}\n"
-            "Audit for lookahead leakage, multiple-testing HLZ t-hurdle / DSR compliance, 2x-cost survival, "
-            "SEC S-3/424B5 dilution, or architectural failure modes.",
+            "Audit ADR-0004 3-tier convergence and 7-feed `sota-research-feeds.v2` PIT discipline (`SIP`/`BOATS` + "
+            "`Adjustment.RAW` vs `ALL` + SEC `acceptanceDateTime` 15m half-life & `424B*`/`S-3` dilution block + FINRA `T-1`), "
+            "multiple-testing HLZ t-hurdle / CPCV / DSR >= 0.95 compliance, and 2x square-root impact survival.",
         ),
         (
             "Deterministic Lint, Type, Test & Secret Verifier",

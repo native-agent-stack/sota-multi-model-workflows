@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import closing, contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -35,10 +35,9 @@ class PortablePeerBus:
             )
 
     @contextmanager
-    def _conn(self) -> Iterator[sqlite3.Connection]:
-        with closing(sqlite3.connect(str(self.db_path), timeout=10.0)) as connection:
-            with connection:
-                yield connection
+    def _conn(self) -> Generator[sqlite3.Connection]:
+        with closing(sqlite3.connect(str(self.db_path), timeout=10.0)) as connection, connection:
+            yield connection
 
     def claim_lease(
         self, repo: str, agent: str, session_id: str, paths: list[str], intent: str, ttl_m: int = 45
