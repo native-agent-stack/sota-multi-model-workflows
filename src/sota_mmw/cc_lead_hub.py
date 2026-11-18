@@ -52,6 +52,20 @@ def orca_remote_on_args(*, use_noesis: bool, flag: str = "--on") -> list[str]:
     return [flag, "100.110.115.22"] if use_noesis else []
 
 
+FORBIDDEN_STALE_AND_REDUNDANT_MODELS: tuple[str, ...] = (
+    "kimi",
+    "moonshot",
+    "deepseek-v4-pro",
+    "deepseek-v4-flash",
+    "deepseek-v3",
+    "gemini-3.8-flash",
+    "gpt-6.1-sol",
+    "gpt-6-astra",
+    "claude-fable-5-1",
+    "grok-4.6",
+    "muse-spark-1.2",
+)
+
 QUALITY_DIRECTIVE_POWERHOUSE_FLEET: dict[str, dict[str, Any]] = {
     "anthropic_claude_1to1": {
         "vendor": "Anthropic",
@@ -218,12 +232,12 @@ RUNTIME_WORKER_ROSTER: dict[str, dict[str, str]] = {
         "effort": "high",
         "slot": "1M-context 18-clone upstream shelf, SEC EDGAR & run_workflow synthesis",
     },
-    "opencode-kimi-omo": {
+    "opencode-sonnet-omo": {
         "binary": "opencode",
         "orca_agent": "opencode",
         "omc_spec": "1:claude:architect",
-        "vendor": "moonshot",
-        "model": "kimi-k3.1-pro",
+        "vendor": "anthropic",
+        "model": "claude-sonnet-5-5",
         "effort": "high",
         "slot": "Non-GPT Hephaestus structured multi-file refactoring (OMO / OpenCode)",
     },
@@ -484,9 +498,18 @@ def validate_cc_lead_safety_and_invariants(
     if _LIVE_ALPACA_RE.search(req.goal) or _LIVE_BIN_RE.search(req.goal) or _LIVE_IBKR_PORT_RE.search(req.goal):
         raise PermissionError("Live-capital endpoints, binaries, and ports (4001/7496) are 100% hard-refused")
 
+    for bad_sub in FORBIDDEN_STALE_AND_REDUNDANT_MODELS:
+        if bad_sub in hephaestus_model.lower():
+            raise ValueError(f"Forbidden stale/redundant model {hephaestus_model!r} matched {bad_sub!r}")
+    for wk_check in worker_keys:
+        wk_meta = RUNTIME_WORKER_ROSTER.get(wk_check, {})
+        wk_hay = f"{wk_check} {wk_meta.get('model', '')} {wk_meta.get('vendor', '')}".lower()
+        for bad_sub in FORBIDDEN_STALE_AND_REDUNDANT_MODELS:
+            if bad_sub in wk_hay:
+                raise ValueError(f"Worker {wk_check!r} references forbidden stale/redundant model ({bad_sub!r})")
     if hephaestus_model.strip().lower().startswith("gpt-"):
         raise ValueError(
-            f"Hephaestus slot forbids GPT models (got {hephaestus_model!r}); use claude-sonnet-5-5 or kimi-k3.1-pro"
+            f"Hephaestus slot forbids GPT/Kimi models (got {hephaestus_model!r}); use claude-sonnet-5-5 or deepseek-v4.1-flash"
         )
 
     eff_date = req.study_end_date or (AO_STUDY_WALL_DATE.isoformat() if requires_prewall else None)
@@ -519,8 +542,8 @@ def build_cc_lead_execution_plan(
     mesh_state: str = "portable_autonomous_ac",
     local_orca_repo_id: str | None = None,
     bus_db_path: Path | None = None,
-    hlz_trials_n: int = 88,
-    hlz_next_t_hurdle: float = 4.1709,
+    hlz_trials_n: int = 96,
+    hlz_next_t_hurdle: float = 4.1905,
     feeds_schema: str = "sota-research-feeds.v2",
 ) -> dict[str, Any]:
     """Synthesize a Turn-0 context-injected Claude-Code-Central 5-channel execution plan."""
@@ -1149,7 +1172,7 @@ def build_multi_model_assign_envelope(
         "orca",
         "orchestration",
         "worker-release",
-        *orca_remote_on_args(use_noesis=use_noesis),
+        *orca_remote_on_args(use_noesis=use_noesis, flag="--environment"),
         "--dispatch",
         "<dispatch_id>",
     ]

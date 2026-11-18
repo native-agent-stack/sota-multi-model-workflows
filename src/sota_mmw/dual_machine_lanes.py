@@ -45,7 +45,6 @@ CANONICAL_SEVEN_MODEL_VENDORS: tuple[str, ...] = (
     "OpenAI",
     "Google DeepMind",
     "DeepSeek",
-    "Moonshot AI",
     "xAI",
     "Meta",
 )
@@ -123,7 +122,7 @@ ORCHESTRATION_FRAMEWORKS_MATRIX: dict[str, dict[str, Any]] = {
     "opencode_omo_hephaestus": {
         "upstream": "sst/opencode + code-yeongyu/oh-my-openagent",
         "versions": {"opencode": "2.3.0", "oh_my_openagent": "5.1.75"},
-        "models": ("kimi-k3.1-pro", "claude-sonnet-5-5"),
+        "models": ("claude-sonnet-5-5", "deepseek-v4.1-flash"),
         "capabilities": ("non-GPT Hephaestus structured multi-file graph runtime", "polyglot AST refactoring"),
         "role": "Non-GPT structured multi-file graph transformation runtime",
     },
@@ -436,15 +435,31 @@ def resolve_dual_machine_lane_plan(
             selected_surface = "portable_mac_m5_max"
             use_noesis = False
 
+    is_mac_pinned = is_broker_bound or (repo == "astrolabe" and workload in ("default", "active_paper_broker"))
     on_noesis_self = is_running_on_noesis_host()
-    if use_noesis or on_noesis_self:
+    if is_mac_pinned:
+        if on_noesis_self:
+            orca_repo_selector = f"id:{local_orca_repo_id}" if local_orca_repo_id else f"name:{repo}"
+            remote_wt_args = ["--environment", "100.93.211.101"]
+            remote_start_args = ["--on", "100.93.211.101"]
+        else:
+            resolved_local = local_orca_repo_id or resolve_local_orca_repo_id(repo)
+            orca_repo_selector = f"id:{resolved_local}" if resolved_local else f"name:{repo}"
+            remote_wt_args = []
+            remote_start_args = []
+        lane_hub = ORCA_LANE_HUBS["portable_mac_m5_max"][plane]
+    elif use_noesis or on_noesis_self:
         remote_uuid = NOESIS_PROVISIONED_ORCA_REPOS[repo]
         orca_repo_selector = f"id:{remote_uuid}"
         lane_hub = ORCA_LANE_HUBS["stationary_noesis"][plane]
+        remote_wt_args = orca_remote_on_args(use_noesis=use_noesis, flag="--environment")
+        remote_start_args = orca_remote_on_args(use_noesis=use_noesis, flag="--on")
     else:
         resolved_local = local_orca_repo_id or resolve_local_orca_repo_id(repo)
         orca_repo_selector = f"id:{resolved_local}" if resolved_local else f"name:{repo}"
         lane_hub = ORCA_LANE_HUBS["portable_mac_m5_max"][plane]
+        remote_wt_args = []
+        remote_start_args = []
 
     worker_trio: tuple[str, ...] = tuple(lane["default_worker_trio"])
     lead_wk = worker_trio[0]
@@ -456,7 +471,7 @@ def resolve_dual_machine_lane_plan(
         "orca",
         "worktree",
         "create",
-        *orca_remote_on_args(use_noesis=use_noesis, flag="--environment"),
+        *remote_wt_args,
         "--repo",
         orca_repo_selector,
         "--name",
@@ -472,7 +487,7 @@ def resolve_dual_machine_lane_plan(
         "orca",
         "orchestration",
         "worker-start",
-        *orca_remote_on_args(use_noesis=use_noesis, flag="--on"),
+        *remote_start_args,
         "--worktree",
         "new-child",
         "--repo",

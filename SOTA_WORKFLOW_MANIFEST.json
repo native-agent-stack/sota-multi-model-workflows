@@ -40,7 +40,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 24,
+    "adrCount": 25,
     "records": [
       {
         "id": "ADR-0001",
@@ -412,6 +412,20 @@
           "https://github.com/microsoft/qlib",
           "https://github.com/native-agent-stack/sota-multi-model-workflows",
           "https://github.com/native-agent-stack/sota-upstream-shelf-lock",
+          "https://github.com/stablyai/orca"
+        ]
+      },
+      {
+        "id": "ADR-0025",
+        "layer": "Multi-Model Fleet Hygiene, Cross-Host Single-Broker Orca Routing & CLI Contract Parity (`L3..L7` x `T1..T5` x `H0..H7`)",
+        "title": "`v3.10.2` Zero-Stale & Zero-Kimi Model Hygiene Gate, Cross-Host Broker-Pinned Orca Routing (`100.93.211.101`), and `worker-release --environment` Parity",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "E4 (`FORBIDDEN_STALE_AND_REDUNDANT_MODELS` Enforced, `0` Kimi/Moonshot & `0` Retired Models, Real-Call Verified `sota-lanes route --repo sota-mover-ranker` on Noesis -> `--on 100.93.211.101` + Mac Hub `4cf80c7f`, `worker-release --environment`, `ruff`/`ty`/Unit Suite/`merge_gate.py`/`gitleaks` `0` Leaks)",
+        "file": "docs/adr/ADR-0025-v3102-zero-kimi-zero-stale-model-gate-and-cross-host-broker-orca-routing.md",
+        "githubUrls": [
+          "https://github.com/native-agent-stack/cc-sota-harness",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
           "https://github.com/stablyai/orca"
         ]
       }

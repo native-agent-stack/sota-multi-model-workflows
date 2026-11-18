@@ -709,7 +709,12 @@ class TestMultiModelWorkflows(unittest.TestCase):
                     goal="Test OMP and OpenCode worker flags",
                     task_class="parallel_worktree_implementation",
                     placement="local",
-                    worker_keys_override=("codex-sol-omx", "antigravity-carbon", "pi-omp-worker", "opencode-kimi-omo"),
+                    worker_keys_override=(
+                        "codex-sol-omx",
+                        "antigravity-carbon",
+                        "pi-omp-worker",
+                        "opencode-sonnet-omo",
+                    ),
                     session_id="cc-lead-1",
                 ),
                 mesh_state="dual_mesh_docked",
@@ -725,7 +730,7 @@ class TestMultiModelWorkflows(unittest.TestCase):
             self.assertIn("--model", omp_argv)
             self.assertIn("@worker", omp_argv)
             self.assertIn("--effort", omp_argv)
-            opencode_argv = local_dispatches["opencode-kimi-omo"]
+            opencode_argv = local_dispatches["opencode-sonnet-omo"]
             self.assertNotIn("--effort", opencode_argv)
             self.assertNotIn("--model", opencode_argv)
 
@@ -1189,7 +1194,7 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertEqual(len(dml.STAGE_AND_LAYER_SUBLANES), 13)
         sublane_repos = {r for s in dml.STAGE_AND_LAYER_SUBLANES.values() for r in s["repos"]}
         self.assertEqual(sublane_repos, set(dml.REPO_LANE_INDEX.keys()))
-        self.assertEqual(len(dml.CANONICAL_SEVEN_MODEL_VENDORS), 7)
+        self.assertEqual(len(dml.CANONICAL_SEVEN_MODEL_VENDORS), 6)
 
         # 3. Live RTH active_broker_host_shield offloads docked heavy sweeps to Noesis
         unshielded = dml.resolve_dual_machine_lane_plan(
@@ -1245,7 +1250,7 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertIn("codex_omx_exec", enacted["runtime_enactments"])
         self.assertEqual(enacted["multi_model_fleet"]["runtime_workers_count"], 11)
         self.assertEqual(enacted["multi_model_fleet"]["orchestration_frameworks_count"], 8)
-        self.assertEqual(enacted["multi_model_fleet"]["model_vendors_count"], 7)
+        self.assertEqual(enacted["multi_model_fleet"]["model_vendors_count"], 6)
 
         # Execute Grand Workflow #17 deterministically with mocked workflow primitives
         wf17_src = (ROOT / "workflows" / "sota_skills_adr_and_orca_grand_workflow.py").read_text(encoding="utf-8")
@@ -1313,7 +1318,7 @@ class TestMultiModelWorkflows(unittest.TestCase):
             self.assertEqual(env_noesis["surface"], "noesis")
             self.assertTrue(env_noesis["stdin_spec_file_mode"])
             self.assertEqual(len(env_noesis["assign_sha256"]), 64)
-            self.assertIn("--on", env_noesis["orca_worker_release_template"])
+            self.assertIn("--environment", env_noesis["orca_worker_release_template"])
 
         with self.assertRaises(PermissionError):
             cch.build_multi_model_assign_envelope(
@@ -1584,6 +1589,55 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertEqual(orca_assign["target_lead"], "cc-lead")
         self.assertTrue(orca_assign["non_colliding_message_handoff"])
         self.assertEqual(len(orca_assign["assign_sha256"]), 64)
+
+    def test_v3102_adr0025_zero_kimi_worker_release_env_and_broker_mac_pinning(self) -> None:
+        from unittest import mock
+
+        from sota_mmw import cc_lead_hub as cch
+        from sota_mmw import dual_machine_lanes as dml
+
+        # 1. Zero Kimi / Moonshot & zero retired models across roster and vendors
+        self.assertNotIn("Moonshot AI", dml.CANONICAL_SEVEN_MODEL_VENDORS)
+        for wk, meta in cch.RUNTIME_WORKER_ROSTER.items():
+            hay = f"{wk} {meta.get('model', '')} {meta.get('vendor', '')}".lower()
+            for bad in cch.FORBIDDEN_STALE_AND_REDUNDANT_MODELS:
+                self.assertNotIn(bad, hay)
+
+        with self.assertRaises(ValueError):
+            cch.build_cc_lead_execution_plan(
+                cch.CCLeadPlanRequest(
+                    repo="cc-sota-harness",
+                    goal="Verify forbidden model rejection",
+                    hephaestus_model_override="kimi-" + "k3.1-pro",
+                )
+            )
+
+        # 2. worker-release uses --environment (never --on) when targeting remote Noesis from Mac
+        with mock.patch.object(cch, "is_running_on_noesis_host", return_value=False):
+            env_mac = cch.build_multi_model_assign_envelope(
+                repo="cc-sota-harness",
+                goal="Verify worker-release flag",
+                worker="codex-sol",
+                surface="noesis",
+            )
+            self.assertIn("--environment", env_mac["orca_worker_release_template"])
+            self.assertNotIn("--on", env_mac["orca_worker_release_template"])
+
+        # 3. Broker-pinned repo (sota-mover-ranker) invoked ON Noesis emits --on 100.93.211.101 + Mac hub 4cf80c7f
+        with mock.patch.object(dml, "is_running_on_noesis_host", return_value=True):
+            for pl_mode in ("local", "auto"):
+                broker_plan = dml.resolve_dual_machine_lane_plan(
+                    "sota-mover-ranker",
+                    requested_placement=pl_mode,
+                )
+                self.assertEqual(broker_plan["selected_surface"], "portable_mac_m5_max")
+                self.assertEqual(broker_plan["orca_repo_selector"], "name:sota-mover-ranker")
+                self.assertEqual(
+                    broker_plan["orca_parent_worktree_selector"],
+                    "folder:4cf80c7f-96aa-42f1-a25c-a55e7d5e3f3a",
+                )
+                self.assertIn("100.93.211.101", broker_plan["orca_worker_start_argv"])
+                self.assertIn("100.93.211.101", broker_plan["orca_folder_worktree_cmd"])
 
 
 if __name__ == "__main__":
