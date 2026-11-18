@@ -1,8 +1,8 @@
 {
-  "schemaVersion": "3.6.0",
+  "schemaVersion": "3.7.0",
   "repository": "https://github.com/native-agent-stack/sota-multi-model-workflows",
   "visibility": "PUBLIC",
-  "workflowCount": 14,
+  "workflowCount": 15,
   "workflows": [
     "master-sota-harness",
     "org-compounding-promotion",
@@ -17,7 +17,8 @@
     "dual-workstation-orca",
     "multi-model-ao-convergence",
     "research-convergence-landing",
-    "cc-lead-multi-runtime-workers"
+    "cc-lead-multi-runtime-workers",
+    "dual-machine-trading-and-harness-lanes"
   ],
   "supportedHarnesses": [
     "antigravity",
@@ -35,7 +36,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 13,
+    "adrCount": 14,
     "records": [
       {
         "id": "ADR-0001",
@@ -224,6 +225,24 @@
           "https://github.com/nautechsystems/nautilus_trader",
           "https://github.com/nkaz001/hftbacktest",
           "https://github.com/stablyai/orca"
+        ]
+      },
+      {
+        "id": "ADR-0014",
+        "layer": "Dual-Machine Multi-Model Orchestration, Execution Placement & Broker Firewall (`L0\u2013L11` \u00d7 `T0\u2013T8`)",
+        "title": "Dual-Machine Orca Trading Lanes (`T1\u2013T3`), Harness Lanes (`H1\u2013H3`) & 8-Framework Orchestration Matrix",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "E4 (Unit Tested, Live Orca `--help` / Folder-Hub Verified & Public GitHub Actions Verified)",
+        "file": "docs/adr/ADR-0014-dual-machine-orca-trading-and-harness-lanes-and-8framework-matrix.md",
+        "githubUrls": [
+          "https://github.com/Yeachan-Heo/oh-my-claudecode",
+          "https://github.com/Yeachan-Heo/oh-my-codex",
+          "https://github.com/can1357/oh-my-pi",
+          "https://github.com/code-yeongyu/oh-my-openagent",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/stablyai/orca",
+          "https://github.com/steveyegge/beads"
         ]
       }
     ]

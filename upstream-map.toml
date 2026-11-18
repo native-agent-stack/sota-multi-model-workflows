@@ -3,6 +3,9 @@
 "src/sota_mmw/promotion_gate.py" = { upstream = "ml4t-diagnostic", how = "build-on", feature = "5-stage Sim->Backtest->Paper->FineTune->Alpaca/IBKR promotion validator" }
 "src/sota_mmw/peer_bus_schema.py" = { upstream = "cpython-stdlib", how = "build-on", feature = "SQLite WAL cross-peer leases, messages, and SHA-256 hypothesis ledger" }
 "src/sota_mmw/ao_lifecycle.py" = { upstream = "agent-orchestrator", how = "build-on", feature = "8-slot multi-model AO worktree isolation, cross-vendor review, and bounded CI reaction gate" }
+"src/sota_mmw/cc_lead_hub.py" = { upstream = "orca", how = "build-on", feature = "Claude Code (OMC v2) 5-channel runtime worker hub, 11-worker roster, and --on 100.110.115.22 Orca dispatch" }
+"src/sota_mmw/dual_machine_lanes.py" = { upstream = "orca", how = "build-on", feature = "Dual-Machine Trading Lanes (T1..T3), Harness Lanes (H1..H3), 8-framework matrix, and Orca folder lane hubs" }
 "src/sota_mmw/research_convergence_contract.py" = { upstream = "edgartools", how = "build-on", feature = "7-feed sota-research-feeds.v2 PIT contract, 4 strategy archetypes, and ADR-0004 3-tier SHA convergence verifier" }
-"workflows/*" = { upstream = "antigravity-sdk", how = "build-on", feature = "13 self-bootstrapping multi-model & research-convergence workflow DAGs" }
+"workflows/*" = { upstream = "antigravity-sdk", how = "build-on", feature = "15 self-bootstrapping multi-model, dual-machine lanes & research-convergence workflow DAGs" }
 "scripts/*" = { upstream = "cpython-stdlib", how = "build-on", feature = "MADR 4.0 catalog verifier and zero-leak merge gate" }
+"orca.yaml" = { upstream = "orca", how = "integrate", feature = "Cross-OS Mac M5 Max + Noesis Win32/WSL2 workspace setup & default tabs" }

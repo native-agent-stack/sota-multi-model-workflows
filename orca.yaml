@@ -1,0 +1,16 @@
+# Orca (https://github.com/stablyai/orca) cross-OS workspace recipe for sota-multi-model-workflows (v3.7.0)
+# Supports Apple M5 Max (macOS), Stationary Noesis (Win32), and Noesis-Carbon (WSL2 ext4).
+scripts:
+  setup: |
+    if [ -f uv.lock ]; then
+      uv sync --locked
+    else
+      uv sync
+    fi
+setupAgentStartupPolicy: wait-for-setup
+defaultTabs:
+  - title: Agent
+  - title: CC-Lead & Lanes Hub
+    command: PYTHONPATH=src python3 -m sota_mmw.dual_machine_lanes status --json
+  - title: 15-Workflow Suite & Pytest
+    command: uv run pytest -q

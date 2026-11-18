@@ -1,4 +1,4 @@
-"""SOTA Multi-Model Workflows, AO Lifecycle, Research-Convergence Contract & Promotion Gate."""
+"""SOTA Multi-Model Workflows, AO Lifecycle, CC-Lead Hub, Dual-Machine Lanes & Research-Convergence."""
 
 from sota_mmw.ao_lifecycle import (
     AO_FLEET_BINARIES,
@@ -24,6 +24,17 @@ from sota_mmw.cc_lead_hub import (
     build_cc_lead_execution_plan,
     probe_cc_runtime_fleet,
     validate_cc_lead_safety_and_invariants,
+)
+from sota_mmw.dual_machine_lanes import (
+    DUAL_MACHINE_SURFACES,
+    HARNESS_LANES,
+    LANES_SCHEMA_VERSION,
+    ORCA_LANE_HUBS,
+    ORCHESTRATION_FRAMEWORKS_MATRIX,
+    REPO_LANE_INDEX,
+    TRADING_LANES,
+    build_lanes_overview,
+    resolve_dual_machine_lane_plan,
 )
 from sota_mmw.peer_bus_schema import PortablePeerBus
 from sota_mmw.promotion_gate import (
@@ -71,18 +82,25 @@ __all__ = [
     "CONCRETE_VENDORS",
     "CONVERGENCE_ENVELOPE_SCHEMA_VERSION",
     "DEFAULT_PINNED_ENGINE_COMMITS",
+    "DUAL_MACHINE_SURFACES",
     "DUAL_WORKSTATION_HOSTS",
     "DUAL_WORKSTATION_SURFACES",
     "FORBIDDEN_IBKR_LIVE_PORTS",
+    "HARNESS_LANES",
+    "LANES_SCHEMA_VERSION",
     "MAX_HARD_STOP_PCT",
     "MAX_STOP_ADR0022_PCT",
+    "ORCA_LANE_HUBS",
+    "ORCHESTRATION_FRAMEWORKS_MATRIX",
     "PRE_WALL_MAX_DATE",
+    "REPO_LANE_INDEX",
     "RESEARCH_FEEDS_SCHEMA_VERSION",
     "RUNTIME_WORKER_ROSTER",
     "SIBLING_REPO_AUTHORITY",
     "STRATEGY_TEMPLATES_SCHEMA_VERSION",
     "STUDY_WALL_DATE",
     "TASK_CLASS_PROFILES",
+    "TRADING_LANES",
     "VALID_EVIDENCE_GRADES",
     "AOLifecycleAttempt",
     "AOMultiModelRoute",
@@ -90,6 +108,7 @@ __all__ = [
     "PortablePeerBus",
     "StrategyCandidateManifest",
     "build_cc_lead_execution_plan",
+    "build_lanes_overview",
     "build_workflow_research_convergence_envelope",
     "compute_hlz_t_hurdle",
     "count_python_test_assertions",
@@ -103,6 +122,7 @@ __all__ = [
     "probe_installed_multi_model_binaries",
     "qualify_ao_lifecycle_attempt",
     "resolve_ao_multi_model_route",
+    "resolve_dual_machine_lane_plan",
     "resolve_ecosystem_repo_dir",
     "validate_cc_lead_safety_and_invariants",
     "verify_research_convergence_claim",

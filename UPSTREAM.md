@@ -4,7 +4,12 @@
 |---|---|---|---|---|---|---|
 | `antigravity-sdk` | `v1.5.3` | Apache-2.0 | https://github.com/google-antigravity/antigravity-sdk-python | 2026-11-17 | Typed `run_workflow` parallel/pipeline multi-agent primitives | upstream |
 | `agent-orchestrator` | `main` (8-slot AO reference) | MIT | https://github.com/ComposioHQ/agent-orchestrator | 2026-11-18 | 8-slot pluggable Agent Orchestrator (`AO`) worktree, CI-reaction & cross-model review lifecycle | upstream |
-| `orca` | `v1.4.261` | Apache-2.0 | https://github.com/stablyai/orca | 2026-11-18 | Cross-vendor Claude/Codex isolated git worktree & Dual-Machine (`Mac M5 Max <-> Noesis`) fleet dispatch | upstream |
+| `orca` | `v1.4.261` | Apache-2.0 | https://github.com/stablyai/orca | 2026-11-18 | Symmetric `:6770` Dual-Machine (`Mac M5 Max <-> Noesis Win32 + Noesis-Carbon WSL2`), `worker-start --on`, & `--kind folder` lane hubs | upstream |
+| `oh-my-claudecode` | `v5.8.4` | MIT | https://github.com/Yeachan-Heo/oh-my-claudecode | 2026-11-18 | `OMC_RUNTIME_V2=1` `omc ultragoal`, `omc team`, `omc interop`, & `omc ask` central orchestrator | upstream |
+| `oh-my-codex` | `v0.22.10` | MIT | https://github.com/Yeachan-Heo/oh-my-codex | 2026-11-18 | `omx exec` / `omx mission` parallel test & math critic workflows | upstream |
+| `oh-my-openagent` | `v5.1.75` | MIT | https://github.com/code-yeongyu/oh-my-openagent | 2026-11-18 | Non-GPT `Hephaestus` structured multi-file graph refactoring (`kimi-k3.1-pro` / `claude-sonnet-5-5`) | upstream |
+| `oh-my-pi` | `v18.22.0` | MIT | https://github.com/can1357/oh-my-pi | 2026-11-18 | `omp` `@worker` role-selected thinking-effort runtime workers | upstream |
+| `beads` | `v1.3.4` | MIT | https://github.com/steveyegge/beads | 2026-11-18 | `bd` distributed git-backed DAG issue & dependency graph | upstream |
 | `hcom` | `v0.7.31` | MIT | https://github.com/aannoo/hcom | 2026-11-17 | Real-time cross-terminal agent push messaging | upstream |
 | `nautilus_trader` | `da6b57aefdd62b44f675e434ffcfefca7f4025dd` | LGPL-3.0 | https://github.com/nautechsystems/nautilus_trader | 2026-11-17 | Stage-2 event-driven simulation parity | upstream |
 | `skfolio` | `90e3fb907fab39d244d899f3caf4e9676889309c` | BSD-3-Clause | https://github.com/skfolio/skfolio | 2026-11-17 | Stage-3 `CombinatorialPurgedCV` validation | upstream |

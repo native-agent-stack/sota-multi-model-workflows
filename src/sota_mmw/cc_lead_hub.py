@@ -137,6 +137,24 @@ RUNTIME_WORKER_ROSTER: dict[str, dict[str, str]] = {
         "effort": "high",
         "slot": "5th-vendor independent critic via omc ask muse & Orca muse worker",
     },
+    "pi-omp-worker": {
+        "binary": "omp",
+        "orca_agent": "omp",
+        "omc_spec": "1:claude:executor",
+        "vendor": "multi-role",
+        "model": "@worker",
+        "effort": "high",
+        "slot": "OMP role-selector (@worker) thinking runtime",
+    },
+    "goose-autonomous": {
+        "binary": "goose",
+        "orca_agent": "opencode",
+        "omc_spec": "1:claude:executor",
+        "vendor": "aaif-open",
+        "model": "goose-1.59",
+        "effort": "high",
+        "slot": "AAIF Goose autonomous MCP recipe & verification worker",
+    },
 }
 
 TASK_CLASS_PROFILES: dict[str, dict[str, Any]] = {
@@ -232,6 +250,7 @@ def probe_cc_runtime_fleet() -> dict[str, Any]:
         "codex",
         "omx",
         "orca",
+        "agy",
         "gemini",
         "opencode",
         "oh-my-openagent",
@@ -241,12 +260,14 @@ def probe_cc_runtime_fleet() -> dict[str, Any]:
         "dsh",
         "hcom",
         "wt",
+        "bd",
         "omniroute",
     )
     extra_dirs = [
         str(Path.home() / ".agents" / "bin"),
         str(Path.home() / ".local" / "bin"),
         str(Path.home() / ".local" / "share" / "mise" / "shims"),
+        "/Applications/Antigravity.app/Contents/Resources/app/bin",
         "/opt/homebrew/bin",
         "/usr/local/bin",
     ]
@@ -384,11 +405,13 @@ def build_cc_lead_execution_plan(
         resolved_local = local_orca_repo_id or resolve_local_orca_repo_id(req.repo)
         orca_selector = f"id:{resolved_local}" if resolved_local else f"name:{req.repo}"
 
-    repo_dir = (
-        Path.home() / "canon"
-        if req.repo == "canon"
-        else Path.home() / "Documents" / ("dot-github" if req.repo == ".github" else req.repo)
-    )
+    if req.repo == "canon":
+        repo_dir = Path.home() / "canon"
+    elif req.repo == "sota-dynamic-trail-c":
+        tcc_safe = Path.home() / "sota-dynamic-trail-c"
+        repo_dir = tcc_safe if tcc_safe.exists() else Path.home() / "Documents" / "sota-dynamic-trail-c"
+    else:
+        repo_dir = Path.home() / "Documents" / ("dot-github" if req.repo == ".github" else req.repo)
     in_isolated_wt = detect_isolated_worktree(repo_dir) if repo_dir.exists() else False
     lease_disjoint = detect_disjoint_peer_lease(
         req.repo,
@@ -434,8 +457,7 @@ def build_cc_lead_execution_plan(
             "orca",
             "orchestration",
             "worker-start",
-            "--environment",
-            "100.110.115.22" if use_noesis else "local",
+            *(["--on", "100.110.115.22"] if use_noesis else []),
             "--worktree",
             "new-child",
             "--repo",
@@ -445,7 +467,7 @@ def build_cc_lead_execution_plan(
             "--agent",
             meta["orca_agent"],
         ]
-        if meta["orca_agent"] in ("claude", "codex", "antigravity", "muse"):
+        if meta["orca_agent"] in ("claude", "codex", "antigravity", "grok", "muse", "omp"):
             argv.extend(["--model", meta["model"], "--effort", meta["effort"]])
         argv.extend(
             [
@@ -485,7 +507,7 @@ def build_cc_lead_execution_plan(
     plan_sha256 = hashlib.sha256(json.dumps(plan_digest_payload, sort_keys=True).encode("utf-8")).hexdigest()
 
     return {
-        "schema_version": "sota-cc-lead-hub.v1",
+        "schema_version": "sota-cc-lead-hub.v2",
         "plan_id": plan_id,
         "plan_sha256": plan_sha256,
         "cc_lead_contract": CC_LEAD_CENTRAL_CONTRACT,
@@ -574,6 +596,10 @@ def main(argv: list[str] | None = None) -> int:
     p_st = sub.add_parser("status", help="Probe Claude Lead + OMC/OMX/Orca/OMO/Pi/Goose/DSH runtime worker fleet")
     p_st.add_argument("--json", action="store_true", help="Emit JSON status")
 
+    p_ln = sub.add_parser("lanes", help="Inspect Dual-Machine Trading Lanes (T1..T3) & Harness Lanes (H1..H3)")
+    p_ln.add_argument("--plane", default="all", choices=("all", "trading", "harness"))
+    p_ln.add_argument("--json", action="store_true", help="Emit JSON lanes overview")
+
     p_pl = sub.add_parser("plan", help="Synthesize 5-channel Claude-Lead multi-runtime worker execution plan")
     p_pl.add_argument("--repo", default="sota-multi-model-workflows")
     p_pl.add_argument("--task-class", default="parallel_worktree_implementation", choices=sorted(TASK_CLASS_PROFILES))
@@ -601,7 +627,7 @@ def main(argv: list[str] | None = None) -> int:
         fleet = probe_cc_runtime_fleet()
         out = {
             "ok": fleet["cc_lead_ready"] and fleet["codex_omx_ready"] and fleet["orca_supervisor_ready"],
-            "schema_version": "sota-cc-lead-hub.v1",
+            "schema_version": "sota-cc-lead-hub.v2",
             "cc_lead": CC_LEAD_CENTRAL_CONTRACT,
             "fleet": fleet,
             "mesh_state": mesh,
@@ -612,6 +638,13 @@ def main(argv: list[str] | None = None) -> int:
         }
         print(json.dumps(out, indent=2))
         return 0 if out["ok"] else 1
+
+    if args.cmd == "lanes":
+        from sota_mmw.dual_machine_lanes import build_lanes_overview
+
+        lanes_out = build_lanes_overview(plane=args.plane, mesh_state=mesh)
+        print(json.dumps(lanes_out, indent=2, default=list))
+        return 0 if lanes_out["ok"] else 1
 
     w_override = tuple(x.strip() for x in getattr(args, "workers", "").split(",") if x.strip()) or None
     req = CCLeadPlanRequest(
