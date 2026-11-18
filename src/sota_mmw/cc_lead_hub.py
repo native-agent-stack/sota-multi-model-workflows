@@ -20,6 +20,7 @@ import os
 import re
 import shlex
 import shutil
+import socket
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -34,12 +35,65 @@ from sota_mmw.ao_lifecycle import (
     detect_isolated_worktree,
 )
 
+
+def is_running_on_noesis_host() -> bool:
+    """Return True when executing directly on Stationary Noesis Win32 or Noesis-Carbon WSL2."""
+    if os.name == "nt":
+        return True
+    if "noesis" in socket.gethostname().lower():
+        return True
+    return "noesis" in os.environ.get("WSL_DISTRO_NAME", "").lower()
+
+
+def orca_remote_on_args(*, use_noesis: bool, flag: str = "--on") -> list[str]:
+    """Emit Orca remote target flags without ever passing 100.110.115.22 to Noesis itself (#188)."""
+    if is_running_on_noesis_host():
+        return []
+    return [flag, "100.110.115.22"] if use_noesis else []
+
+
+QUALITY_DIRECTIVE_POWERHOUSE_FLEET: dict[str, dict[str, Any]] = {
+    "anthropic_claude_1to1": {
+        "vendor": "Anthropic",
+        "benchmark_authority": "https://artificialanalysis.ai/models (Intelligence v5.0.1 #1 & Coding Agent v2.1 #1)",
+        "lead_model": "claude-fable-5-2",
+        "remaining_models": ("claude-opus-5-5", "claude-sonnet-5-5"),
+        "target_fable_share": 0.50,
+        "target_remaining_share": 0.50,
+        "allowed_fable_band": (0.42, 0.58),
+        "zero_haiku_sprawl": True,
+    },
+    "openai_codex_and_pi_omp": {
+        "vendor": "OpenAI",
+        "benchmark_authority": "https://artificialanalysis.ai/models (Intelligence v5.0.1 #2)",
+        "reasoning_critic_model": "gpt-6.2-astra",
+        "high_quality_execution_model": "gpt-6.2-sol",
+        "runtimes": ("codex", "omx", "pi", "omp"),
+        "default_effort": "high",
+    },
+    "google_deepmind_antigravity": {
+        "vendor": "Google DeepMind",
+        "benchmark_authority": "https://artificialanalysis.ai/models (Intelligence v5.0.1 #3 & #1 1M+ Context)",
+        "model": "gemini-4-carbon-high",
+        "runtimes": ("antigravity",),
+        "default_effort": "high",
+    },
+    "deepseek_dsh_prewall": {
+        "vendor": "DeepSeek",
+        "benchmark_authority": "https://artificialanalysis.ai/models (Top Cost-Efficiency Pre-Wall Batch Sweep)",
+        "model": "deepseek-v4-pro",
+        "runtimes": ("dsh",),
+        "default_effort": "high",
+    },
+}
+
 CC_LEAD_CENTRAL_CONTRACT: dict[str, Any] = {
     "workspace_name": "cc-lead",
     "lead_runtime": "claude",
     "orchestrator_plugin": "oh-my-claudecode@omc",
     "lead_model_id": "claude-fable-5-2",
     "lead_effort": "xhigh",
+    "claude_cli_fable_vs_remaining_target_ratio": "1:1",
     "one_model_per_conversation": True,
     "hephaestus_forbids_gpt_models": True,
     "paper_only_trading_firewall": True,
@@ -47,12 +101,16 @@ CC_LEAD_CENTRAL_CONTRACT: dict[str, Any] = {
     "omc_worker_default_env": {
         "OMC_RUNTIME_V2": "1",
         "OMC_TEAM_WORKTREE_MODE": "branch",
+        "OMC_MODEL_HIGH": "claude-fable-5-2",
+        "OMC_MODEL_MEDIUM": "claude-sonnet-5-5",
+        "OMC_MODEL_LOW": "claude-sonnet-5-5",
         "OMC_CODEX_DEFAULT_MODEL": "gpt-6.2-astra",
         "OMC_ANTIGRAVITY_DEFAULT_MODEL": "gemini-4-carbon-high",
         "OMC_GEMINI_DEFAULT_MODEL": "gemini-4-carbon-high",
         "OMC_GROK_DEFAULT_MODEL": "grok-4.7",
         "OMC_JEV_MAX_EFFORT": "xhigh",
     },
+    "quality_directive_powerhouse_fleet": QUALITY_DIRECTIVE_POWERHOUSE_FLEET,
     "live_authenticated_worker_routes": ("cc-lead", "codex", "antigravity", "opencode", "dsh"),
     "binary_present_user_auth_pending_routes": ("gemini-cli", "muse", "grok", "goose", "pi", "omp-direct", "ccr"),
 }
@@ -143,10 +201,10 @@ RUNTIME_WORKER_ROSTER: dict[str, dict[str, str]] = {
         "binary": "omp",
         "orca_agent": "omp",
         "omc_spec": "1:claude:executor",
-        "vendor": "multi-role",
+        "vendor": "openai",
         "model": "@worker",
         "effort": "high",
-        "slot": "OMP role-selector (@worker) thinking runtime",
+        "slot": "Pi v1.5.2 / OMP v18.22.0 (@worker -> openai-codex/gpt-6.2-sol high) thinking runtime",
     },
     "goose-autonomous": {
         "binary": "goose",
@@ -169,8 +227,8 @@ TASK_CLASS_PROFILES: dict[str, dict[str, Any]] = {
     },
     "parallel_worktree_implementation": {
         "omc_team_spec": "1:claude:executor,1:codex:test-engineer,1:antigravity:analyst,1:antigravity:verifier",
-        "orca_workers": ("claude-sonnet-omc", "codex-sol-omx", "antigravity-carbon", "opencode-kimi-omo"),
-        "hephaestus_model": "kimi-k3.1-pro",
+        "orca_workers": ("claude-sonnet-omc", "codex-sol-omx", "antigravity-carbon", "pi-omp-worker"),
+        "hephaestus_model": "claude-sonnet-5-5",
         "requires_prewall_lock": False,
         "requires_3vendor_stage3": True,
     },
@@ -198,7 +256,7 @@ TASK_CLASS_PROFILES: dict[str, dict[str, Any]] = {
     "combinatorial_gpu_sweep": {
         "omc_team_spec": "1:claude:scientist,1:codex:critic,1:antigravity:verifier",
         "orca_workers": ("claude-opus-falsifier", "codex-astra-omx", "deepseek-dsh"),
-        "hephaestus_model": "kimi-k3.1-pro",
+        "hephaestus_model": "claude-sonnet-5-5",
         "requires_prewall_lock": True,
         "requires_3vendor_stage3": True,
     },
@@ -394,10 +452,15 @@ def build_cc_lead_execution_plan(
         requires_3vendor=requires_3vendor,
     )
 
-    use_noesis = req.placement == "noesis" or (
-        req.placement == "auto"
-        and req.task_class == "combinatorial_gpu_sweep"
-        and mesh_state in ("dual_mesh_docked", "dual_mesh_on_battery")
+    on_noesis_self = is_running_on_noesis_host()
+    use_noesis = (
+        on_noesis_self
+        or req.placement == "noesis"
+        or (
+            req.placement == "auto"
+            and req.task_class == "combinatorial_gpu_sweep"
+            and mesh_state in ("dual_mesh_docked", "dual_mesh_on_battery")
+        )
     )
     target_host = "noesis_64c_rtx4090" if use_noesis else "mac_m5_max_local"
     if use_noesis:
@@ -463,7 +526,7 @@ def build_cc_lead_execution_plan(
             "orca",
             "orchestration",
             "worker-start",
-            *(["--on", "100.110.115.22"] if use_noesis else []),
+            *orca_remote_on_args(use_noesis=use_noesis),
             "--worktree",
             "new-child",
             "--repo",
@@ -653,14 +716,14 @@ SMART_TASK_SUITABILITY_MATRIX: dict[str, dict[str, Any]] = {
             "hephaestus",
             "tree-sitter",
         ),
-        "primary_worker": "opencode",
-        "primary_orca_agent": "opencode",
-        "primary_model": "kimi-k3.1-pro",
+        "primary_worker": "cc-lead",
+        "primary_orca_agent": "claude",
+        "primary_model": "claude-sonnet-5-5",
         "effort": "high",
-        "challenger_worker": "codex",
+        "challenger_worker": "omp",
         "challenger_model": "gpt-6.2-sol",
         "default_surface": "auto",
-        "claude_best_practice": "Enforce hephaestusForbidsGptModels=True via OpenCode OMO kimi-k3.1-pro + codebase-memory-mcp impact graph",
+        "claude_best_practice": "Enforce hephaestusForbidsGptModels=True via Anthropic claude-sonnet-5-5 + codebase-memory-mcp impact graph + Pi/OMP gpt-6.2-sol challenger",
     },
     "skill_quality_eval_and_trajectory_tuning": {
         "keywords": (
@@ -706,7 +769,19 @@ SMART_TASK_SUITABILITY_MATRIX: dict[str, dict[str, Any]] = {
         "claude_best_practice": "Enforce singleActiveBrokerHostOnly=True on portable_mac_m5_max + <=2.00% initial stop + paper-only firewall",
     },
     "parallel_worktree_feature_and_pytest": {
-        "keywords": ("implement", "feature", "fix", "pytest", "unit test", "cli", "endpoint", "parser"),
+        "keywords": (
+            "implement",
+            "feature",
+            "fix",
+            "pytest",
+            "unit test",
+            "cli",
+            "endpoint",
+            "parser",
+            "pi",
+            "omp",
+            "gpt-6.2-sol",
+        ),
         "primary_worker": "codex",
         "primary_orca_agent": "codex",
         "primary_model": "gpt-6.2-sol",
@@ -714,9 +789,130 @@ SMART_TASK_SUITABILITY_MATRIX: dict[str, dict[str, Any]] = {
         "challenger_worker": "claude",
         "challenger_model": "claude-sonnet-5-5",
         "default_surface": "auto",
-        "claude_best_practice": "Isolate implementation in child git worktrees with disjoint peer_bus path-glob leases & Red-Green-Refactor TDD",
+        "claude_best_practice": "Isolate implementation in child git worktrees with Codex / Pi / OMP gpt-6.2-sol high & disjoint peer_bus path-glob leases",
     },
 }
+
+
+def audit_claude_1to1_model_mix(
+    model_counts: dict[str, int] | None = None,
+    *,
+    projects_dir: Path | None = None,
+    target_fable_share: float = 0.50,
+    band_half_width: float = 0.08,
+) -> dict[str, Any]:
+    """Audit Claude Code CLI model-turn distribution against the v3.10.0 ~1:1 (50% fable-5-2 vs 50% remaining) target."""
+    counts: dict[str, int] = {}
+    if model_counts is not None:
+        counts = {str(k): int(v) for k, v in model_counts.items() if int(v) > 0}
+    else:
+        pdir = projects_dir or (Path.home() / ".claude" / "projects")
+        if pdir.is_dir():
+            for jf in sorted(pdir.rglob("*.jsonl")):
+                try:
+                    for line in jf.read_text(encoding="utf-8", errors="ignore").splitlines():
+                        if '"model"' not in line:
+                            continue
+                        obj = json.loads(line)
+                        msg = obj.get("message") if isinstance(obj, dict) else None
+                        m = str((msg or {}).get("model") or obj.get("model") or "").strip()
+                        if m.startswith("claude-"):
+                            counts[m] = counts.get(m, 0) + 1
+                except (OSError, json.JSONDecodeError):
+                    continue
+
+    fable_turns = sum(v for k, v in counts.items() if "fable-5-2" in k or "fable-5-1" in k or k == "fable")
+    opus_turns = sum(v for k, v in counts.items() if "opus" in k)
+    sonnet_turns = sum(v for k, v in counts.items() if "sonnet" in k)
+    haiku_turns = sum(v for k, v in counts.items() if "haiku" in k)
+    remaining_turns = sum(v for k, v in counts.items() if k not in {"fable"} and "fable-5-" not in k)
+    total_turns = fable_turns + remaining_turns
+
+    fable_share = round(fable_turns / total_turns, 4) if total_turns > 0 else 0.50
+    remaining_share = round(remaining_turns / total_turns, 4) if total_turns > 0 else 0.50
+    low_bound = round(target_fable_share - band_half_width, 4)
+    high_bound = round(target_fable_share + band_half_width, 4)
+    in_band = low_bound <= fable_share <= high_bound
+
+    if total_turns == 0 or in_band:
+        action = "BALANCED_1TO1_HOLD"
+    elif fable_share < low_bound:
+        action = "PROMOTE_HIGH_AND_ELIMINATE_HAIKU_TO_REACH_50PCT_FABLE"
+    else:
+        action = "DELEGATE_SUBAGENTS_TO_SONNET_OPUS_TO_REACH_50PCT_REMAINING"
+
+    return {
+        "schema_version": "sota-claude-1to1-mix.v1",
+        "target_fable_share": target_fable_share,
+        "allowed_band": [low_bound, high_bound],
+        "total_claude_turns": total_turns,
+        "fable_turns": fable_turns,
+        "remaining_turns": remaining_turns,
+        "opus_turns": opus_turns,
+        "sonnet_turns": sonnet_turns,
+        "haiku_turns": haiku_turns,
+        "fable_share": fable_share,
+        "remaining_share": remaining_share,
+        "within_1to1_band": in_band,
+        "recommended_action": action,
+        "enforced_omc_tiers": {
+            "OMC_MODEL_HIGH": "claude-fable-5-2",
+            "OMC_MODEL_MEDIUM": "claude-sonnet-5-5",
+            "OMC_MODEL_LOW": "claude-sonnet-5-5",
+            "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
+            "CLAUDE_CODE_WORKFLOW_SUBAGENT_MODEL": "sonnet",
+        },
+        "raw_model_counts": counts,
+    }
+
+
+def rebalance_claude_1to1_route(
+    route: dict[str, Any],
+    *,
+    fable_share: float,
+    target_fable_share: float = 0.50,
+    band_half_width: float = 0.08,
+) -> dict[str, Any]:
+    """Deterministically steer subagent/worker tier between claude-fable-5-2 and opus/sonnet toward 1:1 balance."""
+    out = dict(route)
+    model = str(out.get("selected_model") or "")
+    cls_name = str(out.get("suitability_class") or "")
+    low_bound = target_fable_share - band_half_width
+    high_bound = target_fable_share + band_half_width
+
+    # Never downgrade live broker guard or sovereign architecture lead, and never introduce haiku sprawl.
+    if model.startswith("claude-haiku"):
+        out["selected_model"] = "claude-sonnet-5-5"
+        out["rebalance_reason"] = "eliminated_haiku_sprawl_to_sonnet_5_5"
+        return out
+
+    if (
+        fable_share < low_bound
+        and model in {"claude-sonnet-5-5", "claude-opus-5-5"}
+        and cls_name != "ast_graph_multifile_codemod_refactor"
+    ):
+        out["selected_model"] = "claude-fable-5-2"
+        out["effort"] = "xhigh"
+        out["selected_worker"] = "cc-lead"
+        out["assign_compatible_worker"] = "cc-lead"
+        out["rebalance_reason"] = f"fable_share={fable_share:.4f}<{low_bound:.2f}:promoted_to_claude_fable_5_2"
+    elif (
+        fable_share > high_bound
+        and model == "claude-fable-5-2"
+        and cls_name
+        not in {
+            "live_cockpit_and_paper_broker_guard",
+            "architecture_adr_and_spec",
+        }
+    ):
+        out["selected_model"] = "claude-opus-5-5"
+        out["effort"] = "high"
+        out["selected_worker"] = "claude-opus"
+        out["assign_compatible_worker"] = "claude-opus"
+        out["rebalance_reason"] = f"fable_share={fable_share:.4f}>{high_bound:.2f}:delegated_to_claude_opus_5_5"
+    else:
+        out["rebalance_reason"] = "within_1to1_policy"
+    return out
 
 
 def smart_route_task(
@@ -811,8 +1007,13 @@ def build_multi_model_assign_envelope(
             surface = str(smart_decision["recommended_surface"])
     valid_workers = (
         "claude",
+        "claude-opus",
+        "claude-sonnet",
         "codex",
+        "codex-sol",
         "omp",
+        "pi",
+        "dsh",
         "opencode",
         "muse",
         "grok",
@@ -824,7 +1025,8 @@ def build_multi_model_assign_envelope(
         raise ValueError(f"Unsupported worker '{worker}'; expected one of {valid_workers}")
     if repo not in NOESIS_PROVISIONED_ORCA_REPOS:
         raise ValueError(f"Unknown repository '{repo}'")
-    use_noesis = surface == "noesis" or worker == "noesis-cc-lead"
+    on_noesis_self = is_running_on_noesis_host()
+    use_noesis = on_noesis_self or surface == "noesis" or worker == "noesis-cc-lead"
     orca_repo = f"id:{NOESIS_PROVISIONED_ORCA_REPOS[repo]}" if use_noesis else repo
     assign_sha256 = hashlib.sha256(
         json.dumps(
@@ -840,11 +1042,11 @@ def build_multi_model_assign_envelope(
         repo,
         "--worker",
         worker,
-        "--surface",
+        "--placement",
         "noesis" if use_noesis else ("local" if surface == "local" else "auto"),
         "--goal",
         goal,
-        "--sender",
+        "--callback-to",
         sender_session,
         "--paths",
         *paths,
@@ -853,7 +1055,7 @@ def build_multi_model_assign_envelope(
         "orca",
         "orchestration",
         "worker-release",
-        *(["--on", "100.110.115.22"] if use_noesis else []),
+        *orca_remote_on_args(use_noesis=use_noesis),
         "--dispatch",
         "<dispatch_id>",
     ]
@@ -873,14 +1075,14 @@ def build_multi_model_assign_envelope(
 
 
 def _load_live_bus_and_mesh() -> tuple[int, float, str]:
-    trials_n = 88
-    next_t = 4.1709
+    trials_n = 96
+    next_t = 4.1905
     mesh = "portable_autonomous_ac"
-    bus_bin = Path.home() / ".agents" / "bin" / "sota-bus"
+    bus_engine = Path.home() / ".agents" / "bus" / "sota_bus_engine.py"
     ws_bin = Path.home() / ".agents" / "bin" / "sota-workstation"
-    if bus_bin.is_file():
+    if bus_engine.is_file():
         p_bus = subprocess.run(
-            [sys.executable, str(Path.home() / ".agents" / "bus" / "sota_bus_engine.py"), "status"],
+            [sys.executable, str(bus_engine), "status"],
             capture_output=True,
             text=True,
             timeout=5,
@@ -957,8 +1159,13 @@ def main(argv: list[str] | None = None) -> int:
         choices=(
             "auto",
             "claude",
+            "claude-opus",
+            "claude-sonnet",
             "codex",
+            "codex-sol",
             "omp",
+            "pi",
+            "dsh",
             "opencode",
             "muse",
             "grok",
@@ -980,6 +1187,11 @@ def main(argv: list[str] | None = None) -> int:
     p_sr.add_argument("--goal", required=True)
     p_sr.add_argument("--surface", default="auto", choices=("auto", "local", "noesis"))
 
+    p_mm = sub.add_parser(
+        "model-mix", help="Audit Claude Code CLI ~1:1 (50%% claude-fable-5-2 vs 50%% remaining) usage & tier balance"
+    )
+    p_mm.add_argument("--json", action="store_true")
+
     p_rl = sub.add_parser("release", help="Release a completed Orca supervised worker dispatch & sota-bus lease")
     p_rl.add_argument("--dispatch", required=True)
     p_rl.add_argument("--repo", default="")
@@ -989,6 +1201,10 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     trials_n, next_t, mesh = _load_live_bus_and_mesh()
+
+    if args.cmd == "model-mix":
+        print(json.dumps(audit_claude_1to1_model_mix(), indent=2))
+        return 0
 
     if args.cmd == "smart-route":
         print(json.dumps(smart_route_task(args.goal, repo=args.repo, surface=args.surface), indent=2))
@@ -1016,7 +1232,7 @@ def main(argv: list[str] | None = None) -> int:
             "orca",
             "orchestration",
             "worker-release",
-            *(["--on", "100.110.115.22"] if args.surface == "noesis" else []),
+            *orca_remote_on_args(use_noesis=(args.surface == "noesis")),
             "--dispatch",
             args.dispatch,
         ]

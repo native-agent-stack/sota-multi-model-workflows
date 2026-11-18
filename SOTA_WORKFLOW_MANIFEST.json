@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "3.9.9",
+  "schemaVersion": "3.10.0",
   "repository": "https://github.com/native-agent-stack/sota-multi-model-workflows",
   "visibility": "PUBLIC",
   "workflowCount": 18,
@@ -39,7 +39,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 22,
+    "adrCount": 23,
     "records": [
       {
         "id": "ADR-0001",
@@ -378,6 +378,22 @@
           "https://github.com/native-agent-stack/cc-sota-harness",
           "https://github.com/native-agent-stack/sota-multi-model-workflows",
           "https://github.com/parallel-web/parallel-search-evals",
+          "https://github.com/stablyai/orca"
+        ]
+      },
+      {
+        "id": "ADR-0023",
+        "layer": "Quality-Directive Multi-Model Routing, Claude Code `1:1` Tier Governance & Symmetric 3-Surface Hub Parity (`L1` x `L3` x `L4` x `L8` x `L10`)",
+        "title": "`v3.10.0` Quality-Directive `3`-Powerhouse + `DSH` + `Pi`/`OMP` (`gpt-6.2-sol` `high`) Convergence, Claude Code `~1:1` Model-Mix Rebalancer & Host-Aware Noesis Hub Parity",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "E4 (Artificial Analysis Intelligence Index `v5.0.1` & Coding Agent Index `v2.1`, `413`-Turn `~/.claude/projects` Telemetry Audit, `noesis-cc-lead` `#188`/`#190`/`#191` Empirical Verification & `21/21` Unit Suite)",
+        "file": "docs/adr/ADR-0023-v3100-quality-directive-3powerhouse-dsh-pi-gpt62sol-and-claude-1to1-fable-mix.md",
+        "githubUrls": [
+          "https://github.com/Yeachan-Heo/oh-my-claudecode",
+          "https://github.com/can1357/oh-my-pi",
+          "https://github.com/native-agent-stack/cc-sota-harness",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
           "https://github.com/stablyai/orca"
         ]
       }

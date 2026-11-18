@@ -21,6 +21,8 @@ from sota_mmw.cc_lead_hub import (
     NOESIS_PROVISIONED_ORCA_REPOS,
     RUNTIME_WORKER_ROSTER,
     _load_live_bus_and_mesh,
+    is_running_on_noesis_host,
+    orca_remote_on_args,
     probe_cc_runtime_fleet,
     resolve_local_orca_repo_id,
 )
@@ -434,7 +436,8 @@ def resolve_dual_machine_lane_plan(
             selected_surface = "portable_mac_m5_max"
             use_noesis = False
 
-    if use_noesis:
+    on_noesis_self = is_running_on_noesis_host()
+    if use_noesis or on_noesis_self:
         remote_uuid = NOESIS_PROVISIONED_ORCA_REPOS[repo]
         orca_repo_selector = f"id:{remote_uuid}"
         lane_hub = ORCA_LANE_HUBS["stationary_noesis"][plane]
@@ -453,7 +456,7 @@ def resolve_dual_machine_lane_plan(
         "orca",
         "worktree",
         "create",
-        *(["--environment", "100.110.115.22"] if use_noesis else []),
+        *orca_remote_on_args(use_noesis=use_noesis, flag="--environment"),
         "--repo",
         orca_repo_selector,
         "--name",
@@ -469,7 +472,7 @@ def resolve_dual_machine_lane_plan(
         "orca",
         "orchestration",
         "worker-start",
-        *(["--on", "100.110.115.22"] if use_noesis else []),
+        *orca_remote_on_args(use_noesis=use_noesis, flag="--on"),
         "--worktree",
         "new-child",
         "--repo",

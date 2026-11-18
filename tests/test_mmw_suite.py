@@ -129,8 +129,8 @@ class TestMultiModelWorkflows(unittest.TestCase):
     def test_workflow_registry_ast_and_merge_gate(self) -> None:
         reg = json.loads((ROOT / "workflows" / "REGISTRY.json").read_text(encoding="utf-8"))
         manifest = json.loads((ROOT / "SOTA_WORKFLOW_MANIFEST.json").read_text(encoding="utf-8"))
-        self.assertEqual(reg["version"], "3.9.9")
-        self.assertEqual(manifest["schemaVersion"], "3.9.9")
+        self.assertEqual(reg["version"], "3.10.0")
+        self.assertEqual(manifest["schemaVersion"], "3.10.0")
         self.assertEqual(len(reg["workflows"]), 18)
         self.assertEqual(manifest["workflowCount"], 18)
         ids = [w["id"] for w in reg["workflows"]]
@@ -1173,11 +1173,11 @@ class TestMultiModelWorkflows(unittest.TestCase):
             cv.DEFAULT_PREWALL_LAKE_SHA256,
             "a253421e873441740d5d4b410d993cfa7345fe34b88ec4ab7f4eecd537b3f234",
         )
-        self.assertEqual(cv.DEFAULT_ECOSYSTEM_SEMVER, "3.9.9")
+        self.assertEqual(cv.DEFAULT_ECOSYSTEM_SEMVER, "3.10.0")
         st_v390 = cv.build_compounding_version_status()
         self.assertTrue(st_v390["ok"])
-        self.assertEqual(st_v390["ecosystem_version"], "3.9.9")
-        self.assertEqual(st_v390["latest_verified_transition"]["adr_id"], "ADR-0021")
+        self.assertEqual(st_v390["ecosystem_version"], "3.10.0")
+        self.assertEqual(st_v390["latest_verified_transition"]["adr_id"], "ADR-0023")
 
         # 2. T1..T5 x H0..H7 bijection (13 sub-lanes covering all 18 active repos) & 9-feed DF1..DF9 gate
         self.assertEqual(len(dml.STAGE_AND_LAYER_SUBLANES), 13)
@@ -1345,7 +1345,7 @@ class TestMultiModelWorkflows(unittest.TestCase):
                 asyncio.run(r18)
         out18 = json.loads(buf18.getvalue())
         self.assertTrue(out18["all_gates_passed"])
-        self.assertEqual(out18["schema_version"], "3.9.9")
+        self.assertEqual(out18["schema_version"], "3.10.0")
         rec18.assert_called_once()
         self.assertEqual(rec18.call_args.args, ())
         self.assertIn("repo", rec18.call_args.kwargs)
@@ -1377,8 +1377,9 @@ class TestMultiModelWorkflows(unittest.TestCase):
             repo="sota-multi-model-workflows",
         )
         self.assertEqual(r_ast["suitability_class"], "ast_graph_multifile_codemod_refactor")
-        self.assertEqual(r_ast["selected_worker"], "opencode")
-        self.assertEqual(r_ast["selected_model"], "kimi-k3.1-pro")
+        self.assertEqual(r_ast["selected_worker"], "cc-lead")
+        self.assertEqual(r_ast["selected_model"], "claude-sonnet-5-5")
+        self.assertEqual(r_ast["challenger_model"], "gpt-6.2-sol")
         self.assertTrue(r_ast["hephaestus_non_gpt_enforced"])
 
         r_sec = cch.smart_route_task(
@@ -1396,6 +1397,67 @@ class TestMultiModelWorkflows(unittest.TestCase):
         )
         self.assertEqual(auto_env["worker"], "antigravity")
         self.assertEqual(auto_env["smart_route"]["selected_model"], "gemini-4-carbon-high")
+        self.assertIn("--placement", auto_env["sota_bus_assign_argv"])
+        self.assertIn("--callback-to", auto_env["sota_bus_assign_argv"])
+
+    def test_v3100_quality_directive_claude_1to1_mix_and_noesis_self_routing(self) -> None:
+        from sota_mmw import cc_lead_hub as cch
+        from sota_mmw import dual_machine_lanes as dml
+
+        # 1. Verify 3 frontier powerhouses + DSH + OMC 1:1 tier env
+        env_cfg = cch.CC_LEAD_CENTRAL_CONTRACT["omc_worker_default_env"]
+        self.assertEqual(env_cfg["OMC_MODEL_HIGH"], "claude-fable-5-2")
+        self.assertEqual(env_cfg["OMC_MODEL_MEDIUM"], "claude-sonnet-5-5")
+        self.assertEqual(env_cfg["OMC_MODEL_LOW"], "claude-sonnet-5-5")
+        self.assertEqual(len(cch.QUALITY_DIRECTIVE_POWERHOUSE_FLEET), 4)
+
+        # 2. Verify Claude 1:1 telemetry & rebalancer (0.48% historical fable -> promote; 50% -> hold; 80% -> delegate)
+        skew_low = cch.audit_claude_1to1_model_mix(
+            {"claude-fable-5-2": 2, "claude-opus-5-5": 126, "claude-haiku-5-5": 285}
+        )
+        self.assertFalse(skew_low["within_1to1_band"])
+        self.assertEqual(skew_low["recommended_action"], "PROMOTE_HIGH_AND_ELIMINATE_HAIKU_TO_REACH_50PCT_FABLE")
+
+        bal = cch.audit_claude_1to1_model_mix({"claude-fable-5-2": 50, "claude-opus-5-5": 20, "claude-sonnet-5-5": 30})
+        self.assertTrue(bal["within_1to1_band"])
+        self.assertEqual(bal["fable_share"], 0.50)
+        self.assertEqual(bal["haiku_turns"], 0)
+
+        promoted = cch.rebalance_claude_1to1_route(
+            {"suitability_class": "parallel_worktree_feature_and_pytest", "selected_model": "claude-sonnet-5-5"},
+            fable_share=0.20,
+        )
+        self.assertEqual(promoted["selected_model"], "claude-fable-5-2")
+
+        delegated = cch.rebalance_claude_1to1_route(
+            {"suitability_class": "general_analysis", "selected_model": "claude-fable-5-2"},
+            fable_share=0.75,
+        )
+        self.assertEqual(delegated["selected_model"], "claude-opus-5-5")
+
+        # 3. Verify host-aware Noesis self-routing (#188(2): never pass --on 100.110.115.22 to Noesis itself)
+        with (
+            mock.patch.object(cch, "is_running_on_noesis_host", return_value=True),
+            mock.patch.object(dml, "is_running_on_noesis_host", return_value=True),
+        ):
+            self.assertEqual(cch.orca_remote_on_args(use_noesis=True), [])
+            env_self = cch.build_multi_model_assign_envelope(
+                repo="cc-sota-harness",
+                goal="Implement pytest gate",
+                worker="codex-sol",
+                surface="noesis",
+            )
+            self.assertNotIn("100.110.115.22", env_self["orca_worker_release_template"])
+            lane_self = dml.resolve_dual_machine_lane_plan(
+                "cc-sota-harness",
+                workload="parallel_worktree_implementation",
+                requested_placement="local",
+            )
+            self.assertEqual(
+                lane_self["orca_parent_worktree_selector"],
+                "folder:060eb055-834e-4ef2-8198-e3e224a35fbe",
+            )
+            self.assertNotIn("100.110.115.22", lane_self["orca_worker_start_argv"])
 
 
 if __name__ == "__main__":

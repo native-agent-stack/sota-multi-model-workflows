@@ -43,7 +43,7 @@ from sota_mmw.research_convergence_contract import (
 
 RANKING_DATAFEEDS_SCHEMA_VERSION = "sota-ranking-datafeeds.v3.8"
 COMPOUNDING_VERSION_SCHEMA = "sota-compounding-version-ledger.v3.8"
-DEFAULT_ECOSYSTEM_SEMVER = "3.9.9"
+DEFAULT_ECOSYSTEM_SEMVER = "3.10.0"
 MIN_HLZ_TRIALS_FLOOR = 90
 MIN_NEXT_HLZ_HURDLE_FLOOR = 4.1760
 MIN_COMPILED_LESSONS_FLOOR = 59
@@ -433,16 +433,16 @@ def build_compounding_version_status(
     shelf_sha = compute_upstream_shelf_tree_sha256(pins_path)
     df_sha = compute_ranking_datafeed_contract_sha256()
     h090_rec = CompoundingVersionRecord(
-        prev_semver="3.9.8",
+        prev_semver="3.9.9",
         next_semver=DEFAULT_ECOSYSTEM_SEMVER,
         promotion_kind="PROTECTIVE_FILTER_OR_GOVERNANCE",
-        adr_id="ADR-0021",
+        adr_id="ADR-0023",
         input_lake_sha256=DEFAULT_PREWALL_LAKE_SHA256,
         upstream_shelf_tree_sha256=shelf_sha,
         ranking_datafeed_contract_sha256=df_sha,
         trials_n=trials_n,
         lessons_count=lessons_count,
-        candidate_id="V399_POST_RESTART_OMC_DIST_LIVE_ROUTE_VERIFICATION_AND_CREATEPROCESSW_SYNC",
+        candidate_id="V3100_QUALITY_DIRECTIVE_3POWERHOUSE_DSH_PI_GPT62SOL_AND_CLAUDE_1TO1_FABLE_MIX",
         dsr_probability=0.42,
         cpcv_positive_fold_pct=73.33,
         t_stat_date_clustered=1.2919,
@@ -454,7 +454,7 @@ def build_compounding_version_status(
     )
     verified = verify_compounding_version_transition(
         h090_rec,
-        prev_adr_id="ADR-0020",
+        prev_adr_id="ADR-0022",
         pins_path=pins_path,
     )
     return {

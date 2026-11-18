@@ -102,7 +102,7 @@ if not fast_deterministic_only and "agent" in globals():
 phase("Phase 2: Emit Assignment & DAG Receipt")  # noqa: F821
 final_receipt = {
     "workflow": "multi-model-omc-memory-assign",
-    "schema_version": "3.9.9",
+    "schema_version": "3.10.0",
     "research_convergence_valid": bool(rc_envelope["valid"]),
     "assign_envelope": assign_envelope,
     "dag_summary": {
