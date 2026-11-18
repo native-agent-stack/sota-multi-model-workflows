@@ -28,7 +28,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 7,
+    "adrCount": 9,
     "records": [
       {
         "id": "ADR-0001",
@@ -124,6 +124,30 @@
           "https://github.com/native-agent-stack/native-agent-stack",
           "https://github.com/native-agent-stack/sota-compounding-lab",
           "https://github.com/native-agent-stack/sota-multi-model-workflows"
+        ]
+      },
+      {
+        "id": "ADR-0008",
+        "layer": "Model routing and workflow evidence",
+        "title": "Native Gemini 4 Carbon handoff across public and private repositories",
+        "status": "Accepted",
+        "date": "2026-11-17",
+        "evidenceGrade": "Vendor release and native client contract. Each deployment supplies its own account witness.",
+        "file": "docs/adr/ADR-0008-native-gemini-carbon-handoff.md",
+        "githubUrls": [
+          "https://github.com/google-antigravity/antigravity-cli"
+        ]
+      },
+      {
+        "id": "ADR-0009",
+        "layer": "Workstation storage and service continuity",
+        "title": "Independent recovery before a WSL host volume reset",
+        "status": "Accepted",
+        "date": "2026-11-17",
+        "evidenceGrade": "Upstream WSL lifecycle and Windows backup interfaces. Restore proof is specific to each deployment.",
+        "file": "docs/adr/ADR-0009-wsl-volume-reset-and-independent-restore.md",
+        "githubUrls": [
+          "https://github.com/microsoft/WSL"
         ]
       }
     ]
