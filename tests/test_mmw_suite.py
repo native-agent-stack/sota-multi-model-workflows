@@ -44,6 +44,17 @@ from sota_mmw.cc_lead_hub import (
     CCLeadPlanRequest,
     build_cc_lead_execution_plan,
 )
+from sota_mmw.compounding_versioning import (
+    CANONICAL_RANKING_DATAFEEDS_V38,
+    DEFAULT_PREWALL_LAKE_SHA256,
+    RANKING_DATAFEEDS_SCHEMA_VERSION,
+    UPSTREAM_SHELF_PINS_18,
+    CompoundingVersionRecord,
+    build_compounding_version_status,
+    compute_ranking_datafeed_contract_sha256,
+    compute_upstream_shelf_tree_sha256,
+    verify_compounding_version_transition,
+)
 from sota_mmw.dual_machine_lanes import (
     DUAL_MACHINE_SURFACES,
     HARNESS_LANES,
@@ -118,10 +129,10 @@ class TestMultiModelWorkflows(unittest.TestCase):
     def test_workflow_registry_ast_and_merge_gate(self) -> None:
         reg = json.loads((ROOT / "workflows" / "REGISTRY.json").read_text(encoding="utf-8"))
         manifest = json.loads((ROOT / "SOTA_WORKFLOW_MANIFEST.json").read_text(encoding="utf-8"))
-        self.assertEqual(reg["version"], "3.7.0")
-        self.assertEqual(manifest["schemaVersion"], "3.7.0")
-        self.assertEqual(len(reg["workflows"]), 15)
-        self.assertEqual(manifest["workflowCount"], 15)
+        self.assertEqual(reg["version"], "3.8.0")
+        self.assertEqual(manifest["schemaVersion"], "3.8.0")
+        self.assertEqual(len(reg["workflows"]), 16)
+        self.assertEqual(manifest["workflowCount"], 16)
         ids = [w["id"] for w in reg["workflows"]]
         self.assertEqual(ids, manifest["workflows"])
         self.assertIn("multi-model-ao-convergence", ids)
@@ -129,10 +140,11 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertIn("research-convergence-landing", ids)
         self.assertIn("cc-lead-multi-runtime-workers", ids)
         self.assertIn("dual-machine-trading-and-harness-lanes", ids)
+        self.assertIn("compounding-versioning-and-ranking-adr", ids)
 
         expected_keys = {"id", "script_path", "skill", "agents", "args_schema", "when_to_use"}
         top_level_wf_files = sorted(p for p in (ROOT / "workflows").glob("*.py") if not p.name.startswith("_"))
-        self.assertEqual(len(top_level_wf_files), 15)
+        self.assertEqual(len(top_level_wf_files), 16)
 
         for wf in reg["workflows"]:
             self.assertEqual(set(wf.keys()), expected_keys)
@@ -828,9 +840,9 @@ class TestMultiModelWorkflows(unittest.TestCase):
             resolve_ecosystem_repo_dir,
         )
 
-        # 1. Every single one of the 15 canonical workflows must call kit.verify_workflow_research_convergence
+        # 1. Every single one of the 16 canonical workflows must call kit.verify_workflow_research_convergence
         wf_files = sorted((ROOT / "workflows").glob("*_workflow.py"))
-        self.assertEqual(len(wf_files), 15)
+        self.assertEqual(len(wf_files), 16)
         for wf_path in wf_files:
             txt = wf_path.read_text(encoding="utf-8")
             self.assertIn(
@@ -1001,6 +1013,154 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertEqual(out15["frameworks_count"], 8)
         self.assertEqual(out15["target_lane_route"]["selected_surface"], "stationary_noesis_win32")
         rec15.assert_called_once()
+
+    def test_v380_ranking_datafeeds_compounding_versioning_and_workflow_16(self) -> None:
+        from sota_mmw import compounding_versioning as cv
+
+        # 1. Verify 9 DF1..DF9 Ranking DataFeeds, v2 backward-compat coverage, and 64-hex digests
+        self.assertEqual(RANKING_DATAFEEDS_SCHEMA_VERSION, "sota-ranking-datafeeds.v3.8")
+        self.assertEqual(len(CANONICAL_RANKING_DATAFEEDS_V38), 9)
+        expected_df_ids = [
+            "DF1_alpaca_sip_lit_and_dark_tape",
+            "DF2_alpaca_boats_overnight_and_dec6_23x5",
+            "DF3_raw_vs_all_split_and_corporate_actions_guard",
+            "DF4_xnys_tod_rvol_bucket_normalizer",
+            "DF5_sec_edgar_acceptance_datetime_catalyst_and_dilution_shield",
+            "DF6_sec_xbrl_point_in_time_public_float",
+            "DF7_finra_regsho_cnmsshvol_intraday_t1",
+            "DF8_finra_rule4560_settled_short_interest_t8",
+            "DF9_vix_majors_regime_and_ibkr_4002_l1_locate",
+        ]
+        self.assertEqual(list(CANONICAL_RANKING_DATAFEEDS_V38.keys()), expected_df_ids)
+        covered_v2 = {v2 for df in CANONICAL_RANKING_DATAFEEDS_V38.values() for v2 in df["v2_compat_feeds"]}
+        self.assertEqual(covered_v2, set(CANONICAL_DATAFEEDS.keys()))
+
+        self.assertEqual(len(UPSTREAM_SHELF_PINS_18), 18)
+        shelf_sha = compute_upstream_shelf_tree_sha256()
+        df_sha = compute_ranking_datafeed_contract_sha256()
+        self.assertEqual(len(shelf_sha), 64)
+        self.assertEqual(len(df_sha), 64)
+
+        # 2. Two-track promotion: H090 compounds ONLY on PROTECTIVE_FILTER_OR_GOVERNANCE, refused on ALPHA_STRATEGY_MINOR
+        h090_protective = CompoundingVersionRecord(
+            prev_semver="3.7.0",
+            next_semver="3.8.0",
+            promotion_kind="PROTECTIVE_FILTER_OR_GOVERNANCE",
+            adr_id="ADR-0015",
+            input_lake_sha256=DEFAULT_PREWALL_LAKE_SHA256,
+            upstream_shelf_tree_sha256=shelf_sha,
+            ranking_datafeed_contract_sha256=df_sha,
+            trials_n=90,
+            lessons_count=60,
+            candidate_id="H090_LIT_ONLY_PROTECTIVE_FILTER",
+            dsr_probability=0.42,
+            cpcv_positive_fold_pct=100.0,
+            t_stat_date_clustered=1.2919,
+            net_1x_bps=20.84,
+            net_2x_bps=15.43,
+            closed_roundtrips=0,
+            distinct_sessions=0,
+            hard_stop_pct=1.80,
+        )
+        res_prot = verify_compounding_version_transition(h090_protective, prev_adr_id="ADR-0014")
+        self.assertTrue(res_prot["approved"], msg=res_prot["violations"])
+        self.assertFalse(res_prot["alpha_stage_elevated"])
+        self.assertEqual(res_prot["track_disposition"], "PROTECTIVE_FILTER_OR_ADR_COMPOUNDED")
+        self.assertEqual(res_prot["required_hlz_t_hurdle"], 4.1735)
+        self.assertGreaterEqual(res_prot["next_trial_hlz_t_hurdle"], 4.1760)
+        self.assertEqual(len(res_prot["transition_receipt_sha256"]), 64)
+
+        h090_alpha_attempt = dataclasses.replace(h090_protective, promotion_kind="ALPHA_STRATEGY_MINOR")
+        res_alpha_rej = verify_compounding_version_transition(h090_alpha_attempt, prev_adr_id="ADR-0014")
+        self.assertFalse(res_alpha_rej["approved"])
+        self.assertFalse(res_alpha_rej["alpha_stage_elevated"])
+        self.assertTrue(any(v.startswith("ALPHA_T_STAT_BELOW_HLZ:") for v in res_alpha_rej["violations"]))
+
+        # Full alpha candidate clears ALPHA_STRATEGY_MINOR
+        full_alpha = dataclasses.replace(
+            h090_protective,
+            promotion_kind="ALPHA_STRATEGY_MINOR",
+            candidate_id="H091_FULL_STAGE4_CANDIDATE",
+            dsr_probability=0.98,
+            cpcv_positive_fold_pct=86.7,
+            t_stat_date_clustered=4.65,
+            net_1x_bps=18.4,
+            net_2x_bps=9.2,
+            closed_roundtrips=35,
+            distinct_sessions=12,
+            hard_stop_pct=1.60,
+        )
+        res_alpha_ok = verify_compounding_version_transition(full_alpha, prev_adr_id="ADR-0014")
+        self.assertTrue(res_alpha_ok["approved"], msg=res_alpha_ok["violations"])
+        self.assertTrue(res_alpha_ok["alpha_stage_elevated"])
+        self.assertEqual(res_alpha_ok["track_disposition"], "ALPHA_STAGE_ELEVATED")
+
+        # 3. Monotonic SemVer, sequential ADR, pre-wall, ADR-0022 stop & hash tampering all fail closed
+        for bad_rec, expected_prefix in (
+            (dataclasses.replace(h090_protective, next_semver="3.7.0"), "NON_MONOTONIC_SEMVER"),
+            (dataclasses.replace(h090_protective, next_semver="3.6.9"), "NON_MONOTONIC_SEMVER"),
+            (dataclasses.replace(h090_protective, adr_id="ADR-0014"), "NON_SEQUENTIAL_ADR_ID"),
+            (dataclasses.replace(h090_protective, study_end_date="2026-11-01"), "PREWALL_VIOLATION"),
+            (dataclasses.replace(h090_protective, hard_stop_pct=2.50), "ADR0022_STOP_VIOLATION"),
+            (dataclasses.replace(h090_protective, trials_n=85), "HLZ_TRIALS_BELOW_FLOOR"),
+            (dataclasses.replace(h090_protective, sibling_repo_authority="COPY"), "SIBLING_REPO_AUTHORITY_VIOLATION"),
+            (
+                dataclasses.replace(h090_protective, ranking_datafeed_contract_sha256="0" * 64),
+                "RANKING_DATAFEED_CONTRACT_SHA256_MISMATCH",
+            ),
+        ):
+            r_bad = verify_compounding_version_transition(bad_rec, prev_adr_id="ADR-0014")
+            self.assertFalse(r_bad["approved"])
+            self.assertTrue(
+                any(v.startswith(expected_prefix) for v in r_bad["violations"]),
+                msg=f"Expected {expected_prefix} in {r_bad['violations']}",
+            )
+
+        # 4. Verify CLI status, ranking-feeds, and verify exit codes
+        st_snap = build_compounding_version_status()
+        self.assertTrue(st_snap["ok"])
+        out_rf = io.StringIO()
+        with redirect_stdout(out_rf):
+            self.assertEqual(cv.main(["ranking-feeds", "--json"]), 0)
+        self.assertEqual(json.loads(out_rf.getvalue())["feed_count"], 9)
+
+        err_vf = io.StringIO()
+        with mock.patch("sys.stderr", err_vf):
+            rc_rej = cv.main(["verify", "--promotion-kind", "ALPHA_STRATEGY_MINOR", "--t-stat", "1.2919"])
+        self.assertEqual(rc_rej, 2)
+
+        # 5. Execute Workflow #16 in <workflow> namespace without __file__
+        wf16 = ROOT / "workflows" / "compounding_versioning_and_ranking_adr_workflow.py"
+        src16 = wf16.read_text(encoding="utf-8")
+        code16 = compile(src16, "<workflow>", "exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+        ns16: dict[str, object] = {
+            "__name__": "__main__",
+            "args": {
+                "repo": "sota-multi-model-workflows",
+                "prev_semver": "3.7.0",
+                "next_semver": "3.8.0",
+                "promotion_kind": "PROTECTIVE_FILTER_OR_GOVERNANCE",
+                "adr_id": "ADR-0015",
+                "prev_adr_id": "ADR-0014",
+                "fast_deterministic_only": True,
+            },
+            "log": lambda *_a: None,
+            "phase": lambda *_a: None,
+        }
+        buf16 = io.StringIO()
+        with (
+            mock.patch.object(kit, "run_preflight_summary", return_value={"sota_doctor": {"status": "PASS"}}),
+            mock.patch.object(kit, "record_workflow_run") as rec16,
+            redirect_stdout(buf16),
+        ):
+            r16 = eval(code16, ns16)
+            if isinstance(r16, types.CoroutineType):
+                asyncio.run(r16)
+        out16 = json.loads(buf16.getvalue())
+        self.assertEqual(out16["canonical_ranking_feeds_count"], 9)
+        self.assertTrue(out16["transition_verdict"]["approved"])
+        self.assertTrue(out16["two_track_subhurdle_alpha_rejection_verified"])
+        rec16.assert_called_once()
 
 
 if __name__ == "__main__":

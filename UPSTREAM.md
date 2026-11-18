@@ -14,8 +14,10 @@
 | `nautilus_trader` | `da6b57aefdd62b44f675e434ffcfefca7f4025dd` | LGPL-3.0 | https://github.com/nautechsystems/nautilus_trader | 2026-11-17 | Stage-2 event-driven simulation parity | upstream |
 | `skfolio` | `90e3fb907fab39d244d899f3caf4e9676889309c` | BSD-3-Clause | https://github.com/skfolio/skfolio | 2026-11-17 | Stage-3 `CombinatorialPurgedCV` validation | upstream |
 | `ml4t-diagnostic` | `19e76072e64a18c9ba56130e4a7bcc0bc871f57e` | MIT | https://github.com/ml4t/diagnostic | 2026-11-17 | Stage-3 multi-trial Deflated Sharpe Ratio (`DSR`) | upstream |
-| `alpaca-py` | `c42add7c0a7026e2ead3ed64e76f4def2b99fda4` | Apache-2.0 | https://github.com/alpacahq/alpaca-py | 2026-11-17 | Stage-4 `200 req/min` `PA...` Paper streaming, `SIP`/`BOATS` & `RAW`/`ALL` adjustment | upstream |
-| `edgartools` | `574c2bd15f6c629bceef03b6550ea8ac8abf3473` | MIT | https://github.com/dgunning/edgartools | 2026-11-18 | Point-in-time SEC EDGAR `acceptanceDateTime` (`15m` half-life) & `424B*`/`S-3` dilution block | upstream |
+| `alpaca-py` | `c42add7c0a7026e2ead3ed64e76f4def2b99fda4` | Apache-2.0 | https://github.com/alpacahq/alpaca-py | 2026-11-18 | Stage-4 `200 req/min` `PA...` Paper streaming, `DF1` `SIP` lit/dark tape & `DF2` `BOATS` (`<=28 bps`) | upstream |
+| `polars` | `7f902bd3ffd27ff82d14278a09a295ff2f7aed92` | MIT | https://github.com/pola-rs/polars | 2026-11-18 | `DF3` `RAW` vs `ALL` split/notional conservation & `DF4` `20d` `XNYS` `RVOL_tod` bucket profiles | upstream |
+| `duckdb` | `d54cbbe3df17e8e5ce68312f483b4155836112aa` | MIT | https://github.com/duckdb/duckdb | 2026-11-18 | `DF7` `CNMSshvol` `T-1` & `DF8` FINRA Rule 4560 `+8` business-day columnar PIT analytics | upstream |
+| `edgartools` | `574c2bd15f6c629bceef03b6550ea8ac8abf3473` | MIT | https://github.com/dgunning/edgartools | 2026-11-18 | `DF5` SEC EDGAR `acceptanceDateTime` (`15m` half-life, `90d` `S-3`/`424B5` block) & `DF6` XBRL public float | upstream |
 | `exchange_calendars` | `dbe38b1f6887434bbdd1a7d2df6ff8f1742a048a` | Apache-2.0 | https://github.com/gerrymanoim/exchange_calendars | 2026-11-18 | `XNYS` holiday/early-close entry pause & corporate-action ex-date boundary | upstream |
 | `ib_async` | `ab629f34c1823ea4c1542f32f07377208a86bdfd` | BSD-3-Clause | https://github.com/ib-api-reloaded/ib_async | 2026-11-17 | Stage-4 `3,000 msg/min` `:4002` `DU...` Paper `outsideRth` execution | upstream |
 | `cpython-stdlib` | Python `3.12+` | PSF-2.0 | https://github.com/python/cpython | 2026-11-17 | `sqlite3` WAL bus, `hashlib` SHA-256 pre-registration, `unittest` | upstream |

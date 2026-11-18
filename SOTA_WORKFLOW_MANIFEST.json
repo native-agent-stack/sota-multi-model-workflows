@@ -1,8 +1,8 @@
 {
-  "schemaVersion": "3.7.0",
+  "schemaVersion": "3.8.0",
   "repository": "https://github.com/native-agent-stack/sota-multi-model-workflows",
   "visibility": "PUBLIC",
-  "workflowCount": 15,
+  "workflowCount": 16,
   "workflows": [
     "master-sota-harness",
     "org-compounding-promotion",
@@ -18,7 +18,8 @@
     "multi-model-ao-convergence",
     "research-convergence-landing",
     "cc-lead-multi-runtime-workers",
-    "dual-machine-trading-and-harness-lanes"
+    "dual-machine-trading-and-harness-lanes",
+    "compounding-versioning-and-ranking-adr"
   ],
   "supportedHarnesses": [
     "antigravity",
@@ -36,7 +37,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 14,
+    "adrCount": 15,
     "records": [
       {
         "id": "ADR-0001",
@@ -243,6 +244,25 @@
           "https://github.com/native-agent-stack/sota-multi-model-workflows",
           "https://github.com/stablyai/orca",
           "https://github.com/steveyegge/beads"
+        ]
+      },
+      {
+        "id": "ADR-0015",
+        "layer": "Point-in-Time DataFeeds, Microstructure Hygiene & Compounding SemVer Governance (`L1\u2013L9` \u00d7 `T1\u2013T8`)",
+        "title": "Research-Converged 9-Feed Ranking System DataFeeds (`DF1\u2013DF9`) & Two-Track Compounding Versioning Ledger (`v3.8.0`)",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "E4 (Unit Tested, 4-Hash Cryptographic Lineage Verified & Public GitHub Actions Verified)",
+        "file": "docs/adr/ADR-0015-research-converged-ranking-datafeeds-and-compounding-versioning-ledger.md",
+        "githubUrls": [
+          "https://github.com/alpacahq/alpaca-py",
+          "https://github.com/dgunning/edgartools",
+          "https://github.com/duckdb/duckdb",
+          "https://github.com/gerrymanoim/exchange_calendars",
+          "https://github.com/ib-api-reloaded/ib_async",
+          "https://github.com/ml4t/diagnostic",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/pola-rs/polars"
         ]
       }
     ]

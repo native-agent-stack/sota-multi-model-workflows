@@ -1,6 +1,6 @@
 {
-  "version": "3.7.0",
-  "description": "Canonical v3.7.0 registry of 15 self-bootstrapping SOTA `run_workflow`, Dual-Machine Orca Trading/Harness Lanes (`T1..T3` & `H1..H3`), Claude-Lead Central Multi-Runtime (`OMC`/`OMX`/`Orca`/`OMP`/`Goose`), Multi-Model `AO` (`Agent Orchestrator`), and 7-Feed `sota-research-feeds.v2` Research-Convergence scripts (`Mac M5 Max <-> Noesis Win32 <-> Noesis-Carbon WSL2` 3-surface parity). Every script explicitly executes `kit.verify_workflow_research_convergence(...)` binding the 6 Trading Lane DataFeed APIs (`:8787`, `:8799`, `:4002`), 4 Strategy Templates + Pine v6, 8 Trading Engine Sources, 18 40-hex upstream pins, `ADR-0004` (`PHILOSOPHY_ONLY` sibling-repo authority), live peer leases, HLZ trial multiplicity N, `sota-doctor`, `sota-org-doctor`, and `ECOSYSTEM_CONVERGENCE_LOCK.json` via `_sota_kit.py`.",
+  "version": "3.8.0",
+  "description": "Canonical v3.8.0 registry of 16 self-bootstrapping SOTA `run_workflow`, 9-Feed `sota-ranking-datafeeds.v3.8` (`DF1..DF9`) & Two-Track Compounding Versioning (`ADR-0015`), Dual-Machine Orca Trading/Harness Lanes (`T1..T3` & `H1..H3`), Claude-Lead Central Multi-Runtime (`OMC`/`OMX`/`Orca`/`OMP`/`Goose`), Multi-Model `AO` (`Agent Orchestrator`), and `sota-research-feeds.v2` Research-Convergence scripts (`Mac M5 Max <-> Noesis Win32 <-> Noesis-Carbon WSL2` 3-surface parity). Every script explicitly executes `kit.verify_workflow_research_convergence(...)` binding the 6 Trading Lane DataFeed APIs (`:8787`, `:8799`, `:4002`), 9 Ranking DataFeeds (`DF1..DF9`), 4 Strategy Templates + Pine v6, 8 Trading Engine Sources, 18 40-hex upstream pins, `ADR-0004` (`PHILOSOPHY_ONLY` sibling-repo authority), live peer leases, HLZ trial multiplicity N>=90, `sota-doctor`, `sota-org-doctor`, and `ECOSYSTEM_CONVERGENCE_LOCK.json` via `_sota_kit.py`.",
   "workflows": [
     {
       "id": "master-sota-harness",
@@ -273,6 +273,35 @@
         }
       },
       "when_to_use": "Dual-Machine (Mac M5 Max <-> Stationary Noesis 64c/128GB/RTX4090 Win32 + Noesis-Carbon WSL2 ext4) Orca Trading Lanes (T1..T3, 8 repos) & Harness Lanes (H1..H3, 10 repos) audit and routing across 8 orchestration frameworks, 17 runtime binaries, Orca folder lane hubs, and the ADR-0020 single-broker-host firewall."
+    },
+    {
+      "id": "compounding-versioning-and-ranking-adr",
+      "script_path": "~/.agents/workflows/compounding_versioning_and_ranking_adr_workflow.py",
+      "skill": "sota-workflow",
+      "agents": [
+        "sota-deep-synthesizer",
+        "self",
+        "sota-falsifier",
+        "sota-code-verifier"
+      ],
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "repo": {"type": "string"},
+          "prev_semver": {"type": "string"},
+          "next_semver": {"type": "string"},
+          "promotion_kind": {
+            "type": "string",
+            "enum": ["ALPHA_STRATEGY_MINOR", "PROTECTIVE_FILTER_OR_GOVERNANCE"]
+          },
+          "adr_id": {"type": "string"},
+          "prev_adr_id": {"type": "string"},
+          "candidate_id": {"type": "string"},
+          "candidate_metrics": {"type": "object"},
+          "fast_deterministic_only": {"type": "boolean"}
+        }
+      },
+      "when_to_use": "SOTA v3.8.0 9-Feed Ranking System DataFeeds (DF1..DF9, backward-compatible superset of sota-research-feeds.v2), 4-hash cryptographic SemVer lineage, HLZ N>=90 multiplicity, and two-track ALPHA_STRATEGY_MINOR vs PROTECTIVE_FILTER_OR_GOVERNANCE promotion & ADR verification."
     }
   ]
 }
