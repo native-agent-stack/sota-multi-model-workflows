@@ -12,7 +12,12 @@ import _sota_kit as kit
 
 peer_brief = kit.load_peer_brief("sota-mover-ranker")
 rc_ctx = kit.load_research_convergence_context()
-log(f"{peer_brief}\n[Explicit RC: {rc_ctx['schema_version']} / sota-research-feeds.v2 / PHILOSOPHY_ONLY]")  # noqa: F821
+rc_envelope = kit.verify_workflow_research_convergence(
+    "early-mover-compounding", repo="sota-mover-ranker", archetype="PRE_TRAVEL_EARLY_IGNITION"
+)
+log(
+    f"{peer_brief}\n[Explicit RC: {rc_ctx['schema_version']} / sota-research-feeds.v2 / valid={rc_envelope['valid']} / PHILOSOPHY_ONLY]"
+)  # noqa: F821
 
 SYNTHESIS_SCHEMA = {
     "type": "object",

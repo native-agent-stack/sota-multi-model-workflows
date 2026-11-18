@@ -16,7 +16,10 @@ cfg = args if "args" in globals() and isinstance(args, dict) else {}
 repo_hint = str(cfg.get("repo") or "sota-mover-ranker")
 peer_brief = kit.load_peer_brief(repo_hint)
 rc_ctx = kit.load_research_convergence_context()
-log(f"{peer_brief}\n[Explicit RC: {rc_ctx['schema_version']} / sota-research-feeds.v2 / PHILOSOPHY_ONLY]")
+rc_envelope = kit.verify_workflow_research_convergence("rd-agent-hypothesis-bus", repo=repo_hint)
+log(
+    f"{peer_brief}\n[Explicit RC: {rc_ctx['schema_version']} / sota-research-feeds.v2 / valid={rc_envelope['valid']} / PHILOSOPHY_ONLY]"
+)
 
 HYPOTHESIS_SCHEMA = {
     "type": "object",

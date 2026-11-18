@@ -107,8 +107,8 @@ class TestMultiModelWorkflows(unittest.TestCase):
     def test_workflow_registry_ast_and_merge_gate(self) -> None:
         reg = json.loads((ROOT / "workflows" / "REGISTRY.json").read_text(encoding="utf-8"))
         manifest = json.loads((ROOT / "SOTA_WORKFLOW_MANIFEST.json").read_text(encoding="utf-8"))
-        self.assertEqual(reg["version"], "3.5.0")
-        self.assertEqual(manifest["schemaVersion"], "3.5.0")
+        self.assertEqual(reg["version"], "3.6.0")
+        self.assertEqual(manifest["schemaVersion"], "3.6.0")
         self.assertEqual(len(reg["workflows"]), 14)
         self.assertEqual(manifest["workflowCount"], 14)
         ids = [w["id"] for w in reg["workflows"]]
@@ -770,6 +770,65 @@ class TestMultiModelWorkflows(unittest.TestCase):
             fleet_win = cch.probe_cc_runtime_fleet()
         self.assertEqual(fleet_win["installed_count"], 15)
         self.assertTrue(captured_paths and ";C:\\Tools;C:\\Bin" in captured_paths[0])
+
+    def test_v360_all_14_workflows_enforce_full_stack_datafeed_template_engine_and_workstation_convergence(
+        self,
+    ) -> None:
+        from sota_mmw.research_convergence_contract import (
+            CANONICAL_STRATEGY_TEMPLATES_MATRIX,
+            CANONICAL_TRADING_ENGINE_SOURCES,
+            CANONICAL_TRADING_LANE_DATAFEED_APIS,
+            build_workflow_research_convergence_envelope,
+            resolve_ecosystem_repo_dir,
+        )
+
+        # 1. Every single one of the 14 canonical workflows must call kit.verify_workflow_research_convergence
+        wf_files = sorted((ROOT / "workflows").glob("*_workflow.py"))
+        self.assertEqual(len(wf_files), 14)
+        for wf_path in wf_files:
+            txt = wf_path.read_text(encoding="utf-8")
+            self.assertIn(
+                "verify_workflow_research_convergence(",
+                txt,
+                msg=f"{wf_path.name} missing kit.verify_workflow_research_convergence(...)",
+            )
+
+        # 2. Verify 6 Trading Lane DataFeed APIs, 4 Strategy Templates, and 8 Trading Engine Sources
+        self.assertEqual(len(CANONICAL_TRADING_LANE_DATAFEED_APIS), 6)
+        self.assertEqual(len(CANONICAL_STRATEGY_TEMPLATES_MATRIX), 4)
+        self.assertEqual(len(CANONICAL_TRADING_ENGINE_SOURCES), 8)
+
+        # 3. Verify 3-surface repo resolution (Mac ~/Documents, Noesis Win32, Noesis-Carbon WSL2)
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            wsl_home = base / "wsl_home"
+            win_root = base / "win_sota_ws"
+            (wsl_home / "sota-workstation" / "meridian").mkdir(parents=True)
+            (win_root / "astrolabe").mkdir(parents=True)
+
+            self.assertEqual(
+                resolve_ecosystem_repo_dir("meridian", home=wsl_home, win_root=win_root),
+                wsl_home / "sota-workstation" / "meridian",
+            )
+            self.assertEqual(
+                resolve_ecosystem_repo_dir("astrolabe", home=wsl_home, win_root=win_root),
+                win_root / "astrolabe",
+            )
+
+            env = build_workflow_research_convergence_envelope(
+                workflow_id="research-convergence-landing",
+                repo="meridian",
+                archetype="FIRST_HAND_SEC_EPISODIC_PIVOT",
+                home=wsl_home,
+                win_root=win_root,
+            )
+            self.assertTrue(env["valid"], msg=env["violations"])
+            self.assertEqual(env["violations"], [])
+            self.assertEqual(env["datafeed_api_count"], 6)
+            self.assertEqual(env["trading_engine_source_count"], 8)
+            self.assertEqual(len(env["envelope_input_sha256"]), 64)
+            self.assertTrue(env["trading_engine_repos_present"]["meridian"])
+            self.assertTrue(env["trading_engine_repos_present"]["astrolabe"])
 
 
 if __name__ == "__main__":

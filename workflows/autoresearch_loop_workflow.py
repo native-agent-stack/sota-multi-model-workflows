@@ -19,6 +19,7 @@ hyp_prompt = str(
 )
 peer_brief = kit.load_peer_brief(repo)
 rc_ctx = kit.load_research_convergence_context()
+rc_envelope = kit.verify_workflow_research_convergence("autoresearch-loop", repo=repo)
 
 SPEC_SCHEMA = {
     "type": "object",

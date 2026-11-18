@@ -18,14 +18,24 @@ phase("Phase 1: Deterministic Local, Org & Harness Probe Execution")
 peer_brief = kit.load_peer_brief("native-agent-stack")
 preflight = kit.run_preflight_summary(live_org=live_org)
 research_convergence = kit.load_research_convergence_context()
+rc_envelope = kit.verify_workflow_research_convergence("ecosystem-convergence", repo="native-agent-stack")
 
-docs = Path.home() / "Documents"
 probe_cmds = [
-    ("agy-sota-harness-13-probes", ["python3", str(docs / "agy-sota-harness" / "harness" / "run_probes.py")]),
-    ("dsh-sota-harness-10-probes", ["node", str(docs / "dsh-sota-harness" / "harness" / "run.mjs")]),
+    (
+        "agy-sota-harness-13-probes",
+        [sys.executable, str(kit.resolve_repo_dir("agy-sota-harness") / "harness" / "run_probes.py")],
+    ),
+    (
+        "dsh-sota-harness-10-probes",
+        ["node", str(kit.resolve_repo_dir("dsh-sota-harness") / "harness" / "run.mjs")],
+    ),
     (
         "umbrella-v3-lock",
-        ["python3", str(docs / "native-agent-stack" / "scripts" / "architecture_catalog.py"), "--check"],
+        [
+            sys.executable,
+            str(kit.resolve_repo_dir("native-agent-stack") / "scripts" / "architecture_catalog.py"),
+            "--check",
+        ],
     ),
 ]
 
@@ -53,6 +63,7 @@ deterministic_bundle = {
         "feed_count": research_convergence["feed_count"],
         "upstream_pin_count": research_convergence["upstream_pin_count"],
     },
+    "research_convergence_envelope": rc_envelope,
     "probe_receipts": probe_receipts,
 }
 log(json.dumps(deterministic_bundle, indent=2))

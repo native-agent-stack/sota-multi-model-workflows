@@ -1,6 +1,6 @@
 {
-  "version": "3.5.0",
-  "description": "Canonical v3.5.0 registry of 14 self-bootstrapping SOTA `run_workflow`, Claude-Lead Central Multi-Runtime (`OMC`/`OMX`/`Orca`), Multi-Model `AO` (`Agent Orchestrator`), and 7-Feed `sota-research-feeds.v2` Research-Convergence scripts (`Mac M5 Max <-> Noesis` cross-OS parity). Every script explicitly loads `sota-research-feeds.v2`, `ADR-0004` 3-tier SHA provenance (`PHILOSOPHY_ONLY` sibling-repo authority), live peer leases, handovers, lessons, HLZ trial multiplicity N, `sota-doctor`, `sota-org-doctor`, and `ECOSYSTEM_CONVERGENCE_LOCK.json` via `_sota_kit.py`.",
+  "version": "3.6.0",
+  "description": "Canonical v3.6.0 registry of 14 self-bootstrapping SOTA `run_workflow`, Claude-Lead Central Multi-Runtime (`OMC`/`OMX`/`Orca`), Multi-Model `AO` (`Agent Orchestrator`), and 7-Feed `sota-research-feeds.v2` Research-Convergence scripts (`Mac M5 Max <-> Noesis Win32 <-> Noesis-Carbon WSL2` 3-surface parity). Every script explicitly executes `kit.verify_workflow_research_convergence(...)` binding the 6 Trading Lane DataFeed APIs (`:8787`, `:8799`, `:4002`), 4 Strategy Templates + Pine v6, 8 Trading Engine Sources, 18 40-hex upstream pins, `ADR-0004` (`PHILOSOPHY_ONLY` sibling-repo authority), live peer leases, HLZ trial multiplicity N, `sota-doctor`, `sota-org-doctor`, and `ECOSYSTEM_CONVERGENCE_LOCK.json` via `_sota_kit.py`.",
   "workflows": [
     {
       "id": "master-sota-harness",

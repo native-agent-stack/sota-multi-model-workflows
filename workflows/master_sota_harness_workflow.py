@@ -24,7 +24,11 @@ mode = str(cfg.get("mode") or "quant-trading")
 peer_brief = kit.load_peer_brief(repo)
 preflight = kit.run_preflight_summary(live_org=False)
 research_convergence = kit.load_research_convergence_context()
-doctor_line = f"[v3.4.0 preflight: {json.dumps(preflight)} | rc={research_convergence['schema_version']} ({research_convergence.get('sibling_repo_authority', 'PHILOSOPHY_ONLY')})]"
+rc_envelope = kit.verify_workflow_research_convergence("master-sota-harness", repo=repo or "native-agent-stack")
+doctor_line = (
+    f"[v3.6.0 preflight: {json.dumps(preflight)} | rc={research_convergence['schema_version']} "
+    f"({research_convergence.get('sibling_repo_authority', 'PHILOSOPHY_ONLY')}, rc_valid={rc_envelope['valid']})]"
+)
 
 bootstrap_header = f"{doctor_line}\n{peer_brief}"
 log(bootstrap_header)  # noqa: F821

@@ -43,6 +43,7 @@ fast_deterministic_only = bool(cfg.get("fast_deterministic_only", False))
 peer_brief = kit.load_peer_brief("sota-compounding-lab")
 preflight = kit.run_preflight_summary(live_org=bool(cfg.get("live_org", False)))
 research_convergence = kit.load_research_convergence_context()
+rc_envelope = kit.verify_workflow_research_convergence("org-compounding-promotion", repo="sota-compounding-lab")
 
 default_prefix = "DU" if target_lane == "IBKR_PAPER" else "PA"
 default_port = 4002 if target_lane == "IBKR_PAPER" else None
@@ -123,7 +124,16 @@ if fast_deterministic_only:
         open_risks="; ".join(deterministic_gate["failures"][:3]) or "none",
         next_priority="Run full 2-phase org-compounding-promotion workflow for falsifier & code-verifier sign-off",
     )
-    print(json.dumps({"preflight": preflight, "deterministic_promotion_gate": deterministic_gate}, indent=2))
+    print(
+        json.dumps(
+            {
+                "preflight": preflight,
+                "research_convergence_envelope": rc_envelope,
+                "deterministic_promotion_gate": deterministic_gate,
+            },
+            indent=2,
+        )
+    )
 else:
     phase("Phase 1: Parallel 5-Stage Lifecycle & Adversarial Falsification Audit")
 

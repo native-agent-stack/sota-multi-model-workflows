@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "3.5.0",
+  "schemaVersion": "3.6.0",
   "repository": "https://github.com/native-agent-stack/sota-multi-model-workflows",
   "visibility": "PUBLIC",
   "workflowCount": 14,
@@ -35,7 +35,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 12,
+    "adrCount": 13,
     "records": [
       {
         "id": "ADR-0001",
@@ -204,6 +204,25 @@
           "https://github.com/Yeachan-Heo/oh-my-codex",
           "https://github.com/aannoo/hcom",
           "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/stablyai/orca"
+        ]
+      },
+      {
+        "id": "ADR-0013",
+        "layer": "Full-Stack Workflow, DataFeed, Strategy Template, Engine Source & Dual-Workstation Governance (`L0\u2013L12` \u00d7 `P0\u2013P5` \u00d7 `T0\u2013T8`)",
+        "title": "v3.6.0 Universal 14/14 Workflow Research-Convergence, Trading Lane DataFeed APIs, 4 Strategy Templates, 8 Engine Sources & 3-Surface Workstation Parity",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "E4 (14/14 Workflows Verified with `verify_workflow_research_convergence`, Live `:8787` DataFeed/Template APIs & 3-Surface `Mac` / `Noesis Win32` / `Noesis-Carbon WSL2` Tested)",
+        "file": "docs/adr/ADR-0013-full-workflow-datafeed-template-engine-and-workstation-convergence.md",
+        "githubUrls": [
+          "https://github.com/alpacahq/alpaca-py",
+          "https://github.com/native-agent-stack/astrolabe",
+          "https://github.com/native-agent-stack/sota-compounding-lab",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/native-agent-stack/sota-upstream-shelf-lock",
+          "https://github.com/nautechsystems/nautilus_trader",
+          "https://github.com/nkaz001/hftbacktest",
           "https://github.com/stablyai/orca"
         ]
       }

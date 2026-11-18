@@ -50,6 +50,7 @@ fast_deterministic_only = bool(cfg.get("fast_deterministic_only", False))
 
 peer_brief = kit.load_peer_brief(target_repo)
 rc_context = kit.load_research_convergence_context()
+rc_envelope = kit.verify_workflow_research_convergence("cc-lead-multi-runtime-workers", repo=target_repo)
 preflight = kit.run_preflight_summary(live_org=False)
 fleet_status = probe_cc_runtime_fleet()
 trials_n, next_t, mesh_state = _load_live_bus_and_mesh()
@@ -77,6 +78,7 @@ bootstrap_payload = {
         "feed_count": rc_context.get("feed_count", 7),
         "upstream_pin_count": rc_context.get("upstream_pin_count", 18),
     },
+    "research_convergence_envelope": rc_envelope,
     "fleet": fleet_status,
     "preflight": preflight,
     "cc_lead_plan": plan,

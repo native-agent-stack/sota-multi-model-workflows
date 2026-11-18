@@ -18,9 +18,10 @@ question = str(
     cfg.get("question") or "Audit the current workspace architecture and recommend the highest-leverage next step."
 )
 repo_hint = str(cfg.get("repo") or "")
-scope_note = f"Target repository: ~/Documents/{repo_hint}. " if repo_hint else ""
+scope_note = f"Target repository: {kit.resolve_repo_dir(repo_hint)}. " if repo_hint else ""
 peer_brief = kit.load_peer_brief(repo_hint)
 rc_ctx = kit.load_research_convergence_context()
+rc_envelope = kit.verify_workflow_research_convergence("council-deliberation", repo=repo_hint or "native-agent-stack")
 
 SEAT_SCHEMA = {
     "type": "object",

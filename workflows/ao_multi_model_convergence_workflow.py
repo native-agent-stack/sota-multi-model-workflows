@@ -56,6 +56,7 @@ phase("Phase 1: 8-Slot Multi-Model AO Preflight, Fleet Probe & Dual-Machine Rout
 peer_brief = kit.load_peer_brief(target_repo)
 preflight = kit.run_preflight_summary(live_org=False)
 research_convergence = kit.load_research_convergence_context()
+rc_envelope = kit.verify_workflow_research_convergence("multi-model-ao-convergence", repo=target_repo)
 fleet_probe = probe_installed_multi_model_binaries()
 
 ws_bin = Path.home() / ".agents" / "bin" / "sota-workstation"
@@ -86,7 +87,7 @@ if ws_bin.is_file():
 route = resolve_ao_multi_model_route(task_kind=task_kind, mesh_state=mesh_state)
 quant_wall_date = "2026-10-15" if task_kind in ("prewall_quant_factor", "combinatorial_gpu_sweep") else None
 
-repo_dir = Path.home() / "Documents" / target_repo
+repo_dir = kit.resolve_repo_dir(target_repo)
 active_checkout = Path.cwd() if (Path.cwd() / ".git").exists() else repo_dir
 is_isolated_wt = detect_isolated_worktree(active_checkout)
 is_disjoint_lease = detect_disjoint_peer_lease(target_repo, session_id=str(cfg.get("session_id") or ""))
@@ -133,6 +134,7 @@ preflight_bundle = {
         "upstream_pin_count": research_convergence["upstream_pin_count"],
         "mcp_tools": research_convergence["mcp_tools"],
     },
+    "research_convergence_envelope": rc_envelope,
     "preflight": preflight,
 }
 log(json.dumps(preflight_bundle, indent=2))

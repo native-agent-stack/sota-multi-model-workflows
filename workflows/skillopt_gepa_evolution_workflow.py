@@ -9,6 +9,7 @@ import _sota_kit as kit
 
 peer_brief = kit.load_peer_brief("agy-sota-harness")
 rc_ctx = kit.load_research_convergence_context()
+rc_envelope = kit.verify_workflow_research_convergence("skillopt-gepa-evolution", repo="agy-sota-harness")
 log(peer_brief)
 
 phase("1. Zero-Copy In-Session Trajectory & Historical Friction Scan")

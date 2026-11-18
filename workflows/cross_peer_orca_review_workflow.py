@@ -9,8 +9,10 @@ import _sota_kit as kit
 
 cfg = args if "args" in globals() and isinstance(args, dict) else {}
 target_repo = str(cfg.get("repo") or "agy-sota-harness")
+target_repo_dir = kit.resolve_repo_dir(target_repo)
 peer_brief = kit.load_peer_brief(target_repo)
 rc_ctx = kit.load_research_convergence_context()
+rc_envelope = kit.verify_workflow_research_convergence("cross-peer-orca-review", repo=target_repo)
 log(peer_brief)
 
 GATE_SCHEMA = {

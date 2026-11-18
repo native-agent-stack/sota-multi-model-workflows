@@ -16,6 +16,7 @@ repo_path = str(cfg.get("repo_path") or kit.get_primary_workspace(globals(), "."
 repo_name = Path(repo_path).resolve().name
 peer_brief = kit.load_peer_brief(repo_name)
 rc_ctx = kit.load_research_convergence_context()
+rc_envelope = kit.verify_workflow_research_convergence("security-and-release-gate", repo=repo_name)
 
 GATE_SCHEMA = {
     "type": "object",

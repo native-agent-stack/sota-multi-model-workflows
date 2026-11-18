@@ -10,7 +10,6 @@ Orchestrates 3-tier `ADR-0004` / `ADR-0011` Research-Convergence across:
 
 import hashlib
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -51,21 +50,12 @@ fast_deterministic_only = bool(cfg.get("fast_deterministic_only", False))
 
 peer_brief = kit.load_peer_brief(target_repo)
 rc_context = kit.load_research_convergence_context()
+rc_envelope = kit.verify_workflow_research_convergence(
+    "research-convergence-landing", repo=target_repo, archetype=archetype
+)
 preflight = kit.run_preflight_summary(live_org=False)
 
-pins_md = Path.home() / "Documents" / "upstream" / "PINS.md"
-discovered_pins: dict[str, str] = {}
-if pins_md.is_file():
-    for m_row in re.finditer(
-        r"\|\s*`([^`/]+)/?`\s*\|[^|]+\|[^|]+\|\s*`([0-9a-f]{40})`\s*\|", pins_md.read_text("utf-8")
-    ):
-        discovered_pins[m_row.group(1)] = m_row.group(2)
-if not discovered_pins:
-    discovered_pins = {
-        "alpaca-py": "c42add7c0a7026e2ead3ed64e76f4def2b99fda4",
-        "edgartools": "574c2bd15f6c629bceef03b6550ea8ac8abf3473",
-        "nautilus_trader": "da6b57aefdd62b44f675e434ffcfefca7f4025dd",
-    }
+discovered_pins: dict[str, str] = kit.discover_pinned_upstream_commits()
 
 seed_input_sha256 = hashlib.sha256(
     json.dumps(
@@ -97,6 +87,7 @@ bootstrap_bundle = {
         "strategy_templates": rc_context["strategy_templates"],
         "mcp_tools": rc_context["mcp_tools"],
     },
+    "research_convergence_envelope": rc_envelope,
     "preflight": preflight,
 }
 log(f"{peer_brief}\n{json.dumps(bootstrap_bundle, indent=2)}")

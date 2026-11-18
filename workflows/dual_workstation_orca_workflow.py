@@ -25,6 +25,7 @@ phase("Phase 1: Dual-Machine Orca Mesh Telemetry, Preflight & Research-Convergen
 peer_brief = kit.load_peer_brief(target_repo)
 preflight = kit.run_preflight_summary(live_org=False)
 research_convergence = kit.load_research_convergence_context()
+rc_envelope = kit.verify_workflow_research_convergence("dual-workstation-orca", repo=target_repo)
 ws_bin = Path.home() / ".agents" / "bin" / "sota-workstation"
 
 reg_path = Path.home() / ".agents" / "workflows" / "REGISTRY.json"
@@ -71,7 +72,10 @@ bundle = {
         "mac_workflows_root": "~/.agents/workflows",
         "noesis_repos_root": "C:/sota-workstation/*",
         "noesis_workflows_root": "$HOME/.agents/workflows",
+        "noesis_wsl_carbon_root": "~/sota-workstation/*",
+        "noesis_wsl_workflows_root": "~/.agents/workflows",
     },
+    "research_convergence_envelope": rc_envelope,
 }
 log(json.dumps(bundle, indent=2))
 
