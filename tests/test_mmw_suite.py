@@ -1810,17 +1810,16 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertEqual(cli_out["adr"], "ADR-0027")
 
         wf20_src = (ROOT / "workflows" / "grand_merit_harness_workflow.py").read_text(encoding="utf-8")
-        captured: dict[str, object] = {}
         ns20: dict[str, object] = {
             "__name__": "__main__",
             "args": {"repo": "sota-mover-ranker", "fast_deterministic_only": True},
             "log": lambda *_a: None,
             "phase": lambda *_a: None,
-            "result": lambda obj: captured.setdefault("out", obj),
         }
-        exec(compile(wf20_src, "grand_merit_harness_workflow.py", "exec"), ns20)  # noqa: S102
-        out20 = captured["out"]
-        assert isinstance(out20, dict)
+        buf20 = io.StringIO()
+        with redirect_stdout(buf20):
+            exec(compile(wf20_src, "grand_merit_harness_workflow.py", "exec"), ns20)  # noqa: S102
+        out20 = json.loads(buf20.getvalue())
         self.assertTrue(out20["all_gates_passed"])
         self.assertEqual(out20["workflow_id"], "grand-merit-harness")
 

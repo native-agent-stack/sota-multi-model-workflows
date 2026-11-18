@@ -194,4 +194,4 @@ log(
         }
     )
 )  # noqa: F821
-result(final_result)  # noqa: F821
+print(json.dumps(final_result, indent=2))
