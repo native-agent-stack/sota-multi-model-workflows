@@ -7,6 +7,7 @@ import hashlib
 import http.server
 import io
 import json
+import statistics
 import subprocess
 import sys
 import tempfile
@@ -21,11 +22,15 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
+from scripts import merge_gate
 from sota_mmw.ao_lifecycle import (
     AO_MODEL_FAMILIES,
     AO_PLUGGABLE_SLOTS,
+    CONCRETE_VENDORS,
     AOLifecycleAttempt,
+    derive_workstation_mesh_state,
     evaluate_ao_lifecycle_gate,
+    qualify_ao_lifecycle_attempt,
     resolve_ao_multi_model_route,
 )
 from sota_mmw.peer_bus_schema import PortablePeerBus
@@ -110,7 +115,15 @@ class TestMultiModelWorkflows(unittest.TestCase):
             self.assertTrue(local_script.is_file(), msg=f"Missing workflow script: {script_name}")
             src = local_script.read_text(encoding="utf-8")
             self.assertIn("_sota_kit", src)
-            compile(src, str(local_script), "exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+            compile(src, "<workflow>", "exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+            tree = ast.parse(src)
+            uses_dunder_file = any(isinstance(node, ast.Name) and node.id == "__file__" for node in ast.walk(tree))
+            if uses_dunder_file:
+                self.assertIn(
+                    '"__file__" in globals()',
+                    src,
+                    msg=f"{script_name} uses __file__ without guarding '__file__' in globals() for <workflow> runtime",
+                )
 
         r = subprocess.run(
             [sys.executable, str(ROOT / "scripts" / "merge_gate.py")],
@@ -282,9 +295,8 @@ class TestMultiModelWorkflows(unittest.TestCase):
 
     def test_research_convergence_landing_workflow_fast_execution(self) -> None:
         wf_path = ROOT / "workflows" / "research_convergence_landing_workflow.py"
-        code = compile(wf_path.read_text(encoding="utf-8"), str(wf_path), "exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+        code = compile(wf_path.read_text(encoding="utf-8"), "<workflow>", "exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
         ns: dict[str, object] = {
-            "__file__": str(wf_path),
             "__name__": "__main__",
             "args": {
                 "strategy_id": "SOTA_TEST_RC_01",
@@ -296,6 +308,7 @@ class TestMultiModelWorkflows(unittest.TestCase):
             "log": lambda *_a: None,
             "phase": lambda *_a: None,
         }
+        self.assertNotIn("__file__", ns)
         buf = io.StringIO()
         with (
             mock.patch.object(kit, "run_preflight_summary", return_value={"sota_doctor": {"status": "PASS"}}),
@@ -310,6 +323,187 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertEqual(out["violations"], [])
         self.assertEqual(out["bootstrap"]["archetype"], "FIRST_HAND_SEC_EPISODIC_PIVOT")
         rec_mock.assert_called_once()
+
+    def test_e4_promotion_gate_nan_inf_ibkr_port_and_normaldist_hlz(self) -> None:
+        self.assertEqual(compute_hlz_t_hurdle(1), 3.0)
+        exp_84 = round(max(3.0, statistics.NormalDist(0.0, 1.0).inv_cdf(1.0 - 0.00135 / 84.0)), 4)
+        self.assertEqual(compute_hlz_t_hurdle(84), exp_84)
+
+        base = StrategyCandidateManifest(
+            strategy_id="SOTA_E4_CHECK",
+            study_end_date="2026-10-15",
+            events_count=300,
+            distinct_dates=70,
+            t_stat_date_clustered=4.50,
+            trial_n=84,
+            dsr_probability=0.97,
+            cpcv_positive_fold_pct=80.0,
+            net_expectancy_1x_bps=15.0,
+            net_expectancy_2x_impact_bps=8.0,
+            sim_engine_verified=True,
+            max_initial_stop_pct=1.50,
+            mega_cap_scratch_bps=10.0,
+            broker_lane="IBKR_PAPER",
+            account_prefix="DU",
+            broker_port=4002,
+        )
+        self.assertTrue(evaluate_promotion_gate(base)["approved_for_autonomous_alpha"])
+
+        # IBKR_PAPER with broker_port=None must fail closed
+        ibkr_none_port = dataclasses.replace(base, broker_port=None)
+        res_none_port = evaluate_promotion_gate(ibkr_none_port)
+        self.assertFalse(res_none_port["hard_safety_verified"])
+        self.assertEqual(res_none_port["stage_reached"], "HARD_BLOCKED")
+        self.assertIn("HARD_FIREWALL_NON_DU_OR_PORT_IBKR", res_none_port["failures"])
+
+        # NaN/Inf on stop, scratch, and statistical floats must fail closed
+        nan_stop = evaluate_promotion_gate(dataclasses.replace(base, max_initial_stop_pct=float("nan")))
+        self.assertEqual(nan_stop["stage_reached"], "HARD_BLOCKED")
+        self.assertTrue(any(f.startswith("ADR0022_STOP_VIOLATION") for f in nan_stop["failures"]))
+
+        inf_scratch = evaluate_promotion_gate(dataclasses.replace(base, mega_cap_scratch_bps=float("inf")))
+        self.assertFalse(inf_scratch["approved_for_autonomous_alpha"])
+        self.assertTrue(any(f.startswith("NEAR_LOSSLESS_SCRATCH_BOUNDS") for f in inf_scratch["failures"]))
+
+        for field_name in (
+            "t_stat_date_clustered",
+            "dsr_probability",
+            "cpcv_positive_fold_pct",
+            "net_expectancy_1x_bps",
+            "net_expectancy_2x_impact_bps",
+        ):
+            for bad_val in (float("nan"), float("inf"), float("-inf")):
+                mutated = dataclasses.replace(base, **{field_name: bad_val})
+                res_bad = evaluate_promotion_gate(mutated)
+                self.assertFalse(res_bad["approved_for_autonomous_alpha"], msg=f"{field_name}={bad_val}")
+                self.assertTrue(any(f.startswith("STATISTICAL_GATE_REJECTED") for f in res_bad["failures"]))
+
+    def test_e4_ao_mesh_failover_concrete_vendors_and_prewall(self) -> None:
+        self.assertEqual(CONCRETE_VENDORS, frozenset({"google", "anthropic", "openai", "deepseek"}))
+
+        ws_offline_batt = {"stationaryNoesis": {"reachable": False}, "portableMac": {"onAcPower": False}}
+        self.assertEqual(derive_workstation_mesh_state(ws_offline_batt), "portable_roaming_battery")
+        r_failover = resolve_ao_multi_model_route(
+            "combinatorial_gpu_sweep", derive_workstation_mesh_state(ws_offline_batt)
+        )
+        self.assertEqual(r_failover.workstation_host, "mac_m5_max_local")
+
+        ws_offline_ac = {"stationaryNoesis": {"reachable": False}, "portableMac": {"onAcPower": True}}
+        self.assertEqual(derive_workstation_mesh_state(ws_offline_ac), "portable_roaming_ac")
+
+        ws_online = {"stationaryNoesis": {"reachable": True}, "portableMac": {"onAcPower": True}}
+        self.assertEqual(derive_workstation_mesh_state(ws_online), "dual_mesh_docked")
+        self.assertEqual(
+            resolve_ao_multi_model_route(
+                "combinatorial_gpu_sweep", derive_workstation_mesh_state(ws_online)
+            ).workstation_host,
+            "noesis_64c_rtx4090",
+        )
+
+        # Multi-router harness without resolved concrete vendor must hard-block
+        router_unresolved = AOLifecycleAttempt(
+            task_id="ao-router-1",
+            repo="sota-multi-model-workflows",
+            head_commit_sha="8a29338c70778565379aacccf308a2c9fea14de8",
+            lead_harness="opencode-omo",
+            reviewer_harness="claude-code-omc",
+            isolated_worktree=True,
+            disjoint_peer_lease=True,
+            upstream_sha_cited=True,
+        )
+        self.assertEqual(qualify_ao_lifecycle_attempt(router_unresolved)["disposition"], "AO_HARD_BLOCKED")
+
+        # Multi-router harness resolving to same concrete vendor as reviewer must hard-block
+        router_same = dataclasses.replace(router_unresolved, resolved_lead_vendor="anthropic")
+        self.assertEqual(qualify_ao_lifecycle_attempt(router_same)["disposition"], "AO_HARD_BLOCKED")
+
+        # Multi-router harness resolving to distinct concrete vendor + valid pre-wall date succeeds
+        router_distinct = dataclasses.replace(
+            router_unresolved,
+            resolved_lead_vendor="openai",
+            task_kind="prewall_quant_factor",
+            study_end_date="2026-10-15",
+        )
+        self.assertEqual(
+            qualify_ao_lifecycle_attempt(router_distinct)["disposition"],
+            "AO_READY_FOR_EXPLICIT_LANDING",
+        )
+
+        # Post-wall study_end_date on quant task must hard-block
+        router_postwall = dataclasses.replace(router_distinct, study_end_date="2026-10-16")
+        self.assertEqual(qualify_ao_lifecycle_attempt(router_postwall)["disposition"], "AO_HARD_BLOCKED")
+
+    def test_e4_peer_bus_foreign_lease_collision_guard(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            bus = PortablePeerBus(Path(td) / "peer_bus.db")
+            c1 = bus.claim_lease("sota-mmw", "agy", "session-a", ["src/*"], "owning src")
+            self.assertTrue(c1["claimed"])
+
+            # Foreign session with overlapping path must be rejected without clobbering session-a
+            c_conflict = bus.claim_lease(
+                "sota-mmw", "claude", "session-b", ["src/sota_mmw/promotion_gate.py"], "overlapping edit"
+            )
+            self.assertFalse(c_conflict["claimed"])
+            self.assertEqual(c_conflict["conflict_lease_key"], "sota-mmw::session-a")
+            self.assertIn("src/sota_mmw/promotion_gate.py", c_conflict["conflict_paths"])
+
+            # Wildcard foreign claim also collides
+            c_wild = bus.claim_lease("sota-mmw", "codex", "session-c", ["*"], "whole repo")
+            self.assertFalse(c_wild["claimed"])
+
+            # Disjoint directory claim by foreign session succeeds
+            c_disjoint = bus.claim_lease("sota-mmw", "claude", "session-b", ["docs/adr/*"], "disjoint docs")
+            self.assertTrue(c_disjoint["claimed"])
+
+            # Same session renewing its own lease succeeds
+            c_renew = bus.claim_lease("sota-mmw", "agy", "session-a", ["src/*"], "renew")
+            self.assertTrue(c_renew["claimed"])
+
+            # Expired foreign lease does not block
+            bus.claim_lease("sota-mmw", "dsh", "session-exp", ["scripts/*"], "already expired", ttl_m=-5)
+            c_take_expired = bus.claim_lease("sota-mmw", "agy", "session-new", ["scripts/merge_gate.py"], "fresh")
+            self.assertTrue(c_take_expired["claimed"])
+
+    def test_e4_org_compounding_workflow_invokes_promotion_gate_and_merge_gate_patterns(self) -> None:
+        wf_path = ROOT / "workflows" / "org_compounding_promotion_workflow.py"
+        src = wf_path.read_text(encoding="utf-8")
+        self.assertIn("evaluate_promotion_gate", src)
+        code = compile(src, "<workflow>", "exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+        ns: dict[str, object] = {
+            "__name__": "__main__",
+            "args": {
+                "strategy_id": "SOTA_PROMO_FAST_01",
+                "broker_lane": "IBKR_PAPER",
+                "fast_deterministic_only": True,
+            },
+            "log": lambda *_a: None,
+            "phase": lambda *_a: None,
+        }
+        self.assertNotIn("__file__", ns)
+        buf = io.StringIO()
+        with (
+            mock.patch.object(kit, "run_preflight_summary", return_value={"sota_doctor": {"status": "PASS"}}),
+            mock.patch.object(kit, "record_workflow_run") as rec_mock,
+            redirect_stdout(buf),
+        ):
+            res = eval(code, ns)
+            if isinstance(res, types.CoroutineType):
+                asyncio.run(res)
+        out = json.loads(buf.getvalue())
+        self.assertTrue(out["deterministic_promotion_gate"]["hard_safety_verified"])
+        rec_mock.assert_called_once()
+
+        def _triggers(sample: str) -> list[str]:
+            return [label for label, rx in merge_gate.SECRET_PATTERNS if rx.search(sample)]
+
+        self.assertTrue(_triggers("https://api." + "alpaca.markets/v2/orders"))
+        self.assertEqual(_triggers("https://paper-api.alpaca.markets/v2/orders"), [])
+        self.assertTrue(_triggers("~/." + "claude/bin/live"))
+        self.assertTrue(_triggers("~/." + "claude/bin/alpaca-live-mcp"))
+        self.assertTrue(_triggers("~/." + "claude/bin/key-store"))
+        self.assertTrue(_triggers("/" + "home/ubuntu/workspace/"))
+        self.assertTrue(_triggers("C:\\" + "Users\\runner\\repo\\"))
+        self.assertTrue(_triggers("C:/" + "Users/runner/repo/"))
 
 
 if __name__ == "__main__":

@@ -11,8 +11,20 @@ import sys
 from pathlib import Path
 
 WF_DIR = Path.home() / ".agents" / "workflows"
+CWD_DIR = Path.cwd()
+LOCAL_WF_DIR = (
+    Path(__file__).resolve().parent
+    if "__file__" in globals()
+    else (CWD_DIR / "workflows" if (CWD_DIR / "workflows" / "_sota_kit.py").is_file() else WF_DIR)
+)
+REPO_SRC = LOCAL_WF_DIR.parent / "src"
+CWD_SRC = CWD_DIR / "src"
 MMW_SRC = Path.home() / "Documents" / "sota-multi-model-workflows" / "src"
-for p_dir in (WF_DIR, MMW_SRC):
+for _cand_src in (REPO_SRC, CWD_SRC, MMW_SRC):
+    if (_cand_src / "sota_mmw").is_dir() and str(_cand_src) not in sys.path:
+        sys.path.insert(0, str(_cand_src))
+        break
+for p_dir in (LOCAL_WF_DIR, WF_DIR):
     if p_dir.is_dir() and str(p_dir) not in sys.path:
         sys.path.insert(0, str(p_dir))
 
@@ -21,6 +33,7 @@ import _sota_kit as kit
 from sota_mmw.ao_lifecycle import (
     AO_PLUGGABLE_SLOTS,
     AOLifecycleAttempt,
+    derive_workstation_mesh_state,
     evaluate_ao_lifecycle_gate,
     probe_installed_multi_model_binaries,
     resolve_ao_multi_model_route,
@@ -43,14 +56,14 @@ research_convergence = kit.load_research_convergence_context()
 fleet_probe = probe_installed_multi_model_binaries()
 
 ws_bin = Path.home() / ".agents" / "bin" / "sota-workstation"
-mesh_state = "portable_autonomous_ac"
+mesh_state = "portable_roaming_ac"
 ws_summary: dict[str, object] = {"available": False}
 if ws_bin.is_file():
     ws_proc = subprocess.run([str(ws_bin), "status", "--json"], capture_output=True, text=True, timeout=15, check=False)
     if ws_proc.returncode == 0:
         try:
             ws_json = json.loads(ws_proc.stdout)
-            mesh_state = str(ws_json.get("meshState") or "dual_mesh_docked")
+            mesh_state = derive_workstation_mesh_state(ws_json)
             ws_summary = {
                 "available": True,
                 "ok": ws_json.get("ok"),
@@ -62,6 +75,7 @@ if ws_bin.is_file():
             ws_summary = {"available": True, "ok": False}
 
 route = resolve_ao_multi_model_route(task_kind=task_kind, mesh_state=mesh_state)
+quant_wall_date = "2026-10-15" if task_kind in ("prewall_quant_factor", "combinatorial_gpu_sweep") else None
 
 repo_dir = Path.home() / "Documents" / target_repo
 head_sha = "0000000"
@@ -121,6 +135,8 @@ if fast_deterministic_only:
         merge_gate_and_adr_clean=preflight.get("sota_org_doctor", {}).get("status") == "PASS",
         gitleaks_clean=True,
         p0_p1_open_findings=0,
+        task_kind=task_kind,
+        study_end_date=quant_wall_date,
     )
     gate_out = evaluate_ao_lifecycle_gate(det_attempt)
     out_fast = {"preflight_bundle": preflight_bundle, "ao_qualification": gate_out}
@@ -210,6 +226,8 @@ else:
         gitleaks_clean=bool(triad[2]["passed"]),
         p0_p1_open_findings=len(open_p0_p1),
         reaction_iteration=reaction_iter,
+        task_kind=task_kind,
+        study_end_date=quant_wall_date,
     )
     ao_gate = evaluate_ao_lifecycle_gate(attempt)
 

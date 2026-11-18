@@ -21,8 +21,8 @@ BUS_DIR = Path.home() / ".agents" / "bus"
 if BUS_DIR.is_dir() and str(BUS_DIR) not in sys.path:
     sys.path.insert(0, str(BUS_DIR))
 
-REPO_SRC = Path(__file__).resolve().parent.parent / "src"
 HOME_MMW_SRC = Path.home() / "Documents" / "sota-multi-model-workflows" / "src"
+REPO_SRC = Path(__file__).resolve().parent.parent / "src" if "__file__" in globals() else Path.cwd() / "src"
 _ACTIVE_MMW_SRC = REPO_SRC if (REPO_SRC / "sota_mmw").is_dir() else HOME_MMW_SRC
 if (_ACTIVE_MMW_SRC / "sota_mmw").is_dir() and str(_ACTIVE_MMW_SRC) not in sys.path:
     sys.path.insert(0, str(_ACTIVE_MMW_SRC))

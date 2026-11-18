@@ -5,18 +5,27 @@ from __future__ import annotations
 import datetime as dt
 import math
 from dataclasses import dataclass
+from statistics import NormalDist
 from typing import Any
 
 STUDY_WALL_DATE = dt.date(2026, 10, 15)
 MAX_STOP_ADR0022_PCT = 2.00
 FORBIDDEN_IBKR_LIVE_PORTS = frozenset({4001, 7496})
+_STD_NORMAL = NormalDist(0.0, 1.0)
+
+
+def _is_real_finite(val: float) -> bool:
+    return not isinstance(val, bool) and isinstance(val, (int, float)) and math.isfinite(float(val))
 
 
 def compute_hlz_t_hurdle(trial_n: int, base_hurdle: float = 3.00) -> float:
-    """Dynamic Harvey-Liu-Zhu multiple-testing t-statistic hurdle growing with global trial count N."""
-    if trial_n < 1:
+    """Exact Harvey-Liu-Zhu normal-quantile multiple-testing t-hurdle growing with global trial count N."""
+    if isinstance(trial_n, bool) or trial_n < 1:
         raise ValueError("trial_n must be >= 1")
-    return round(max(base_hurdle, math.sqrt(max(9.0, 2.0 * math.log(max(2, trial_n)) + 8.35))), 4)
+    if not _is_real_finite(base_hurdle) or base_hurdle <= 0.0:
+        raise ValueError("base_hurdle must be finite and > 0")
+    quantile = _STD_NORMAL.inv_cdf(1.0 - 0.00135 / float(trial_n))
+    return round(max(float(base_hurdle), quantile), 4)
 
 
 @dataclass(frozen=True)
@@ -46,10 +55,14 @@ def evaluate_promotion_gate(c: StrategyCandidateManifest) -> dict[str, Any]:
     if end_d > STUDY_WALL_DATE:
         failures.append(f"PREWALL_VIOLATION:{c.study_end_date}>{STUDY_WALL_DATE.isoformat()}")
 
-    if c.max_initial_stop_pct <= 0.0 or c.max_initial_stop_pct > MAX_STOP_ADR0022_PCT:
+    if (
+        not _is_real_finite(c.max_initial_stop_pct)
+        or c.max_initial_stop_pct <= 0.0
+        or c.max_initial_stop_pct > MAX_STOP_ADR0022_PCT
+    ):
         failures.append(f"ADR0022_STOP_VIOLATION:{c.max_initial_stop_pct}")
 
-    if not (4.0 <= c.mega_cap_scratch_bps <= 25.0):
+    if not _is_real_finite(c.mega_cap_scratch_bps) or not (4.0 <= c.mega_cap_scratch_bps <= 25.0):
         failures.append(f"NEAR_LOSSLESS_SCRATCH_BOUNDS:{c.mega_cap_scratch_bps}")
 
     if c.broker_port in FORBIDDEN_IBKR_LIVE_PORTS:
@@ -59,7 +72,7 @@ def evaluate_promotion_gate(c: StrategyCandidateManifest) -> dict[str, Any]:
         if c.account_prefix != "PA":
             failures.append("HARD_FIREWALL_NON_PA_ALPACA")
     elif c.broker_lane == "IBKR_PAPER":
-        if c.account_prefix != "DU" or (c.broker_port is not None and c.broker_port != 4002):
+        if c.account_prefix != "DU" or c.broker_port != 4002:
             failures.append("HARD_FIREWALL_NON_DU_OR_PORT_IBKR")
     else:
         failures.append(f"UNSANCTIONED_BROKER_LANE:{c.broker_lane}")
@@ -68,8 +81,19 @@ def evaluate_promotion_gate(c: StrategyCandidateManifest) -> dict[str, Any]:
         failures.append("SIM_STAGE_UNVERIFIED")
 
     req_t = compute_hlz_t_hurdle(c.trial_n)
+    stat_floats_finite = all(
+        _is_real_finite(v)
+        for v in (
+            c.t_stat_date_clustered,
+            c.dsr_probability,
+            c.cpcv_positive_fold_pct,
+            c.net_expectancy_1x_bps,
+            c.net_expectancy_2x_impact_bps,
+        )
+    )
     stat_ok = (
-        c.events_count >= 200
+        stat_floats_finite
+        and c.events_count >= 200
         and c.distinct_dates >= 60
         and c.t_stat_date_clustered >= req_t
         and c.dsr_probability >= 0.95

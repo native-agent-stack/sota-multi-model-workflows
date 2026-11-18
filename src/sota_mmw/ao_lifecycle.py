@@ -9,13 +9,17 @@ Dual-Machine `Mac M5 Max <-> Noesis 64c/RTX4090` Orca Workstation Lane (`ADR-002
 from __future__ import annotations
 
 import dataclasses
+import datetime as dt
 import hashlib
 import json
 import os
 import shutil
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
+
+CONCRETE_VENDORS: frozenset[str] = frozenset({"google", "anthropic", "openai", "deepseek"})
+AO_STUDY_WALL_DATE = dt.date(2026, 10, 15)
 
 AO_PLUGGABLE_SLOTS: dict[str, str] = {
     "runtime": "7-family heterogeneous harnesses (antigravity, claude-code-omc, openai-codex-omx, opencode-omo, pi-omp, goose, deepseek-dsh)",
@@ -89,6 +93,30 @@ class AOLifecycleAttempt:
     private_repo_actions_enabled: bool = False
     touches_live_broker: bool = False
     reads_raw_secrets: bool = False
+    resolved_lead_vendor: str | None = None
+    resolved_reviewer_vendor: str | None = None
+    task_kind: str = "execution_risk_code"
+    study_end_date: str | None = None
+
+
+def derive_workstation_mesh_state(ws_json: Mapping[str, Any]) -> str:
+    """Derive canonical mesh_state from `sota-workstation status --json` with safe offline Noesis failover."""
+    noesis = ws_json.get("stationaryNoesis")
+    mac = ws_json.get("portableMac")
+    noesis_reachable = bool(noesis.get("reachable")) if isinstance(noesis, Mapping) else False
+    on_ac = mac.get("onAcPower") if isinstance(mac, Mapping) else None
+
+    raw_mesh = ws_json.get("meshState")
+    if isinstance(raw_mesh, str) and raw_mesh.strip():
+        if isinstance(noesis, Mapping) and noesis.get("reachable") is False and raw_mesh.startswith("dual_mesh"):
+            return "portable_roaming_battery" if on_ac is False else "portable_roaming_ac"
+        return raw_mesh.strip()
+
+    if noesis_reachable:
+        return "dual_mesh_docked"
+    if on_ac is False:
+        return "portable_roaming_battery"
+    return "portable_roaming_ac"
 
 
 def resolve_ao_multi_model_route(
@@ -149,6 +177,28 @@ def resolve_ao_multi_model_route(
     )
 
 
+def _resolve_concrete_vendor(
+    role_label: str,
+    harness: str,
+    harness_vendor: str,
+    override: str | None,
+    hard_blocks: list[str],
+) -> str | None:
+    if harness_vendor in CONCRETE_VENDORS:
+        if override is not None and override.strip().lower() != harness_vendor:
+            hard_blocks.append(
+                f"{role_label} vendor override '{override}' conflicts with fixed harness '{harness}' ({harness_vendor})"
+            )
+            return None
+        return harness_vendor
+    if override is None or override.strip().lower() not in CONCRETE_VENDORS:
+        hard_blocks.append(
+            f"Multi-router {role_label} harness '{harness}' requires resolved_{role_label}_vendor in {sorted(CONCRETE_VENDORS)}"
+        )
+        return None
+    return override.strip().lower()
+
+
 def evaluate_ao_lifecycle_gate(attempt: AOLifecycleAttempt) -> dict[str, Any]:
     """Evaluate `northstar-ao-sandbox` + `ComposioHQ/agent-orchestrator` closed-loop qualification rules."""
     hard_blocks: list[str] = []
@@ -167,17 +217,36 @@ def evaluate_ao_lifecycle_gate(attempt: AOLifecycleAttempt) -> dict[str, Any]:
     if attempt.repo_visibility.upper() == "PRIVATE" and attempt.private_repo_actions_enabled:
         hard_blocks.append("PRIVATE org repos must keep GitHub Actions disabled (0 quota burn)")
 
+    if attempt.study_end_date is not None:
+        try:
+            parsed_end = dt.date.fromisoformat(attempt.study_end_date)
+            if parsed_end > AO_STUDY_WALL_DATE:
+                hard_blocks.append(
+                    f"PREWALL_VIOLATION: study_end_date {attempt.study_end_date} > {AO_STUDY_WALL_DATE.isoformat()}"
+                )
+        except ValueError:
+            hard_blocks.append(f"Invalid study_end_date '{attempt.study_end_date}' (expected YYYY-MM-DD)")
+
     lead_meta = AO_MODEL_FAMILIES.get(attempt.lead_harness)
     rev_meta = AO_MODEL_FAMILIES.get(attempt.reviewer_harness)
     if lead_meta is None or rev_meta is None:
         hard_blocks.append(f"Unregistered AO harness pair: {attempt.lead_harness} / {attempt.reviewer_harness}")
         cross_vendor_ok = False
     else:
-        cross_vendor_ok = lead_meta["vendor"] != rev_meta["vendor"]
-        if not cross_vendor_ok:
-            hard_blocks.append(
-                f"Same-vendor review prohibited ({lead_meta['vendor']}); AO requires cross-family falsification"
-            )
+        eff_lead = _resolve_concrete_vendor(
+            "lead", attempt.lead_harness, lead_meta["vendor"], attempt.resolved_lead_vendor, hard_blocks
+        )
+        eff_rev = _resolve_concrete_vendor(
+            "reviewer", attempt.reviewer_harness, rev_meta["vendor"], attempt.resolved_reviewer_vendor, hard_blocks
+        )
+        if eff_lead is not None and eff_rev is not None:
+            cross_vendor_ok = eff_lead != eff_rev
+            if not cross_vendor_ok:
+                hard_blocks.append(
+                    f"Same-vendor review prohibited ({eff_lead}); AO requires cross-family falsification"
+                )
+        else:
+            cross_vendor_ok = False
 
     if len(attempt.head_commit_sha.strip()) < 7:
         remediable_failures.append("Missing valid Git commit SHA witness")
@@ -235,6 +304,9 @@ def evaluate_ao_lifecycle_gate(attempt: AOLifecycleAttempt) -> dict[str, Any]:
         "remediable_failures": remediable_failures,
         "qualification_receipt_sha256": receipt_sha256,
     }
+
+
+qualify_ao_lifecycle_attempt = evaluate_ao_lifecycle_gate
 
 
 def probe_installed_multi_model_binaries(extra_dirs: Sequence[Path] | None = None) -> dict[str, Any]:

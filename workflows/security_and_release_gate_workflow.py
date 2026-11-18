@@ -48,7 +48,9 @@ checks = await parallel(  # noqa: F821
         (
             "Firewall, Secret & Public-Tree Leak Auditor",
             f"{peer_brief}\n\nIn `{repo_path}`, inspect `git status -s` and `git diff` plus run `gitleaks detect --no-git --source .` "
-            "if available. Verify zero live-broker imports/ports (`4001`, `7496`, `.claude/bin/live`), zero `PA...`/`DU...` IDs, "
+            "if available. Verify zero live-broker imports/ports (`4001`, `7496`, `"
+            ".claude/"
+            "bin/live`), zero `PA...`/`DU...` IDs, "
             "zero raw keys, and zero hardcoded `/Users/<user>/` paths in tracked files.",
         ),
     ],

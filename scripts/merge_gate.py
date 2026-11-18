@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed Org Merge Gate: verifies zero secrets/home-paths, SHA-pinned Actions, and MADR 4.0 parity."""
+"""Fail-closed Org Merge Gate: verifies zero secrets/home-paths, live-broker firewall, SHA Actions, & MADR 4.0."""
 
 from __future__ import annotations
 
@@ -14,7 +14,20 @@ SECRET_PATTERNS = (
     ("Broker Account ID", re.compile(r"\b(?:PA|DU)[0-9A-Z]*[0-9][0-9A-Z]*\b")),
     ("Alpaca Key Prefix", re.compile(r"\b(?:AK|PK)[0-9A-Z]{16,28}\b")),
     ("Private Key Header", re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----")),
-    ("Local Home Path", re.compile(r"/" + r"Users/[A-Za-z0-9._-]+/")),
+    (
+        "Live Alpaca Trading Endpoint",
+        re.compile(r"(?<!paper-)(?<![A-Za-z0-9-])" + "api" + r"\." + "alpaca" + r"\.markets\b"),
+    ),
+    (
+        "Forbidden Live Broker Binary",
+        re.compile(r"\." + "claude/" + "bin/" + r"(?:live|alpaca-live-mcp|key-store)\b"),
+    ),
+    ("Local Home Path (macOS)", re.compile("/" + "Users/" + r"[A-Za-z0-9._-]+/")),
+    ("Local Home Path (Linux)", re.compile(r"(?<![A-Za-z0-9_.-])/" + "home/" + r"[A-Za-z0-9._-]+/")),
+    (
+        "Local Home Path (Windows)",
+        re.compile(r"\b[A-Za-z]:(?:\\|/)" + "Users" + r"(?:\\|/)[A-Za-z0-9._-]+(?:\\|/)"),
+    ),
     ("Unescaped Single-Brace GH Expression", re.compile(r"\$\{\s*github\.")),
 )
 USES_RE = re.compile(r"^\s*-?\s*uses:\s*([^#\s]+)", re.MULTILINE)

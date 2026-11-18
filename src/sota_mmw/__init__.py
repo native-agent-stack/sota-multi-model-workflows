@@ -4,10 +4,13 @@ from sota_mmw.ao_lifecycle import (
     AO_FLEET_BINARIES,
     AO_MODEL_FAMILIES,
     AO_PLUGGABLE_SLOTS,
+    CONCRETE_VENDORS,
     AOLifecycleAttempt,
     AOMultiModelRoute,
+    derive_workstation_mesh_state,
     evaluate_ao_lifecycle_gate,
     probe_installed_multi_model_binaries,
+    qualify_ao_lifecycle_attempt,
     resolve_ao_multi_model_route,
 )
 from sota_mmw.peer_bus_schema import PortablePeerBus
@@ -37,6 +40,7 @@ __all__ = [
     "CANONICAL_DATAFEEDS",
     "CANONICAL_RESEARCH_MCP_TOOLS",
     "CANONICAL_STRATEGY_ARCHETYPES",
+    "CONCRETE_VENDORS",
     "FORBIDDEN_IBKR_LIVE_PORTS",
     "MAX_HARD_STOP_PCT",
     "MAX_STOP_ADR0022_PCT",
@@ -49,9 +53,11 @@ __all__ = [
     "PortablePeerBus",
     "StrategyCandidateManifest",
     "compute_hlz_t_hurdle",
+    "derive_workstation_mesh_state",
     "evaluate_ao_lifecycle_gate",
     "evaluate_promotion_gate",
     "probe_installed_multi_model_binaries",
+    "qualify_ao_lifecycle_attempt",
     "resolve_ao_multi_model_route",
     "verify_research_convergence_claim",
 ]

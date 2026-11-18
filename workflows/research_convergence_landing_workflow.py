@@ -15,14 +15,22 @@ import sys
 from pathlib import Path
 
 WF_DIR = Path.home() / ".agents" / "workflows"
-LOCAL_WF_DIR = Path(__file__).resolve().parent
+CWD_DIR = Path.cwd()
+LOCAL_WF_DIR = (
+    Path(__file__).resolve().parent
+    if "__file__" in globals()
+    else (CWD_DIR / "workflows" if (CWD_DIR / "workflows" / "_sota_kit.py").is_file() else WF_DIR)
+)
 REPO_SRC = LOCAL_WF_DIR.parent / "src"
+CWD_SRC = CWD_DIR / "src"
 HOME_MMW_SRC = Path.home() / "Documents" / "sota-multi-model-workflows" / "src"
+for _cand_src in (REPO_SRC, CWD_SRC, HOME_MMW_SRC):
+    if (_cand_src / "sota_mmw").is_dir() and str(_cand_src) not in sys.path:
+        sys.path.insert(0, str(_cand_src))
+        break
 ACTIVE_WF_DIR = LOCAL_WF_DIR if (LOCAL_WF_DIR / "_sota_kit.py").is_file() else WF_DIR
-ACTIVE_MMW_SRC = REPO_SRC if (REPO_SRC / "sota_mmw").is_dir() else HOME_MMW_SRC
-for _p_dir in (ACTIVE_MMW_SRC, ACTIVE_WF_DIR):
-    if _p_dir.is_dir() and str(_p_dir) not in sys.path:
-        sys.path.insert(0, str(_p_dir))
+if ACTIVE_WF_DIR.is_dir() and str(ACTIVE_WF_DIR) not in sys.path:
+    sys.path.insert(0, str(ACTIVE_WF_DIR))
 
 import _sota_kit as kit
 

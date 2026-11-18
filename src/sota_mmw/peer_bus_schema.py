@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import fnmatch
 import hashlib
 import json
 import sqlite3
@@ -10,6 +11,33 @@ from contextlib import closing, contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+
+
+def _normalize_lease_path(raw: str) -> str:
+    p = raw.strip().replace("\\", "/")
+    while p.startswith("./"):
+        p = p.removeprefix("./")
+    p = p.strip("/")
+    return "*" if p in ("", ".", "*", "**") else p
+
+
+def _paths_overlap(raw_a: str, raw_b: str) -> bool:
+    a = _normalize_lease_path(raw_a)
+    b = _normalize_lease_path(raw_b)
+    if a == "*" or b == "*" or a == b:
+        return True
+    if fnmatch.fnmatchcase(a, b) or fnmatch.fnmatchcase(b, a):
+        return True
+    a_stem = a.removesuffix("/**").removesuffix("/*")
+    b_stem = b.removesuffix("/**").removesuffix("/*")
+    if a_stem == b_stem:
+        return True
+    return (
+        a.startswith((b + "/", b_stem + "/"))
+        or b.startswith((a + "/", a_stem + "/"))
+        or a_stem.startswith(b_stem + "/")
+        or b_stem.startswith(a_stem + "/")
+    )
 
 
 class PortablePeerBus:
@@ -43,12 +71,46 @@ class PortablePeerBus:
         self, repo: str, agent: str, session_id: str, paths: list[str], intent: str, ttl_m: int = 45
     ) -> dict[str, Any]:
         key = f"{repo}::{session_id}"
-        exp = (datetime.now(UTC) + timedelta(minutes=ttl_m)).isoformat()
-        with self._conn() as cx:
-            cx.execute(
-                "INSERT OR REPLACE INTO leases VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (key, repo, agent, session_id, json.dumps(paths), intent, exp),
-            )
+        now_dt = datetime.now(UTC)
+        now_iso = now_dt.isoformat()
+        exp = (now_dt + timedelta(minutes=ttl_m)).isoformat()
+        req_paths = list(paths) if paths else ["*"]
+
+        with closing(sqlite3.connect(str(self.db_path), timeout=10.0, isolation_level=None)) as cx:
+            cx.execute("BEGIN IMMEDIATE")
+            try:
+                rows = cx.execute(
+                    "SELECT lease_key, session_id, paths_json, expires_utc FROM leases "
+                    "WHERE repo = ? AND session_id != ? AND expires_utc > ?",
+                    (repo, session_id, now_iso),
+                ).fetchall()
+                for foreign_key, _foreign_sid, foreign_paths_json, foreign_exp in rows:
+                    try:
+                        if datetime.fromisoformat(str(foreign_exp)) <= now_dt:
+                            continue
+                    except ValueError:
+                        pass
+                    foreign_paths = json.loads(foreign_paths_json or '["*"]')
+                    overlapping = [rp for rp in req_paths if any(_paths_overlap(rp, str(fp)) for fp in foreign_paths)]
+                    if overlapping:
+                        cx.execute("COMMIT")
+                        return {
+                            "claimed": False,
+                            "lease_key": key,
+                            "conflict_lease_key": str(foreign_key),
+                            "conflict_paths": overlapping,
+                        }
+
+                cx.execute("DELETE FROM leases WHERE repo = ? AND expires_utc <= ?", (repo, now_iso))
+                cx.execute(
+                    "INSERT OR REPLACE INTO leases VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (key, repo, agent, session_id, json.dumps(req_paths), intent, exp),
+                )
+                cx.execute("COMMIT")
+            except BaseException:
+                if cx.in_transaction:
+                    cx.execute("ROLLBACK")
+                raise
         return {"claimed": True, "lease_key": key, "expires_utc": exp}
 
     def release_lease(self, repo: str, session_id: str) -> dict[str, Any]:
