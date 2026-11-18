@@ -174,12 +174,14 @@ kit.record_workflow_run(
     done_summary=(
         f"Executed v3.10.0 8-Stage E2E Convergence + DF1..DF12 Ranking "
         f"({ranking_manifest['ranking_v310_contract_sha256'][:12]}) & Orca Lead assign "
-        f"({orca_lead_assignment['assign_sha256'][:12]})"
+        f"({orca_lead_assignment['assign_sha256'][:12]}) all_gates_passed={all_ok}"
     ),
     verified_by=(
         "sota-deep-synthesizer+sota-falsifier+sota-code-verifier"
         if (not fast_deterministic_only and "agent" in globals())
         else "turn0-deterministic-sample-only (no reviewer agent ran)"
     ),
+    open_risks="none" if all_ok else "e2e_convergence_or_review_revise",
+    next_priority="Ready for merit promotion" if all_ok else "Resolve failing/REVISE E2E convergence gates",
 )
 print(json.dumps(final_receipt, indent=2))

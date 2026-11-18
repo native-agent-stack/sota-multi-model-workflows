@@ -69,12 +69,22 @@ deterministic_bundle = {
 log(json.dumps(deterministic_bundle, indent=2))
 
 if fast_deterministic_only:
+    failed_probes = [str(r["probe"]) for r in probe_receipts if not r["ok"]]
     kit.record_workflow_run(
         repo="native-agent-stack",
         workflow_id="ecosystem-convergence-fast",
         done_summary=f"Deterministic v3.0.0 Convergence PASS={all_deterministic_ok} (live_org={live_org})",
         verified_by="; ".join(f"{r['probe']}:{r['ok']}" for r in probe_receipts),
-        next_priority="Ready for autonomous research & paper compounding",
+        open_risks=(
+            "none"
+            if all_deterministic_ok
+            else f"deterministic_convergence_failed:{','.join(failed_probes) or 'preflight'}"
+        ),
+        next_priority=(
+            "Ready for autonomous research & paper compounding"
+            if all_deterministic_ok
+            else f"Resolve failing convergence gates ({','.join(failed_probes) or 'preflight'})"
+        ),
     )
     print(json.dumps(deterministic_bundle, indent=2))
 else:

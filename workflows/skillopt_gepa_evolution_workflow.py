@@ -51,12 +51,13 @@ plan = await agent(
     type_name="sota-skillopt-curator",
 )
 
+grade = str(plan.get("friction_grade") or "UNKNOWN").upper()
 kit.record_workflow_run(
     repo="agy-sota-harness",
     workflow_id="skillopt-gepa-evolution",
     done_summary=f"Friction Grade={plan['friction_grade']} | Lesson: {plan['lesson_to_record'][:320]}",
     verified_by="trajectory() + ~/.agents/bin/sota-core friction",
-    open_risks="none",
+    open_risks="none" if grade in ("A", "B", "LOW", "NONE") else f"friction_grade={grade}",
     next_priority=plan["executable_hook_or_ast_candidates"][0]
     if plan["executable_hook_or_ast_candidates"]
     else "Monitor trajectory friction",

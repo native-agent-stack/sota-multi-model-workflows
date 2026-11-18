@@ -1823,6 +1823,27 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertTrue(out20["all_gates_passed"])
         self.assertEqual(out20["workflow_id"], "grand-merit-harness")
 
+    def test_workflow_handovers_fail_closed_no_unconditional_none_risks(self) -> None:
+        import re
+
+        targets = (
+            "ecosystem_convergence_workflow.py",
+            "orca_lead_e2e_research_convergence_workflow.py",
+            "skillopt_gepa_evolution_workflow.py",
+        )
+        unconditional_re = re.compile(r'^\s*open_risks\s*=\s*["\']none["\']\s*,', re.MULTILINE)
+        for wf_name in targets:
+            wf_src = (ROOT / "workflows" / wf_name).read_text(encoding="utf-8")
+            self.assertIsNone(
+                unconditional_re.search(wf_src),
+                f"{wf_name} must not pass unconditional open_risks='none'",
+            )
+            norm = " ".join(wf_src.split())
+            self.assertTrue(
+                'open_risks="none" if' in norm or 'open_risks=( "none" if' in norm,
+                f"{wf_name} must guard open_risks='none' with a conditional expression",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
