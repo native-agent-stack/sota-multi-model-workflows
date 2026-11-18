@@ -176,6 +176,16 @@ def agent_bin_argv(bin_path: Path | str, *args: str) -> list[str]:
     """Build cross-OS (`darwin` / `linux` / `win32`) subprocess argv for `~/.agents/bin/*` scripts."""
     p_str = str(bin_path)
     if os.name == "nt" and not p_str.lower().endswith((".exe", ".cmd", ".bat")):
+        exe_sibling = f"{p_str}.exe"
+        if os.path.isfile(exe_sibling):
+            return [exe_sibling, *args]
+        if os.path.isfile(p_str):
+            try:
+                with open(p_str, "rb") as fh:
+                    if fh.read(2) == b"MZ":
+                        return [p_str, *args]
+            except OSError:
+                pass
         return [sys.executable, p_str, *args]
     return [p_str, *args]
 

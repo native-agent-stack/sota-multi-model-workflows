@@ -575,12 +575,24 @@ class TestMultiModelWorkflows(unittest.TestCase):
     def test_cross_os_agent_bin_argv_parity_and_ao_dynamic_detectors(self) -> None:
         argv_posix = kit.agent_bin_argv(Path("~/.agents/bin/sota-workstation"), "status", "--json")
         self.assertEqual(argv_posix[-2:], ["status", "--json"])
-        with mock.patch("workflows._sota_kit.os.name", "nt"):
-            argv_win = kit.agent_bin_argv(Path("C:/sota-workstation/.agents/bin/sota-workstation"), "status", "--json")
-            self.assertEqual(argv_win[0], sys.executable)
-            self.assertEqual(argv_win[-2:], ["status", "--json"])
-            argv_exe = kit.agent_bin_argv(Path("C:/sota-workstation/orca.exe"), "status")
-            self.assertEqual(argv_exe[0], str(Path("C:/sota-workstation/orca.exe")))
+        with tempfile.TemporaryDirectory() as td_pe:
+            pe_shim = Path(td_pe) / "sota-doctor"
+            pe_shim.write_bytes(b"MZ\x90\x00")
+            sibling_base = Path(td_pe) / "sota-org-doctor"
+            sibling_exe = Path(td_pe) / "sota-org-doctor.exe"
+            sibling_exe.write_bytes(b"MZ\x90\x00")
+            win_script = Path("C:/sota-workstation/.agents/bin/sota-workstation")
+            win_exe = Path("C:/sota-workstation/orca.exe")
+            with mock.patch("workflows._sota_kit.os.name", "nt"):
+                argv_win = kit.agent_bin_argv(win_script, "status", "--json")
+                self.assertEqual(argv_win[0], sys.executable)
+                self.assertEqual(argv_win[-2:], ["status", "--json"])
+                argv_exe = kit.agent_bin_argv(win_exe, "status")
+                self.assertEqual(argv_exe[0], str(win_exe))
+                argv_mz = kit.agent_bin_argv(pe_shim, "--json")
+                self.assertEqual(argv_mz, [str(pe_shim), "--json"])
+                argv_sib = kit.agent_bin_argv(sibling_base, "--live")
+                self.assertEqual(argv_sib, [str(sibling_exe), "--live"])
 
         # Count AST assertions in this repository's tests/
         assertion_cnt = count_python_test_assertions(ROOT)
