@@ -3,7 +3,8 @@
 | Component | Pin / Commit | License | Source URL | Date Verified | Role | Origin |
 |---|---|---|---|---|---|---|
 | `antigravity-sdk` | `v1.5.3` | Apache-2.0 | https://github.com/google-antigravity/antigravity-sdk-python | 2026-11-17 | Typed `run_workflow` parallel/pipeline multi-agent primitives | upstream |
-| `orca` | `v1.4.255` | Apache-2.0 | https://github.com/stablyai/orca | 2026-11-17 | Cross-vendor Claude/Codex isolated git worktree fleet dispatch | upstream |
+| `agent-orchestrator` | `main` (8-slot AO reference) | MIT | https://github.com/ComposioHQ/agent-orchestrator | 2026-11-18 | 8-slot pluggable Agent Orchestrator (`AO`) worktree, CI-reaction & cross-model review lifecycle | upstream |
+| `orca` | `v1.4.261` | Apache-2.0 | https://github.com/stablyai/orca | 2026-11-18 | Cross-vendor Claude/Codex isolated git worktree & Dual-Machine (`Mac M5 Max <-> Noesis`) fleet dispatch | upstream |
 | `hcom` | `v0.7.31` | MIT | https://github.com/aannoo/hcom | 2026-11-17 | Real-time cross-terminal agent push messaging | upstream |
 | `nautilus_trader` | `da6b57aefdd62b44f675e434ffcfefca7f4025dd` | LGPL-3.0 | https://github.com/nautechsystems/nautilus_trader | 2026-11-17 | Stage-2 event-driven simulation parity | upstream |
 | `skfolio` | `90e3fb907fab39d244d899f3caf4e9676889309c` | BSD-3-Clause | https://github.com/skfolio/skfolio | 2026-11-17 | Stage-3 `CombinatorialPurgedCV` validation | upstream |

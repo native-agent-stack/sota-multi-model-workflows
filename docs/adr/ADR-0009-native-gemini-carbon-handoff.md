@@ -1,4 +1,4 @@
-# ADR-0008: Native Gemini 4 Carbon handoff across public and private repositories
+# ADR-0009: Native Gemini 4 Carbon handoff across public and private repositories
 
 - **Status:** Accepted
 - **Date:** 2026-11-17

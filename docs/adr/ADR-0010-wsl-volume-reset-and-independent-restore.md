@@ -1,4 +1,4 @@
-# ADR-0009: Independent recovery before a WSL host volume reset
+# ADR-0010: Independent recovery before a WSL host volume reset
 
 - **Status:** Accepted
 - **Date:** 2026-11-17

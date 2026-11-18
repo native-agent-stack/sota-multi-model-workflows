@@ -1,8 +1,8 @@
 {
-  "schemaVersion": "3.0.0",
+  "schemaVersion": "3.2.0",
   "repository": "https://github.com/native-agent-stack/sota-multi-model-workflows",
   "visibility": "PUBLIC",
-  "workflowCount": 10,
+  "workflowCount": 12,
   "workflows": [
     "master-sota-harness",
     "org-compounding-promotion",
@@ -13,12 +13,17 @@
     "early-mover-compounding",
     "rd-agent-hypothesis-bus",
     "cross-peer-orca-review",
-    "skillopt-gepa-evolution"
+    "skillopt-gepa-evolution",
+    "dual-workstation-orca",
+    "multi-model-ao-convergence"
   ],
   "supportedHarnesses": [
     "antigravity",
-    "claude-code",
-    "openai-codex",
+    "claude-code-omc",
+    "openai-codex-omx",
+    "opencode-omo",
+    "pi-omp",
+    "goose",
     "deepseek-dsh",
     "orca"
   ],
@@ -28,7 +33,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 9,
+    "adrCount": 10,
     "records": [
       {
         "id": "ADR-0001",
@@ -128,24 +133,41 @@
       },
       {
         "id": "ADR-0008",
+        "layer": "Multi-Model Agent Orchestration, Worktree Isolation & CI Reaction (`L3\u2013L9` \u00d7 `T0\u2013T8`)",
+        "title": "Multi-Model Agent Orchestrator (`AO`) 8-Slot Lifecycle & Reactive Worktree Convergence",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "E4 (Unit Tested, GitHub Actions Verified & Live `run_workflow` Probed)",
+        "file": "docs/adr/ADR-0008-multi-model-ao-lifecycle-and-reactive-worktree-convergence.md",
+        "githubUrls": [
+          "https://github.com/ComposioHQ/agent-orchestrator",
+          "https://github.com/google-antigravity/antigravity-sdk-python",
+          "https://github.com/native-agent-stack/agy-sota-harness",
+          "https://github.com/native-agent-stack/cc-sota-harness",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/stablyai/orca"
+        ]
+      },
+      {
+        "id": "ADR-0009",
         "layer": "Model routing and workflow evidence",
         "title": "Native Gemini 4 Carbon handoff across public and private repositories",
         "status": "Accepted",
         "date": "2026-11-17",
         "evidenceGrade": "Vendor release and native client contract. Each deployment supplies its own account witness.",
-        "file": "docs/adr/ADR-0008-native-gemini-carbon-handoff.md",
+        "file": "docs/adr/ADR-0009-native-gemini-carbon-handoff.md",
         "githubUrls": [
           "https://github.com/google-antigravity/antigravity-cli"
         ]
       },
       {
-        "id": "ADR-0009",
+        "id": "ADR-0010",
         "layer": "Workstation storage and service continuity",
         "title": "Independent recovery before a WSL host volume reset",
         "status": "Accepted",
         "date": "2026-11-17",
         "evidenceGrade": "Upstream WSL lifecycle and Windows backup interfaces. Restore proof is specific to each deployment.",
-        "file": "docs/adr/ADR-0009-wsl-volume-reset-and-independent-restore.md",
+        "file": "docs/adr/ADR-0010-wsl-volume-reset-and-independent-restore.md",
         "githubUrls": [
           "https://github.com/microsoft/WSL"
         ]
