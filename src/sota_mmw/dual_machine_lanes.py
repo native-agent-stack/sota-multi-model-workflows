@@ -305,7 +305,11 @@ STAGE_AND_LAYER_SUBLANES: dict[str, dict[str, Any]] = {
         "stage": "Stage4_5_Compounding_And_Guardian",
         "repos": ("sota-compounding-lab", "sota-dynamic-trail-c", "sota-private-vault"),
     },
-    "H0_ORG_GOVERNANCE_CI": {"macro_hub_lane": "H3_org_control_plane_and_provenance", "layer": "L0", "repos": (".github",)},
+    "H0_ORG_GOVERNANCE_CI": {
+        "macro_hub_lane": "H3_org_control_plane_and_provenance",
+        "layer": "L0",
+        "repos": (".github",),
+    },
     "H1_ECOSYSTEM_UMBRELLA_LOCK": {
         "macro_hub_lane": "H3_org_control_plane_and_provenance",
         "layer": "L1",

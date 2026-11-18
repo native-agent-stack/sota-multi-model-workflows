@@ -129,8 +129,8 @@ class TestMultiModelWorkflows(unittest.TestCase):
     def test_workflow_registry_ast_and_merge_gate(self) -> None:
         reg = json.loads((ROOT / "workflows" / "REGISTRY.json").read_text(encoding="utf-8"))
         manifest = json.loads((ROOT / "SOTA_WORKFLOW_MANIFEST.json").read_text(encoding="utf-8"))
-        self.assertEqual(reg["version"], "3.9.0")
-        self.assertEqual(manifest["schemaVersion"], "3.9.0")
+        self.assertEqual(reg["version"], "3.9.1")
+        self.assertEqual(manifest["schemaVersion"], "3.9.1")
         self.assertEqual(len(reg["workflows"]), 16)
         self.assertEqual(manifest["workflowCount"], 16)
         ids = [w["id"] for w in reg["workflows"]]
@@ -1171,11 +1171,11 @@ class TestMultiModelWorkflows(unittest.TestCase):
             cv.DEFAULT_PREWALL_LAKE_SHA256,
             "a253421e873441740d5d4b410d993cfa7345fe34b88ec4ab7f4eecd537b3f234",
         )
-        self.assertEqual(cv.DEFAULT_ECOSYSTEM_SEMVER, "3.9.0")
+        self.assertEqual(cv.DEFAULT_ECOSYSTEM_SEMVER, "3.9.1")
         st_v390 = cv.build_compounding_version_status()
         self.assertTrue(st_v390["ok"])
-        self.assertEqual(st_v390["ecosystem_version"], "3.9.0")
-        self.assertEqual(st_v390["latest_verified_transition"]["adr_id"], "ADR-0016")
+        self.assertEqual(st_v390["ecosystem_version"], "3.9.1")
+        self.assertEqual(st_v390["latest_verified_transition"]["adr_id"], "ADR-0017")
 
         # 2. T1..T5 x H0..H7 bijection (13 sub-lanes covering all 18 active repos) & 9-feed DF1..DF9 gate
         self.assertEqual(len(dml.STAGE_AND_LAYER_SUBLANES), 13)

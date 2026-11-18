@@ -43,7 +43,7 @@ from sota_mmw.research_convergence_contract import (
 
 RANKING_DATAFEEDS_SCHEMA_VERSION = "sota-ranking-datafeeds.v3.8"
 COMPOUNDING_VERSION_SCHEMA = "sota-compounding-version-ledger.v3.8"
-DEFAULT_ECOSYSTEM_SEMVER = "3.9.0"
+DEFAULT_ECOSYSTEM_SEMVER = "3.9.1"
 MIN_HLZ_TRIALS_FLOOR = 90
 MIN_NEXT_HLZ_HURDLE_FLOOR = 4.1760
 MIN_COMPILED_LESSONS_FLOOR = 59
@@ -433,16 +433,16 @@ def build_compounding_version_status(
     shelf_sha = compute_upstream_shelf_tree_sha256(pins_path)
     df_sha = compute_ranking_datafeed_contract_sha256()
     h090_rec = CompoundingVersionRecord(
-        prev_semver="3.8.0",
+        prev_semver="3.9.0",
         next_semver=DEFAULT_ECOSYSTEM_SEMVER,
         promotion_kind="PROTECTIVE_FILTER_OR_GOVERNANCE",
-        adr_id="ADR-0016",
+        adr_id="ADR-0017",
         input_lake_sha256=DEFAULT_PREWALL_LAKE_SHA256,
         upstream_shelf_tree_sha256=shelf_sha,
         ranking_datafeed_contract_sha256=df_sha,
         trials_n=trials_n,
         lessons_count=lessons_count,
-        candidate_id="V390_FULL_LANDSCAPE_ORCA_LANES_V2_AND_H090_CONVERGENCE",
+        candidate_id="V391_H092_H093_OVERNIGHT_WHIPSAW_LAW_AND_93TRIAL_69LESSON_SEAL",
         dsr_probability=0.42,
         cpcv_positive_fold_pct=100.0,
         t_stat_date_clustered=1.2919,
@@ -454,7 +454,7 @@ def build_compounding_version_status(
     )
     verified = verify_compounding_version_transition(
         h090_rec,
-        prev_adr_id="ADR-0015",
+        prev_adr_id="ADR-0016",
         pins_path=pins_path,
     )
     return {
@@ -491,15 +491,15 @@ def main(argv: list[str] | None = None) -> int:
     p_rf.add_argument("--json", action="store_true")
 
     p_vf = sub.add_parser("verify", help="Verify a CompoundingVersionRecord transition fail-closed")
-    p_vf.add_argument("--prev-semver", default="3.8.0")
+    p_vf.add_argument("--prev-semver", default="3.9.0")
     p_vf.add_argument("--next-semver", default=DEFAULT_ECOSYSTEM_SEMVER)
     p_vf.add_argument(
         "--promotion-kind",
         default="PROTECTIVE_FILTER_OR_GOVERNANCE",
         choices=("ALPHA_STRATEGY_MINOR", "PROTECTIVE_FILTER_OR_GOVERNANCE"),
     )
-    p_vf.add_argument("--adr-id", default="ADR-0016")
-    p_vf.add_argument("--prev-adr-id", default="ADR-0015")
+    p_vf.add_argument("--adr-id", default="ADR-0017")
+    p_vf.add_argument("--prev-adr-id", default="ADR-0016")
     p_vf.add_argument("--candidate-id", default="H090_LIT_ONLY_PROTECTIVE_FILTER")
     p_vf.add_argument("--input-lake-sha256", default=DEFAULT_PREWALL_LAKE_SHA256)
     p_vf.add_argument("--dsr", type=float, default=0.42)

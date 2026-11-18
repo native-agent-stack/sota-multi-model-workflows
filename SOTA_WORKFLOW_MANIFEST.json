@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "3.9.0",
+  "schemaVersion": "3.9.1",
   "repository": "https://github.com/native-agent-stack/sota-multi-model-workflows",
   "visibility": "PUBLIC",
   "workflowCount": 16,
@@ -37,7 +37,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 16,
+    "adrCount": 17,
     "records": [
       {
         "id": "ADR-0001",
@@ -278,6 +278,22 @@
           "https://github.com/Yeachan-Heo/oh-my-claudecode",
           "https://github.com/Yeachan-Heo/oh-my-codex",
           "https://github.com/native-agent-stack/sota-harness-foundation",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/stablyai/orca"
+        ]
+      },
+      {
+        "id": "ADR-0017",
+        "layer": "Multi-Model Orchestration, Compounding Versioning & Quantitative Falsification (`L0\u2013L13` \u00d7 `T1\u2013T5` \u00d7 `H0\u2013H7`)",
+        "title": "v3.9.1 Twin Overnight Extended-Hours Stop-Whipsaw Law (`H092`+`H093`), 93-Trial / 69-Lesson HLZ Ledger & 18-Repo `UPSTREAM.md` Completion",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "E4 (`93` Pre-Registered HLZ Trials incl. `H092`+`H093` `7,473`-Event Proof, `69` `E1\u2013E4` Lessons, `18/18` `UPSTREAM.md` & `17/17` Unit Suite Verified)",
+        "file": "docs/adr/ADR-0017-v391-h092-h093-overnight-whipsaw-law-and-93trial-69lesson-compounding-seal.md",
+        "githubUrls": [
+          "https://github.com/native-agent-stack/canon",
+          "https://github.com/native-agent-stack/sota-compounding-lab",
+          "https://github.com/native-agent-stack/sota-mover-ranker",
           "https://github.com/native-agent-stack/sota-multi-model-workflows",
           "https://github.com/stablyai/orca"
         ]
