@@ -21,7 +21,7 @@ preflight = kit.run_preflight_summary(live_org=live_org)
 docs = Path.home() / "Documents"
 probe_cmds = [
     ("agy-sota-harness-13-probes", ["python3", str(docs / "agy-sota-harness" / "harness" / "run_probes.py")]),
-    ("dsh-sota-harness-10-probes", ["node", str(docs / "dsh-sota-harness" / "harness" / "run-probes.mjs")]),
+    ("dsh-sota-harness-10-probes", ["node", str(docs / "dsh-sota-harness" / "harness" / "run.mjs")]),
     (
         "umbrella-v3-lock",
         ["python3", str(docs / "native-agent-stack" / "scripts" / "architecture_catalog.py"), "--check"],
