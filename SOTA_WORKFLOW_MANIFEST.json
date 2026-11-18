@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "3.9.3",
+  "schemaVersion": "3.9.7",
   "repository": "https://github.com/native-agent-stack/sota-multi-model-workflows",
   "visibility": "PUBLIC",
   "workflowCount": 17,
@@ -38,7 +38,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 18,
+    "adrCount": 19,
     "records": [
       {
         "id": "ADR-0001",
@@ -314,6 +314,21 @@
           "https://github.com/native-agent-stack/cc-sota-harness",
           "https://github.com/native-agent-stack/sota-multi-model-workflows",
           "https://github.com/stablyai/orca"
+        ]
+      },
+      {
+        "id": "ADR-0019",
+        "layer": "Multi-Model Orchestration, Quantitative Falsification & Compounding SemVer Governance (`L0\u2013L13` \u00d7 `T1\u2013T3` \u00d7 `H1\u2013H3`)",
+        "title": "v3.9.7 Pre-Registered Trial `#95` (`H095`) Two-Stage Collar Synthesis, 95-Trial (`t*(96) = 4.1882`) Ledger & 18-Repo Co-op Convergence",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "E4 (`95` Pre-Registered HLZ Trials, `77` `E1\u2013E4` Lessons, `46/46` SOTA Skills, `17/17` Workflows & `18/18` Unit Suite Verified)",
+        "file": "docs/adr/ADR-0019-v397-h095-two-stage-collar-synthesis-and-95trial-coop-convergence.md",
+        "githubUrls": [
+          "https://github.com/native-agent-stack/meridian",
+          "https://github.com/native-agent-stack/sota-compounding-lab",
+          "https://github.com/native-agent-stack/sota-harness-foundation",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows"
         ]
       }
     ]
