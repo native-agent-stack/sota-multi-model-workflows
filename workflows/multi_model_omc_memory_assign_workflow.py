@@ -26,7 +26,14 @@ from sota_mmw.dual_machine_lanes import build_multi_repo_beads_orca_dag  # noqa:
 cfg = kit.get_workflow_args(globals())
 ws0 = kit.get_primary_workspace(globals())
 repo = str(cfg.get("repo") or (Path(ws0).name if ws0 else "cc-sota-harness"))
-if repo not in ("cc-sota-harness", "sota-multi-model-workflows", "agy-sota-harness", "sota-harness-foundation", "canon", "native-agent-stack"):
+if repo not in (
+    "cc-sota-harness",
+    "sota-multi-model-workflows",
+    "agy-sota-harness",
+    "sota-harness-foundation",
+    "canon",
+    "native-agent-stack",
+):
     repo = "cc-sota-harness"
 worker = str(cfg.get("worker") or "codex")
 surface = str(cfg.get("surface") or "auto")
@@ -108,8 +115,9 @@ final_receipt = {
     "all_gates_passed": bool(rc_envelope["valid"] and agent_verdict.get("verdict") == "PASS"),
 }
 kit.record_workflow_run(
-    repo,
-    "multi-model-omc-memory-assign",
-    f"Verified v3.9.8 1-call worker assign ({worker}@{assign_envelope['surface']}) + 3-stage DAG ({dag_spec['dag_sha256'][:12]})",
+    repo=repo,
+    workflow_id="multi-model-omc-memory-assign",
+    done_summary=f"Verified v3.9.8 1-call worker assign ({worker}@{assign_envelope['surface']}) + 3-stage DAG ({dag_spec['dag_sha256'][:12]})",
+    verified_by="sota-code-verifier",
 )
 print(json.dumps(final_receipt, indent=2))
