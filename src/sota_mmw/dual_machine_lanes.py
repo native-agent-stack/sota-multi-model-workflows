@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import pathlib
 import shlex
 import sys
 from typing import Any
@@ -23,6 +24,11 @@ from sota_mmw.cc_lead_hub import (
     probe_cc_runtime_fleet,
     resolve_local_orca_repo_id,
 )
+from sota_mmw.compounding_versioning import (
+    CANONICAL_RANKING_DATAFEEDS_V38,
+    DEFAULT_PREWALL_LAKE_SHA256,
+    RANKING_DATAFEEDS_SCHEMA_VERSION,
+)
 from sota_mmw.research_convergence_contract import (
     MAX_HARD_STOP_PCT,
     PRE_WALL_MAX_DATE,
@@ -30,7 +36,17 @@ from sota_mmw.research_convergence_contract import (
     SIBLING_REPO_AUTHORITY,
 )
 
-LANES_SCHEMA_VERSION = "sota-dual-machine-lanes.v1"
+LANES_SCHEMA_VERSION = "sota-dual-machine-lanes.v2"
+ORCA_LANE_HUB_SCHEMA_VERSION = "sota-orca-lane-hub.v2"
+CANONICAL_SEVEN_MODEL_VENDORS: tuple[str, ...] = (
+    "Anthropic",
+    "OpenAI",
+    "Google DeepMind",
+    "DeepSeek",
+    "Moonshot AI",
+    "xAI",
+    "Meta",
+)
 
 ORCA_LANE_HUBS: dict[str, dict[str, dict[str, str]]] = {
     "portable_mac_m5_max": {
@@ -96,7 +112,7 @@ ORCHESTRATION_FRAMEWORKS_MATRIX: dict[str, dict[str, Any]] = {
         "versions": {"agy": "1.5.10"},
         "lead_model": "gemini-4-carbon-high (1M context)",
         "capabilities": (
-            "15 schema-typed run_workflow Python DAGs",
+            "16 schema-typed run_workflow Python DAGs (v3.9.0)",
             "Native Swarm workspace:share 1:3 verifiers",
             "18-clone upstream shelf & SEC EDGAR synthesis",
         ),
@@ -128,16 +144,26 @@ ORCHESTRATION_FRAMEWORKS_MATRIX: dict[str, dict[str, Any]] = {
         "role": "Open-weights pre-wall batch evaluator & AAIF autonomous MCP worker",
     },
     "peer_bus_hcom_beads_omniroute_spine": {
-        "upstream": "aannoo/hcom + steveyegge/beads + native-agent-stack/sota-multi-model-workflows",
-        "versions": {"sota_bus": "SQLite-WAL", "hcom": "0.7.31", "bd": "1.3.4", "omniroute": "3.8.53"},
+        "upstream": (
+            "ComposioHQ/agent-orchestrator + aannoo/hcom + steveyegge/beads + "
+            "native-agent-stack/sota-multi-model-workflows"
+        ),
+        "versions": {
+            "agent_orchestrator_ao": "8-slot-v3.9",
+            "sota_bus": "SQLite-WAL",
+            "hcom": "0.7.31",
+            "bd": "1.3.4",
+            "omniroute": "3.8.53",
+        },
         "capabilities": (
+            "8-slot Multi-Model AO cross-vendor convergence gate (ADR-0008)",
             "SQLite WAL BEGIN IMMEDIATE path-glob leases",
             "hcom cross-PTY push notifications",
             "sota-workstation coop @@B64: E2EE bridge",
             "Beads bd DAG issue tracker",
             "OmniRoute provider resilience router",
         ),
-        "role": "Transactional cross-session lease firewall, push messaging & resilience spine",
+        "role": "8-slot AO convergence, transactional cross-session lease firewall, push messaging & resilience spine",
     },
 }
 
@@ -184,7 +210,7 @@ TRADING_LANES: dict[str, dict[str, Any]] = {
         "default_worker_trio": ("claude-opus-falsifier", "codex-astra-omx", "antigravity-carbon"),
         "invariants": (
             "Strictly portable_mac_m5_max (:8787/:8799); PA... <=200 req/min; "
-            "ADR-0022 <=2.00% hard stop; sota-research-feeds.v2"
+            "ADR-0022 <=2.00% hard stop; sota-ranking-datafeeds.v3.8 (DF1..DF9, supersedes sota-research-feeds.v2)"
         ),
     },
     "T2_ibkr_paper_4002_and_event_sim_parity": {
@@ -214,7 +240,7 @@ TRADING_LANES: dict[str, dict[str, Any]] = {
         "default_worker_trio": ("claude-opus-falsifier", "codex-astra-omx", "deepseek-dsh"),
         "invariants": (
             "Pre-wall <=2026-10-15 CPCV/DSR/RTX 4090 sweeps on Z:/sota-data/prewall-lake "
-            "(stationary_noesis_win32 / stationary_noesis_carbon_wsl2, roaming failover portable_mac_m5_max)"
+            "(sha256=a253421e8734..., stationary_noesis_win32 / stationary_noesis_carbon_wsl2, roaming failover portable_mac_m5_max)"
         ),
     },
 }
@@ -228,7 +254,7 @@ HARNESS_LANES: dict[str, dict[str, Any]] = {
         "paired_surface": "stationary_noesis_win32",
         "failover_surface": "portable_mac_m5_max",
         "default_worker_trio": ("claude-sonnet-omc", "codex-astra-omx", "antigravity-carbon"),
-        "invariants": "Sovereign CC-Lead (OMC v2) + 15-workflow AGY/Orca hub + cross-OS Win32/WSL2/macOS CI parity",
+        "invariants": "Sovereign CC-Lead (OMC v2) + 16-workflow v3.9.0 AGY/Orca hub + cross-OS Win32/WSL2/macOS CI parity",
     },
     "H2_cross_vendor_verifiers_and_shelf_lock": {
         "lane_id": "H2_cross_vendor_verifiers_and_shelf_lock",
@@ -249,6 +275,71 @@ HARNESS_LANES: dict[str, dict[str, Any]] = {
         "failover_surface": "portable_mac_m5_max",
         "default_worker_trio": ("claude-sonnet-omc", "codex-astra-omx", "antigravity-carbon"),
         "invariants": "Umbrella v3.x lock, reusable SHA-pinned Org CI, 4-invariant sota-org-doctor & Canon provenance",
+    },
+}
+
+
+STAGE_AND_LAYER_SUBLANES: dict[str, dict[str, Any]] = {
+    "T1_MERIDIAN_NAUTILUS_QUEUE_SIM": {
+        "macro_hub_lane": "T2_ibkr_paper_4002_and_event_sim_parity",
+        "stage": "Stage1_Simulation",
+        "repos": ("meridian",),
+    },
+    "T2_PREWALL_CAUSAL_ALPHA_LAB": {
+        "macro_hub_lane": "T3_prewall_cpcv_gpu_and_strategy_factory",
+        "stage": "Stage2_PreWall_Research",
+        "repos": ("canon", "trading-sota", "tsl"),
+    },
+    "T3A_ALPACA_200RPM_SIP_PAPER": {
+        "macro_hub_lane": "T1_live_24x5_alpaca_paper_and_guardian",
+        "stage": "Stage3A_Alpaca_Paper",
+        "repos": ("sota-mover-ranker",),
+    },
+    "T3B_IBKR_4002_NAUTILUS_PAPER": {
+        "macro_hub_lane": "T2_ibkr_paper_4002_and_event_sim_parity",
+        "stage": "Stage3B_IBKR_Paper",
+        "repos": ("astrolabe",),
+    },
+    "T4_T5_COMPOUNDING_GUARDIAN_VAULT": {
+        "macro_hub_lane": "T1_live_24x5_alpaca_paper_and_guardian+T3_prewall_cpcv_gpu_and_strategy_factory",
+        "stage": "Stage4_5_Compounding_And_Guardian",
+        "repos": ("sota-compounding-lab", "sota-dynamic-trail-c", "sota-private-vault"),
+    },
+    "H0_ORG_GOVERNANCE_CI": {"macro_hub_lane": "H3_org_control_plane_and_provenance", "layer": "L0", "repos": (".github",)},
+    "H1_ECOSYSTEM_UMBRELLA_LOCK": {
+        "macro_hub_lane": "H3_org_control_plane_and_provenance",
+        "layer": "L1",
+        "repos": ("native-agent-stack",),
+    },
+    "H2_UPSTREAM_40SHA_SHELF_LOCK": {
+        "macro_hub_lane": "H2_cross_vendor_verifiers_and_shelf_lock",
+        "layer": "L2",
+        "repos": ("sota-upstream-shelf-lock",),
+    },
+    "H3_OPEN_CORE_MULTI_RUNTIME_FOUNDATION": {
+        "macro_hub_lane": "H1_sovereign_cc_lead_and_multi_runtime_hub",
+        "layer": "L3",
+        "repos": ("sota-harness-foundation",),
+    },
+    "H4_ANTIGRAVITY_L0_L13_HARNESS": {
+        "macro_hub_lane": "H2_cross_vendor_verifiers_and_shelf_lock",
+        "layer": "L4",
+        "repos": ("agy-sota-harness",),
+    },
+    "H5_CLAUDE_LEAD_28RUNTIME_HARNESS": {
+        "macro_hub_lane": "H1_sovereign_cc_lead_and_multi_runtime_hub",
+        "layer": "L5",
+        "repos": ("cc-sota-harness",),
+    },
+    "H6_DEEPSEEK_10LAYER_HARNESS": {
+        "macro_hub_lane": "H2_cross_vendor_verifiers_and_shelf_lock",
+        "layer": "L6",
+        "repos": ("dsh-sota-harness", "dsh-plugin-landscape"),
+    },
+    "H7_MULTI_MODEL_WORKFLOWS_WAL_BUS": {
+        "macro_hub_lane": "H1_sovereign_cc_lead_and_multi_runtime_hub",
+        "layer": "L7",
+        "repos": ("sota-multi-model-workflows",),
     },
 }
 
@@ -274,6 +365,7 @@ def resolve_dual_machine_lane_plan(
     mesh_state: str = "dual_mesh_docked",
     requested_placement: str = "auto",
     local_orca_repo_id: str | None = None,
+    active_broker_host_shield: bool = False,
 ) -> dict[str, Any]:
     """Deterministically resolve surface, Orca `worker-start` command, and >=3-vendor worker trio for `repo`."""
     lane = REPO_LANE_INDEX.get(repo)
@@ -328,8 +420,11 @@ def resolve_dual_machine_lane_plan(
                 "stationary_noesis_carbon_wsl2" if workload == "wsl2_posix_gate" else "stationary_noesis_win32"
             )
             use_noesis = True
-        elif mesh_state == "dual_mesh_on_battery" and workload in ("heavy_test_sweep", "cross_os_ci_parity"):
-            selected_surface = str(lane.get("paired_surface") or "stationary_noesis_win32")
+        elif (mesh_state == "dual_mesh_on_battery" or active_broker_host_shield) and workload in (
+            "heavy_test_sweep",
+            "cross_os_ci_parity",
+        ):
+            selected_surface = str(lane.get("paired_surface") or "stationary_noesis_carbon_wsl2")
             use_noesis = True
         else:
             selected_surface = "portable_mac_m5_max"
@@ -391,8 +486,9 @@ def resolve_dual_machine_lane_plan(
             "--spec",
             (
                 f"Execute {workload} on {repo} ({lane_id}, surface={selected_surface}). "
-                f"Enforce {RESEARCH_FEEDS_SCHEMA_VERSION}, ADR-0004 ({SIBLING_REPO_AUTHORITY}), "
-                f"pre-wall <={PRE_WALL_MAX_DATE}, and ADR-0022 <={MAX_HARD_STOP_PCT:.2f}% stop."
+                f"Enforce {RANKING_DATAFEEDS_SCHEMA_VERSION} (DF1..DF9, compat {RESEARCH_FEEDS_SCHEMA_VERSION}), "
+                f"ADR-0004/ADR-0016 ({SIBLING_REPO_AUTHORITY}), pre-wall <={PRE_WALL_MAX_DATE}, "
+                f"and ADR-0022 <={MAX_HARD_STOP_PCT:.2f}% stop."
             ),
             "--json",
         ]
@@ -415,6 +511,7 @@ def resolve_dual_machine_lane_plan(
                 "selected_surface": selected_surface,
                 "orca_repo_selector": orca_repo_selector,
                 "worker_trio": list(worker_trio),
+                "active_broker_host_shield": active_broker_host_shield,
             },
             sort_keys=True,
         ).encode("utf-8")
@@ -430,6 +527,7 @@ def resolve_dual_machine_lane_plan(
         "workload": workload,
         "mesh_state": mesh_state,
         "requested_placement": requested_placement,
+        "active_broker_host_shield": active_broker_host_shield,
         "selected_surface": selected_surface,
         "use_noesis": use_noesis,
         "single_active_broker_host_only": True,
@@ -444,6 +542,9 @@ def resolve_dual_machine_lane_plan(
         "concrete_vendor_count": len(trio_vendors),
         "provenance_gate": {
             "feeds_schema": RESEARCH_FEEDS_SCHEMA_VERSION,
+            "ranking_datafeeds_schema": RANKING_DATAFEEDS_SCHEMA_VERSION,
+            "ranking_feeds_count": len(CANONICAL_RANKING_DATAFEEDS_V38),
+            "prewall_lake_sha256": DEFAULT_PREWALL_LAKE_SHA256,
             "provenance_adr": "ADR-0004",
             "sibling_repo_authority": SIBLING_REPO_AUTHORITY,
             "prewall_max_date": PRE_WALL_MAX_DATE,
@@ -453,8 +554,99 @@ def resolve_dual_machine_lane_plan(
     }
 
 
+def render_orca_lane_hub_artifacts(plane: str) -> dict[str, str]:
+    """Render deterministic `sota-orca-lane-hub.v2` `LANE_MANIFEST.json`, `orca.yaml`, and `README.md`."""
+    if plane not in ("trading", "harness"):
+        raise ValueError(f"Invalid plane {plane!r}; expected 'trading' or 'harness'")
+
+    is_trading = plane == "trading"
+    lane_map = TRADING_LANES if is_trading else HARNESS_LANES
+    sublanes = {
+        k: v for k, v in STAGE_AND_LAYER_SUBLANES.items() if (k.startswith("T") if is_trading else k.startswith("H"))
+    }
+    manifest_obj: dict[str, Any] = {
+        "schemaVersion": ORCA_LANE_HUB_SCHEMA_VERSION,
+        "ecosystemVersion": "3.9.0",
+        "plane": "TRADING_LANES" if is_trading else "HARNESS_LANES",
+        "adrAuthority": [
+            "ADR-0004 (Research-Convergence & 4-Hash Provenance)",
+            "ADR-0014 (Dual-Machine Orca Trading & Harness Lanes + 8-Framework Matrix)",
+            "ADR-0015 (9-Feed DF1..DF9 Ranking DataFeeds & Two-Track Compounding Versioning)",
+            "ADR-0016 (v3.9.0 Full-Landscape SOTA Layer, 17/17 UPSTREAM.md & Orca Lane Hub v2 Seal)",
+            "ADR-0020 (Symmetric :6770 Dual-Workstation Orca & Single-Broker-Host Firewall)",
+            "ADR-0022 (<= 2.00% Reg NMS Rule 612 Protective Stop-Limit)",
+        ],
+        "singleActiveBrokerHostOnly": True,
+        "rthBrokerContentionShield": True,
+        "sovereignPaperBrokerHost": "portable_mac_m5_max (100.93.211.101)",
+        "pairedWorkstationSurfaces": DUAL_MACHINE_SURFACES,
+        "orcaHubSelectors": {
+            "portable_mac_m5_max": ORCA_LANE_HUBS["portable_mac_m5_max"][plane],
+            "stationary_noesis": ORCA_LANE_HUBS["stationary_noesis"][plane],
+        },
+        "rankingDatafeedsSchema": RANKING_DATAFEEDS_SCHEMA_VERSION,
+        "rankingDatafeedsCount": len(CANONICAL_RANKING_DATAFEEDS_V38),
+        "prewallLakeSha256": DEFAULT_PREWALL_LAKE_SHA256,
+        "orchestrationFrameworksCount": len(ORCHESTRATION_FRAMEWORKS_MATRIX),
+        "runtimeWorkersCount": len(RUNTIME_WORKER_ROSTER),
+        "modelVendors": list(CANONICAL_SEVEN_MODEL_VENDORS),
+        "macroLanes": lane_map,
+        "stageAndLayerSubLanes": sublanes,
+    }
+    hub_title = "Trading Lanes (`T1–T3` / `T1–T5`)" if is_trading else "Harness Lanes (`H1–H3` / `H0–H7`)"
+    orca_yaml = (
+        f"# SOTA Dual-Machine Orca Folder Hub Recipe — {hub_title} (v3.9.0)\n"
+        "setupAgentStartupPolicy: wait-for-setup\n"
+        "scripts:\n"
+        "  setup: |\n"
+        "    ~/.agents/bin/sota-lanes status --plane "
+        f"{plane} --json >/dev/null 2>&1 || true\n"
+    )
+    readme_lines = [
+        f"# SOTA Dual-Machine Orca Hub — {hub_title} (`v3.9.0`)",
+        "",
+        (
+            f"Schema: `{ORCA_LANE_HUB_SCHEMA_VERSION}` · DataFeeds: `{RANKING_DATAFEEDS_SCHEMA_VERSION}` (`DF1..DF9`) · "
+            f"Pre-Wall Lake SHA-256: `{DEFAULT_PREWALL_LAKE_SHA256}` (`<= {PRE_WALL_MAX_DATE}`)."
+        ),
+        "",
+        "- **Symmetric Orca Mesh:** `portable_mac_m5_max` (`100.93.211.101:6770`) <-> `stationary_noesis` (`100.110.115.22:6770` Win32 + `Noesis-Carbon` WSL2 `ext4`).",
+        "- **Single-Broker-Host & RTH Shield:** Live `:8787` / `:8799` / `:4002` paper sockets run exclusively on `portable_mac_m5_max`; `56`-thread / `RTX 4090` sweeps offload to `Noesis`.",
+        f"- **Multi-Model Fleet:** `{len(ORCHESTRATION_FRAMEWORKS_MATRIX)}` SOTA orchestration frameworks, `17` runtime binaries, `{len(RUNTIME_WORKER_ROSTER)}` workers across `{len(CANONICAL_SEVEN_MODEL_VENDORS)}` model vendors.",
+        "",
+        "## Macro Hub Groups",
+    ]
+    for lid, lmeta in lane_map.items():
+        readme_lines.append(f"- **`{lid}`:** `{', '.join(lmeta['repos'])}` — {lmeta['invariants']}")
+    readme_lines.append("")
+    return {
+        "LANE_MANIFEST.json": json.dumps(manifest_obj, indent=2, default=list) + "\n",
+        "orca.yaml": orca_yaml,
+        "README.md": "\n".join(readme_lines),
+    }
+
+
+def sync_orca_lane_hubs(hub_root: pathlib.Path | None = None) -> dict[str, Any]:
+    """Write `sota-orca-lane-hub.v2` artifacts into `<hub_root>/{trading-lanes,harness-lanes}`."""
+    target_root = hub_root or (pathlib.Path.home() / ".agents" / "orca-lanes")
+    written: list[str] = []
+    for plane, folder_name in (("trading", "trading-lanes"), ("harness", "harness-lanes")):
+        dest_dir = target_root / folder_name
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        for fname, content in render_orca_lane_hub_artifacts(plane).items():
+            fp = dest_dir / fname
+            fp.write_text(content, encoding="utf-8")
+            written.append(str(fp))
+    return {
+        "ok": True,
+        "hub_schema_version": ORCA_LANE_HUB_SCHEMA_VERSION,
+        "hub_root": str(target_root),
+        "files_written": len(written),
+    }
+
+
 def build_lanes_overview(*, plane: str = "all", mesh_state: str = "dual_mesh_docked") -> dict[str, Any]:
-    """Summarize Dual-Machine surfaces, 8 frameworks, and T1..T3 / H1..H3 lane assignments."""
+    """Summarize Dual-Machine surfaces, 8 frameworks, and T1..T3 / H1..H3 (+ T1..T5 / H0..H7) lane assignments."""
     fleet = probe_cc_runtime_fleet()
     trading_repos = [r for ln in TRADING_LANES.values() for r in ln["repos"]]
     harness_repos = [r for ln in HARNESS_LANES.values() for r in ln["repos"]]
@@ -466,10 +658,17 @@ def build_lanes_overview(*, plane: str = "all", mesh_state: str = "dual_mesh_doc
     return {
         "ok": len(trading_repos) == 8 and len(harness_repos) == 10 and len(REPO_LANE_INDEX) == 18,
         "schema_version": LANES_SCHEMA_VERSION,
+        "hub_schema_version": ORCA_LANE_HUB_SCHEMA_VERSION,
+        "ranking_datafeeds_schema": RANKING_DATAFEEDS_SCHEMA_VERSION,
+        "ranking_feeds_count": len(CANONICAL_RANKING_DATAFEEDS_V38),
+        "prewall_lake_sha256": DEFAULT_PREWALL_LAKE_SHA256,
         "mesh_state": mesh_state,
         "surfaces": DUAL_MACHINE_SURFACES,
         "orca_lane_hubs": ORCA_LANE_HUBS,
         "frameworks_count": len(ORCHESTRATION_FRAMEWORKS_MATRIX),
+        "workers_count": len(RUNTIME_WORKER_ROSTER),
+        "model_vendors_count": len(CANONICAL_SEVEN_MODEL_VENDORS),
+        "stage_and_layer_sublanes_count": len(STAGE_AND_LAYER_SUBLANES),
         "trading_repos_count": len(trading_repos),
         "harness_repos_count": len(harness_repos),
         "total_provisioned_repos": len(REPO_LANE_INDEX),
@@ -492,11 +691,16 @@ def main(argv: list[str] | None = None) -> int:
     p_mx = sub.add_parser("matrix", help="Emit the 8-framework SOTA multi-model orchestration matrix")
     p_mx.add_argument("--json", action="store_true")
 
+    p_sh = sub.add_parser("sync-hubs", help="Materialize sota-orca-lane-hub.v2 manifests & orca.yaml in folder hubs")
+    p_sh.add_argument("--root", default="", help="Override hub root directory (default: ~/.agents/orca-lanes)")
+    p_sh.add_argument("--json", action="store_true")
+
     p_rt = sub.add_parser("route", help="Resolve Dual-Machine surface & Orca worker-start command for a repository")
     p_rt.add_argument("--repo", required=True, choices=sorted(REPO_LANE_INDEX))
     p_rt.add_argument("--workload", default="default")
     p_rt.add_argument("--placement", default="auto", choices=("auto", "local", "noesis"))
     p_rt.add_argument("--mesh-state", default="")
+    p_rt.add_argument("--active-broker-shield", action="store_true")
 
     args = parser.parse_args(argv)
     _trials_n, _next_t, live_mesh = _load_live_bus_and_mesh()
@@ -510,10 +714,20 @@ def main(argv: list[str] | None = None) -> int:
         out_mx = {
             "schema_version": LANES_SCHEMA_VERSION,
             "frameworks_count": len(ORCHESTRATION_FRAMEWORKS_MATRIX),
+            "workers_count": len(RUNTIME_WORKER_ROSTER),
+            "model_vendors": list(CANONICAL_SEVEN_MODEL_VENDORS),
             "frameworks": ORCHESTRATION_FRAMEWORKS_MATRIX,
+            "runtime_workers": RUNTIME_WORKER_ROSTER,
+            "stage_and_layer_sublanes": STAGE_AND_LAYER_SUBLANES,
             "surfaces": DUAL_MACHINE_SURFACES,
         }
         print(json.dumps(out_mx, indent=2, default=list))
+        return 0
+
+    if args.cmd == "sync-hubs":
+        root_p = pathlib.Path(args.root).expanduser() if args.root.strip() else None
+        res_sh = sync_orca_lane_hubs(root_p)
+        print(json.dumps(res_sh, indent=2))
         return 0
 
     eff_mesh = args.mesh_state.strip() if getattr(args, "mesh_state", "") else live_mesh
@@ -523,6 +737,7 @@ def main(argv: list[str] | None = None) -> int:
             workload=args.workload,
             mesh_state=eff_mesh,
             requested_placement=args.placement,
+            active_broker_host_shield=bool(getattr(args, "active_broker_shield", False)),
         )
     except PermissionError as exc:
         print(

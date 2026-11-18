@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "3.8.0",
+  "schemaVersion": "3.9.0",
   "repository": "https://github.com/native-agent-stack/sota-multi-model-workflows",
   "visibility": "PUBLIC",
   "workflowCount": 16,
@@ -37,7 +37,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 15,
+    "adrCount": 16,
     "records": [
       {
         "id": "ADR-0001",
@@ -263,6 +263,23 @@
           "https://github.com/ml4t/diagnostic",
           "https://github.com/native-agent-stack/sota-multi-model-workflows",
           "https://github.com/pola-rs/polars"
+        ]
+      },
+      {
+        "id": "ADR-0016",
+        "layer": "Multi-Model Orchestration, Dual-Machine Orca Lanes & Quantitative Provenance (`L0\u2013L13` \u00d7 `P0\u2013P5` \u00d7 `T1\u2013T5` \u00d7 `H0\u2013H7`)",
+        "title": "v3.9.0 Full-Landscape SOTA Layer, Dual-Machine Orca Lane Hubs v2 (`T1\u2013T5` \u00d7 `H0\u2013H7`), Empirical Pre-Wall Lake SHA-256 & RTH Contention Shield",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "E4 (`16/16` Workflows, `8` Frameworks / `17` Binaries / `11` Workers / `7` Vendors, `64`-Thread `Noesis-Carbon` Pre-Wall Lake SHA-256 & Unit Suite Verified)",
+        "file": "docs/adr/ADR-0016-v390-full-landscape-sota-layers-17repo-upstream-and-dual-machine-orca-lane-hubs-v2.md",
+        "githubUrls": [
+          "https://github.com/ComposioHQ/agent-orchestrator",
+          "https://github.com/Yeachan-Heo/oh-my-claudecode",
+          "https://github.com/Yeachan-Heo/oh-my-codex",
+          "https://github.com/native-agent-stack/sota-harness-foundation",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/stablyai/orca"
         ]
       }
     ]

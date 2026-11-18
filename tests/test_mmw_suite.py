@@ -129,8 +129,8 @@ class TestMultiModelWorkflows(unittest.TestCase):
     def test_workflow_registry_ast_and_merge_gate(self) -> None:
         reg = json.loads((ROOT / "workflows" / "REGISTRY.json").read_text(encoding="utf-8"))
         manifest = json.loads((ROOT / "SOTA_WORKFLOW_MANIFEST.json").read_text(encoding="utf-8"))
-        self.assertEqual(reg["version"], "3.8.0")
-        self.assertEqual(manifest["schemaVersion"], "3.8.0")
+        self.assertEqual(reg["version"], "3.9.0")
+        self.assertEqual(manifest["schemaVersion"], "3.9.0")
         self.assertEqual(len(reg["workflows"]), 16)
         self.assertEqual(manifest["workflowCount"], 16)
         ids = [w["id"] for w in reg["workflows"]]
@@ -1161,6 +1161,58 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertTrue(out16["transition_verdict"]["approved"])
         self.assertTrue(out16["two_track_subhurdle_alpha_rejection_verified"])
         rec16.assert_called_once()
+
+    def test_v390_full_landscape_lanes_v2_rth_shield_and_hub_sync(self) -> None:
+        from sota_mmw import compounding_versioning as cv
+        from sota_mmw import dual_machine_lanes as dml
+
+        # 1. Empirical 64-hex pre-wall lake SHA-256 & v3.9.0 status
+        self.assertEqual(
+            cv.DEFAULT_PREWALL_LAKE_SHA256,
+            "a253421e873441740d5d4b410d993cfa7345fe34b88ec4ab7f4eecd537b3f234",
+        )
+        self.assertEqual(cv.DEFAULT_ECOSYSTEM_SEMVER, "3.9.0")
+        st_v390 = cv.build_compounding_version_status()
+        self.assertTrue(st_v390["ok"])
+        self.assertEqual(st_v390["ecosystem_version"], "3.9.0")
+        self.assertEqual(st_v390["latest_verified_transition"]["adr_id"], "ADR-0016")
+
+        # 2. T1..T5 x H0..H7 bijection (13 sub-lanes covering all 18 active repos) & 9-feed DF1..DF9 gate
+        self.assertEqual(len(dml.STAGE_AND_LAYER_SUBLANES), 13)
+        sublane_repos = {r for s in dml.STAGE_AND_LAYER_SUBLANES.values() for r in s["repos"]}
+        self.assertEqual(sublane_repos, set(dml.REPO_LANE_INDEX.keys()))
+        self.assertEqual(len(dml.CANONICAL_SEVEN_MODEL_VENDORS), 7)
+
+        # 3. Live RTH active_broker_host_shield offloads docked heavy sweeps to Noesis
+        unshielded = dml.resolve_dual_machine_lane_plan(
+            "agy-sota-harness",
+            workload="heavy_test_sweep",
+            mesh_state="dual_mesh_docked",
+            active_broker_host_shield=False,
+        )
+        self.assertEqual(unshielded["selected_surface"], "portable_mac_m5_max")
+        shielded = dml.resolve_dual_machine_lane_plan(
+            "agy-sota-harness",
+            workload="heavy_test_sweep",
+            mesh_state="dual_mesh_docked",
+            active_broker_host_shield=True,
+        )
+        self.assertEqual(shielded["selected_surface"], "stationary_noesis_carbon_wsl2")
+        self.assertTrue(shielded["use_noesis"])
+        self.assertEqual(shielded["provenance_gate"]["ranking_datafeeds_schema"], "sota-ranking-datafeeds.v3.8")
+        self.assertEqual(shielded["provenance_gate"]["ranking_feeds_count"], 9)
+
+        # 4. Deterministic sota-orca-lane-hub.v2 generation (LANE_MANIFEST.json + orca.yaml + README.md)
+        with tempfile.TemporaryDirectory() as td_hubs:
+            hub_res = dml.sync_orca_lane_hubs(Path(td_hubs))
+            self.assertTrue(hub_res["ok"])
+            self.assertEqual(hub_res["files_written"], 6)
+            tr_mf = json.loads((Path(td_hubs) / "trading-lanes" / "LANE_MANIFEST.json").read_text(encoding="utf-8"))
+            hr_mf = json.loads((Path(td_hubs) / "harness-lanes" / "LANE_MANIFEST.json").read_text(encoding="utf-8"))
+            self.assertEqual(tr_mf["schemaVersion"], "sota-orca-lane-hub.v2")
+            self.assertEqual(hr_mf["schemaVersion"], "sota-orca-lane-hub.v2")
+            self.assertEqual(tr_mf["rankingDatafeedsCount"], 9)
+            self.assertEqual(hr_mf["orchestrationFrameworksCount"], 8)
 
 
 if __name__ == "__main__":
