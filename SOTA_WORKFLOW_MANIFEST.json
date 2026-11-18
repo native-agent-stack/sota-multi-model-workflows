@@ -40,7 +40,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 25,
+    "adrCount": 26,
     "records": [
       {
         "id": "ADR-0001",
@@ -427,6 +427,20 @@
           "https://github.com/native-agent-stack/cc-sota-harness",
           "https://github.com/native-agent-stack/sota-multi-model-workflows",
           "https://github.com/stablyai/orca"
+        ]
+      },
+      {
+        "id": "ADR-0026",
+        "layer": "Quantitative Dimensional/FP Safety, Bitemporal PIT Study Wall & 12-Feed (`DF1..DF12`) Schema Integrity (`L6..L8` x `T1..T5`)",
+        "title": "`v3.10.2` IEEE-754 `NaN`/`Inf` Fail-Closed Handoff Gate, Bitemporal `decision_ns` Study-Wall Enforcement & 12-Feed Key Bijection",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "E4 (`noesis-cc-lead` `#92` Adversarial Defects `A..E` 100% Remediated & Regression-Tested, `24/24` Unit Suite, `ruff`, `merge_gate.py`, `gitleaks` `0` Leaks)",
+        "file": "docs/adr/ADR-0026-v3102-ieee754-nan-inf-failclosed-bitemporal-decision-ns-wall-and-12feed-key-bijection.md",
+        "githubUrls": [
+          "https://github.com/databento/databento-python",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/trailofbits/skills"
         ]
       }
     ]

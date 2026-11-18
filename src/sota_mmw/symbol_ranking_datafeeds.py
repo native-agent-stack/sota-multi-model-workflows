@@ -1,15 +1,13 @@
-"""Finalized 12-Feed Symbol Ranking System DataFeeds (`DF1..DF12`) & 6 Auto-Trading Strategy Routes (`v3.10.0`).
+"""Finalized 12-Feed Symbol Ranking System DataFeeds (`DF1..DF12`) & 6 Auto-Trading Strategy Routes (`v3.10.2`).
 
 Establishes the single authoritative foundation feeding every autonomous paper-trading strategy
 across the `native-agent-stack` ecosystem while preserving full backward compatibility with
 `sota-research-feeds.v2` (`7` feeds) and `sota-ranking-datafeeds.v3.8` (`DF1..DF9`).
 
-Enforces:
-- Bitemporal point-in-time ordering (`ts_event_ns <= ts_recv_ns <= decision_ns`) and `<= 2026-10-15` pre-wall study lock.
-- Per-symbol own-history time-of-day abnormal-rate normalization (`RVOL_tod >= 2.20`, `vol_z_tod >= 2.30`, NYSE U-curve `X1`/`X2`) eliminating mega-cap dollar-volume bias.
-- `H096` `15.0s` dry-powder bid-survival + `<= 10.0` bps collar (`OFI >= 0.25`, `ISO_F >= 0.15 | BJZZ >= 0.12`).
-- `microsoft/qlib` cross-sectional `RankIC` / `ICIR` telemetry + `kappa=40` post-wall Empirical-Bayes shrinkage (`REAL_BROKER_ONLY`, `900.0s` `DEAD_FLOW_RECYCLED` Wave-2 cooldown).
-- `ADR-0022` `<= 2.00%` hard initial stop, `6-14` bps mega-cap near-lossless trail, `<= 200` req/min Alpaca Paper (`PA-prefix`, `:8787`) & `<= 3000` msg/min IBKR Paper (`DU-prefix`, `:4002`), and `singleActiveBrokerHostOnly = True`.
+Enforces (`ADR-0024` + `ADR-0026` IEEE-754 & Bitemporal Hardening):
+- Strict IEEE-754 `math.isfinite()` validation and negated inequality gates (`not (x >= floor)` / `not (x <= cap)`) so `NaN` / `+-Inf` join failures ALWAYS fail closed.
+- Bitemporal point-in-time ordering (`ts_event_ns <= ts_recv_ns <= decision_ns`), real UNIX epoch nanosecond validation (`>= 2000-01-01`), `decision_ns` UTC date `<= 2026-10-15`, and exact consistency with `study_date`.
+- Bijective `feed_id == feeds_key` across all `12` feeds plus `feeds_by_short_id` (`DF1..DF12`) resolving every `required_feeds` entry across all `6` strategy routes.
 """
 
 from __future__ import annotations
@@ -17,6 +15,7 @@ from __future__ import annotations
 import datetime as dt
 import hashlib
 import json
+import math
 from typing import Any
 
 from sota_mmw.compounding_versioning import (
@@ -35,35 +34,47 @@ MIN_DRY_POWDER_SEC = 15.0
 MAX_SPREAD_COLLAR_BPS = 10.0
 WAVE2_DEAD_FLOW_COOLDOWN_SEC = 900.0
 POSTWALL_EB_KAPPA = 40
+MIN_EPOCH_2000_NS = 946_684_800_000_000_000  # 2000-01-01T00:00:00Z in nanoseconds
 
 DF10_TO_DF12_EXTENSION: dict[str, dict[str, Any]] = {
-    "DF10_OWN_HISTORY_TOD_ABNORMAL_RATE_AND_UCURVE": {
-        "feed_id": "DF10",
-        "name": "20d SIP Own-History Time-of-Day Normal Rate & NYSE U-Curve X1/X2",
-        "endpoint": "GET http://127.0.0.1:8787/api/research_feeds?include=tod_abnormal_rate",
-        "primary_upstreams": (
-            "https://github.com/QuantConnect/Lean",
-            "https://github.com/pola-rs/polars",
-            "https://github.com/duckdb/duckdb",
+    "DF10_own_history_tod_abnormal_rate_and_ucurve": {
+        "feed_id": "DF10_own_history_tod_abnormal_rate_and_ucurve",
+        "short_id": "DF10",
+        "v2_compat_feeds": ("tod_rvol_normalizer",),
+        "window_et": "09:30-16:00 ET (20d trailing same-minute buckets)",
+        "upstream": (
+            "QuantConnect/Lean@e28820c9c846 + "
+            "pola-rs/polars@7f902bd3ffd27ff82d14278a09a295ff2f7aed92 + "
+            "duckdb/duckdb@d54cbbe3df17e8e5ce68312f483b4155836112aa"
         ),
-        "pit_rule": "polars asof join <= 2026-10-15 own_tod_mean_rate & own_tod_std_rate; zero raw dollar-volume bias",
+        "pit_and_microstructure_rules": (
+            "polars asof join <= 2026-10-15 own_tod_mean_rate & own_tod_std_rate; zero raw dollar-volume bias",
+            f"RVOL_tod >= {MIN_RVOL_TOD_THRESHOLD:.2f} and vol_z_tod >= {MIN_VOL_Z_TOD_THRESHOLD:.2f}",
+            "NYSE U-curve X1_open_ignition and X2_close_drift bucket normalization",
+        ),
+        "endpoint": "GET http://127.0.0.1:8787/api/research_feeds?include=tod_abnormal_rate",
         "thresholds": {
             "min_rvol_tod": MIN_RVOL_TOD_THRESHOLD,
             "min_vol_z_tod": MIN_VOL_Z_TOD_THRESHOLD,
             "nyse_ucurve_buckets": ("X1_open_ignition", "X2_close_drift"),
         },
-        "target_strategies": ("all_6_autonomous_routes",),
     },
-    "DF11_BITEMPORAL_DATABENTO_PIT_AND_H096_COLLAR": {
-        "feed_id": "DF11",
-        "name": "Databento Bitemporal L1/L2 Event-vs-Receipt PIT & H096 15s Dry-Powder Collar",
-        "endpoint": "GET http://127.0.0.1:8787/api/tv/seamless_practice",
-        "primary_upstreams": (
-            "https://github.com/databento/databento-python",
-            "https://github.com/nkaz001/hftbacktest",
-            "https://github.com/nautechsystems/nautilus_trader",
+    "DF11_bitemporal_databento_pit_and_h096_collar": {
+        "feed_id": "DF11_bitemporal_databento_pit_and_h096_collar",
+        "short_id": "DF11",
+        "v2_compat_feeds": ("alpaca_sip",),
+        "window_et": "04:00-20:00 ET bitemporal L1/L2",
+        "upstream": (
+            "databento/databento-python + "
+            "nkaz001/hftbacktest@5f3ec40b2afb764e0fea112f941ed85523ef4e88 + "
+            "nautechsystems/nautilus_trader@da6b57aefdd62b44f675e434ffcfefca7f4025dd"
         ),
-        "pit_rule": "strict bitemporal inequality ts_event_ns <= ts_recv_ns <= decision_ns with RiskAdverseQueueModel",
+        "pit_and_microstructure_rules": (
+            "strict bitemporal inequality ts_event_ns <= ts_recv_ns <= decision_ns with RiskAdverseQueueModel",
+            f"H096 >= {MIN_DRY_POWDER_SEC:.1f}s dry-powder bid survival and <= {MAX_SPREAD_COLLAR_BPS:.1f} bps collar",
+            f"OFI >= {MIN_OFI_THRESHOLD:.2f}, ISO fraction >= 0.15 or BJZZ institutional fraction >= 0.12",
+        ),
+        "endpoint": "GET http://127.0.0.1:8787/api/tv/seamless_practice",
         "thresholds": {
             "min_ofi": MIN_OFI_THRESHOLD,
             "min_iso_fraction": 0.15,
@@ -71,33 +82,43 @@ DF10_TO_DF12_EXTENSION: dict[str, dict[str, Any]] = {
             "min_dry_powder_sec": MIN_DRY_POWDER_SEC,
             "max_spread_collar_bps": MAX_SPREAD_COLLAR_BPS,
         },
-        "target_strategies": ("all_6_autonomous_routes",),
     },
-    "DF12_QLIB_RANK_IC_AND_KAPPA40_POSTWALL_EB_FEEDBACK": {
-        "feed_id": "DF12",
-        "name": "Microsoft Qlib RankIC/ICIR & kappa=40 Post-Wall Empirical-Bayes Paper Feedback",
-        "endpoint": "GET http://127.0.0.1:8799/api/paper_feedback_manifest",
-        "primary_upstreams": (
-            "https://github.com/microsoft/qlib",
-            "https://github.com/ml4t/ml4t-diagnostic",
-            "https://github.com/skfolio/skfolio",
+    "DF12_qlib_rank_ic_and_kappa40_postwall_eb_feedback": {
+        "feed_id": "DF12_qlib_rank_ic_and_kappa40_postwall_eb_feedback",
+        "short_id": "DF12",
+        "v2_compat_feeds": ("ibkr_paper_4002_l1",),
+        "window_et": "Post-session & continuous paper blotter",
+        "upstream": (
+            "microsoft/qlib + "
+            "ml4t/diagnostic@19e76072e64a18c9ba56130e4a7bcc0bc871f57e + "
+            "skfolio/skfolio@90e3fb907fab39d244d899f3caf4e9676889309c"
         ),
-        "pit_rule": "REAL_BROKER_ONLY post-wall posterior updates; never back-propagated into <=2026-10-15 feature study",
+        "pit_and_microstructure_rules": (
+            "REAL_BROKER_ONLY post-wall posterior updates; never back-propagated into <=2026-10-15 feature study",
+            f"Empirical-Bayes shrinkage prior kappa={POSTWALL_EB_KAPPA}",
+            f"DEAD_FLOW_RECYCLED Wave-2 cooldown >= {WAVE2_DEAD_FLOW_COOLDOWN_SEC:.1f}s",
+        ),
+        "endpoint": "GET http://127.0.0.1:8799/api/paper_feedback_manifest",
         "thresholds": {
             "eb_shrinkage_kappa": POSTWALL_EB_KAPPA,
             "wave2_dead_flow_cooldown_sec": WAVE2_DEAD_FLOW_COOLDOWN_SEC,
         },
-        "target_strategies": (
-            "HYBRID_50_50_CORE_AND_WAVE2_REENTRY",
-            "PRE_TRAVEL_EARLY_IGNITION",
-            "FIRST_HAND_SEC_EPISODIC_PIVOT",
-        ),
     },
 }
 
-FINALIZED_12FEED_SYMBOL_RANKING_DATAFEEDS: dict[str, dict[str, Any]] = {
-    **CANONICAL_RANKING_DATAFEEDS_V38,
-    **DF10_TO_DF12_EXTENSION,
+
+def _build_12feed_catalog() -> dict[str, dict[str, Any]]:
+    out: dict[str, dict[str, Any]] = {}
+    for key, val in CANONICAL_RANKING_DATAFEEDS_V38.items():
+        short_prefix = key.split("_", 1)[0]
+        out[key] = {"short_id": short_prefix, **val}
+    out.update(DF10_TO_DF12_EXTENSION)
+    return out
+
+
+FINALIZED_12FEED_SYMBOL_RANKING_DATAFEEDS: dict[str, dict[str, Any]] = _build_12feed_catalog()
+FEEDS_BY_SHORT_ID: dict[str, dict[str, Any]] = {
+    str(v["short_id"]): v for v in FINALIZED_12FEED_SYMBOL_RANKING_DATAFEEDS.values()
 }
 
 SYMBOL_RANKING_SYSTEM_APIS_V310: dict[str, dict[str, Any]] = {
@@ -173,6 +194,23 @@ SYMBOL_RANKING_TO_AUTO_STRATEGY_ROUTES: dict[str, dict[str, Any]] = {
 }
 
 
+def resolve_route_required_feeds(strategy_route: str) -> list[dict[str, Any]]:
+    """Resolve short feed IDs (`DF1..DF12`) for `strategy_route` into canonical feed definitions (fail-closed)."""
+    route = SYMBOL_RANKING_TO_AUTO_STRATEGY_ROUTES.get(strategy_route)
+    if route is None:
+        raise KeyError(f"Unknown strategy_route: {strategy_route!r}")
+    resolved: list[dict[str, Any]] = []
+    for short_id in route["required_feeds"]:
+        if short_id not in FEEDS_BY_SHORT_ID:
+            raise KeyError(f"Route {strategy_route!r} references unresolved feed {short_id!r}")
+        resolved.append(FEEDS_BY_SHORT_ID[short_id])
+    return resolved
+
+
+def _is_finite_real(val: Any) -> bool:
+    return isinstance(val, (int, float)) and not isinstance(val, bool) and math.isfinite(float(val))
+
+
 def compute_symbol_ranking_v310_sha256() -> str:
     """Return deterministic SHA-256 over the finalized 12-Feed DF1..DF12 Symbol Ranking catalog."""
     payload = json.dumps(FINALIZED_12FEED_SYMBOL_RANKING_DATAFEEDS, sort_keys=True, default=list)
@@ -203,34 +241,88 @@ def evaluate_symbol_ranking_to_strategy_handoff(
     route = SYMBOL_RANKING_TO_AUTO_STRATEGY_ROUTES.get(strategy_route)
     if route is None:
         violations.append(f"UNKNOWN_STRATEGY_ROUTE: {strategy_route!r}")
-    if dt.date.fromisoformat(study_date) > STUDY_WALL_DATE:
+
+    try:
+        parsed_study_date = dt.date.fromisoformat(study_date)
+    except ValueError:
+        parsed_study_date = None
+        violations.append(f"INVALID_STUDY_DATE: {study_date!r}")
+
+    if parsed_study_date is not None and parsed_study_date > STUDY_WALL_DATE:
         violations.append(f"PREWALL_VIOLATION: study_date {study_date} > {STUDY_WALL_DATE.isoformat()}")
-    if not (ts_event_ns <= ts_recv_ns <= decision_ns):
-        violations.append("BITEMPORAL_PIT_VIOLATION: require ts_event_ns <= ts_recv_ns <= decision_ns")
-    if rvol_tod < MIN_RVOL_TOD_THRESHOLD:
+
+    # Strict integer & bitemporal UNIX epoch nanosecond checks (Defect B)
+    for ts_name, ts_val in (("ts_event_ns", ts_event_ns), ("ts_recv_ns", ts_recv_ns), ("decision_ns", decision_ns)):
+        if not isinstance(ts_val, int) or isinstance(ts_val, bool) or ts_val < MIN_EPOCH_2000_NS:
+            violations.append(f"INVALID_EPOCH_NS: {ts_name}={ts_val!r} must be UNIX epoch ns >= 2000-01-01")
+    if (
+        isinstance(ts_event_ns, int)
+        and isinstance(ts_recv_ns, int)
+        and isinstance(decision_ns, int)
+        and not isinstance(ts_event_ns, bool)
+        and not isinstance(ts_recv_ns, bool)
+        and not isinstance(decision_ns, bool)
+    ):
+        if not (ts_event_ns <= ts_recv_ns <= decision_ns):
+            violations.append("BITEMPORAL_PIT_VIOLATION: require ts_event_ns <= ts_recv_ns <= decision_ns")
+        if decision_ns >= MIN_EPOCH_2000_NS:
+            try:
+                decision_date = dt.datetime.fromtimestamp(decision_ns / 1_000_000_000, tz=dt.UTC).date()
+                if decision_date > STUDY_WALL_DATE:
+                    violations.append(
+                        f"PREWALL_DECISION_NS_VIOLATION: decision_ns date {decision_date.isoformat()} > {STUDY_WALL_DATE.isoformat()}"
+                    )
+                if parsed_study_date is not None and decision_date != parsed_study_date:
+                    violations.append(
+                        f"DECISION_NS_STUDY_DATE_MISMATCH: decision_ns date {decision_date.isoformat()} != study_date {study_date}"
+                    )
+            except (OverflowError, OSError, ValueError):
+                violations.append(f"INVALID_EPOCH_NS_RANGE: decision_ns={decision_ns!r}")
+
+    # Strict IEEE-754 finite checks + negated comparisons so NaN/+Inf/-Inf ALWAYS fail closed (Defect A)
+    for num_name, num_val in (
+        ("rvol_tod", rvol_tod),
+        ("vol_z_tod", vol_z_tod),
+        ("ofi", ofi),
+        ("dry_powder_sec", dry_powder_sec),
+        ("spread_collar_bps", spread_collar_bps),
+        ("hard_stop_pct", hard_stop_pct),
+        ("cooldown_elapsed_sec", cooldown_elapsed_sec),
+    ):
+        if not _is_finite_real(num_val):
+            violations.append(f"NON_FINITE_NUMERIC_INPUT: {num_name}={num_val!r}")
+
+    if _is_finite_real(rvol_tod) and not (float(rvol_tod) >= MIN_RVOL_TOD_THRESHOLD):
         violations.append(f"RVOL_TOD_BELOW_MIN: {rvol_tod:.2f} < {MIN_RVOL_TOD_THRESHOLD:.2f}")
-    if vol_z_tod < MIN_VOL_Z_TOD_THRESHOLD:
+    if _is_finite_real(vol_z_tod) and not (float(vol_z_tod) >= MIN_VOL_Z_TOD_THRESHOLD):
         violations.append(f"VOL_Z_TOD_BELOW_MIN: {vol_z_tod:.2f} < {MIN_VOL_Z_TOD_THRESHOLD:.2f}")
-    if ofi < MIN_OFI_THRESHOLD:
+    if _is_finite_real(ofi) and not (float(ofi) >= MIN_OFI_THRESHOLD):
         violations.append(f"OFI_BELOW_MIN: {ofi:.3f} < {MIN_OFI_THRESHOLD:.2f}")
-    if dry_powder_sec < MIN_DRY_POWDER_SEC:
+    if _is_finite_real(dry_powder_sec) and not (float(dry_powder_sec) >= MIN_DRY_POWDER_SEC):
         violations.append(f"DRY_POWDER_BELOW_15S: {dry_powder_sec:.2f}s < {MIN_DRY_POWDER_SEC:.1f}s")
-    if spread_collar_bps > MAX_SPREAD_COLLAR_BPS:
-        violations.append(f"SPREAD_COLLAR_EXCEEDED: {spread_collar_bps:.2f} > {MAX_SPREAD_COLLAR_BPS:.1f} bps")
-    if not (0.0 < hard_stop_pct <= MAX_STOP_ADR0022_PCT):
+    if _is_finite_real(spread_collar_bps) and not (0.0 <= float(spread_collar_bps) <= MAX_SPREAD_COLLAR_BPS):
+        violations.append(
+            f"SPREAD_COLLAR_EXCEEDED: {spread_collar_bps:.2f} outside [0.0, {MAX_SPREAD_COLLAR_BPS:.1f}] bps"
+        )
+    if _is_finite_real(hard_stop_pct) and not (0.0 < float(hard_stop_pct) <= MAX_STOP_ADR0022_PCT):
         violations.append(f"ADR0022_STOP_EXCEEDED: {hard_stop_pct:.2f}% outside (0, {MAX_STOP_ADR0022_PCT:.2f}%]")
-    if route is not None and hard_stop_pct > float(route["max_initial_stop_pct"]):
+    if (
+        route is not None
+        and _is_finite_real(hard_stop_pct)
+        and not (float(hard_stop_pct) <= float(route["max_initial_stop_pct"]))
+    ):
         violations.append(f"ROUTE_STOP_EXCEEDED: {hard_stop_pct:.2f}% > {float(route['max_initial_stop_pct']):.2f}%")
-    if broker_port not in (8787, 8799, 4002):
+
+    if not isinstance(broker_port, int) or isinstance(broker_port, bool) or broker_port not in (8787, 8799, 4002):
         violations.append(
             f"LIVE_BROKER_FIREWALL_BLOCK: unsupported port {broker_port}; only 8787/8799/4002 paper allowed"
         )
     if is_wave2_reentry or (route is not None and route["requires_wave2_cooldown"]):
-        if cooldown_elapsed_sec < WAVE2_DEAD_FLOW_COOLDOWN_SEC:
-            violations.append(
-                f"WAVE2_COOLDOWN_ACTIVE: {cooldown_elapsed_sec:.1f}s < {WAVE2_DEAD_FLOW_COOLDOWN_SEC:.1f}s"
-            )
-        if not pullback_held_zero_loss_floor:
+        if not _is_finite_real(cooldown_elapsed_sec) or not (
+            float(cooldown_elapsed_sec) >= WAVE2_DEAD_FLOW_COOLDOWN_SEC
+        ):
+            violations.append(f"WAVE2_COOLDOWN_ACTIVE: {cooldown_elapsed_sec}s < {WAVE2_DEAD_FLOW_COOLDOWN_SEC:.1f}s")
+        if pullback_held_zero_loss_floor is not True:
             violations.append("WAVE2_ZERO_LOSS_FLOOR_LOST: pullback_held_zero_loss_floor must be True")
 
     return {
@@ -247,12 +339,14 @@ def evaluate_symbol_ranking_to_strategy_handoff(
 
 
 def build_symbol_ranking_foundation_manifest() -> dict[str, Any]:
-    """Build complete v3.10.0 12-Feed Symbol Ranking DataFeeds & 6-Strategy Foundation manifest."""
+    """Build complete v3.10.2 12-Feed Symbol Ranking DataFeeds & 6-Strategy Foundation manifest."""
     return {
         "schema_version": SYMBOL_RANKING_DATAFEEDS_V310_SCHEMA,
         "backward_compat_v38_schema": RANKING_DATAFEEDS_SCHEMA_VERSION,
         "feed_count": len(FINALIZED_12FEED_SYMBOL_RANKING_DATAFEEDS),
-        "feed_ids": [v["feed_id"] for v in FINALIZED_12FEED_SYMBOL_RANKING_DATAFEEDS.values()],
+        "feed_ids": list(FINALIZED_12FEED_SYMBOL_RANKING_DATAFEEDS.keys()),
+        "short_feed_ids": list(FEEDS_BY_SHORT_ID.keys()),
+        "feeds_by_short_id": FEEDS_BY_SHORT_ID,
         "strategy_route_count": len(SYMBOL_RANKING_TO_AUTO_STRATEGY_ROUTES),
         "strategy_routes": SYMBOL_RANKING_TO_AUTO_STRATEGY_ROUTES,
         "datafeed_apis": SYMBOL_RANKING_SYSTEM_APIS_V310,

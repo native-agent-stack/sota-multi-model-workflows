@@ -1241,8 +1241,8 @@ def build_orca_lead_e2e_convergence_assignment(
         "orca-lead-e2e-research-convergence",
         "--repo",
         repo,
-        "--mode",
-        "live-cli",
+        "--backend",
+        "claude",
         "--json",
     ]
     orca_worker_argv = [
@@ -1307,20 +1307,20 @@ def _load_live_bus_and_mesh() -> tuple[int, float, str]:
     bus_engine = Path.home() / ".agents" / "bus" / "sota_bus_engine.py"
     ws_bin = Path.home() / ".agents" / "bin" / "sota-workstation"
     if bus_engine.is_file():
-        p_bus = subprocess.run(
-            [sys.executable, str(bus_engine), "status"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-            check=False,
-        )
-        if p_bus.returncode == 0:
-            try:
+        try:
+            p_bus = subprocess.run(
+                [sys.executable, str(bus_engine), "status"],
+                capture_output=True,
+                text=True,
+                timeout=8,
+                check=False,
+            )
+            if p_bus.returncode == 0:
                 bj = json.loads(p_bus.stdout)
                 trials_n = int(bj.get("hypothesis_trials_total") or trials_n)
                 next_t = float(bj.get("next_trial_hlz_t_hurdle") or next_t)
-            except (ValueError, json.JSONDecodeError):
-                pass
+        except (OSError, subprocess.TimeoutExpired, ValueError, json.JSONDecodeError):
+            pass
     if ws_bin.is_file():
         ws_exe_str = f"{ws_bin}.exe"
         ws_argv = (
@@ -1328,18 +1328,18 @@ def _load_live_bus_and_mesh() -> tuple[int, float, str]:
             if os.name == "nt" and os.path.isfile(ws_exe_str)
             else [sys.executable, str(ws_bin), "status", "--json"]
         )
-        p_ws = subprocess.run(
-            ws_argv,
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=False,
-        )
-        if p_ws.returncode == 0:
-            try:
+        try:
+            p_ws = subprocess.run(
+                ws_argv,
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=False,
+            )
+            if p_ws.returncode == 0:
                 mesh = derive_workstation_mesh_state(json.loads(p_ws.stdout))
-            except json.JSONDecodeError:
-                pass
+        except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
+            pass
     return trials_n, next_t, mesh
 
 

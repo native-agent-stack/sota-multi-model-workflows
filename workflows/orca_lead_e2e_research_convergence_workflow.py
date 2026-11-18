@@ -62,9 +62,9 @@ handoff_check = evaluate_symbol_ranking_to_strategy_handoff(
     symbol="AAPL",
     strategy_route=strategy_route,
     study_date="2026-10-15",
-    ts_event_ns=1_760_500_000_000_000_000,
-    ts_recv_ns=1_760_500_000_005_000_000,
-    decision_ns=1_760_500_000_010_000_000,
+    ts_event_ns=1_792_074_600_000_000_000,
+    ts_recv_ns=1_792_074_600_005_000_000,
+    decision_ns=1_792_074_600_010_000_000,
     rvol_tod=2.45,
     vol_z_tod=2.80,
     ofi=0.35,
@@ -99,6 +99,7 @@ CONVERGENCE_STAGE_SCHEMA = {
         "verdict": {"type": "string", "enum": ["PASS", "REVISE"]},
     },
     "required": ["stage_summary", "df12_bitemporal_pit_ok", "orca_lead_e2e_ready", "verdict"],
+    "additionalProperties": False,
 }
 
 agent_reviews: list[dict[str, object]] = [
@@ -175,6 +176,10 @@ kit.record_workflow_run(
         f"({ranking_manifest['ranking_v310_contract_sha256'][:12]}) & Orca Lead assign "
         f"({orca_lead_assignment['assign_sha256'][:12]})"
     ),
-    verified_by="sota-deep-synthesizer+sota-falsifier+sota-code-verifier",
+    verified_by=(
+        "sota-deep-synthesizer+sota-falsifier+sota-code-verifier"
+        if (not fast_deterministic_only and "agent" in globals())
+        else "turn0-deterministic-sample-only (no reviewer agent ran)"
+    ),
 )
 print(json.dumps(final_receipt, indent=2))

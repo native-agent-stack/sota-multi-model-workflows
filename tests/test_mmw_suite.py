@@ -1488,9 +1488,9 @@ class TestMultiModelWorkflows(unittest.TestCase):
             symbol="NVDA",
             strategy_route="HYBRID_50_50_CORE_AND_WAVE2_REENTRY",
             study_date="2026-10-15",
-            ts_event_ns=100,
-            ts_recv_ns=200,
-            decision_ns=300,
+            ts_event_ns=1_792_074_600_000_000_000,
+            ts_recv_ns=1_792_074_600_005_000_000,
+            decision_ns=1_792_074_600_010_000_000,
             rvol_tod=2.5,
             vol_z_tod=2.7,
             ofi=0.35,
@@ -1508,9 +1508,9 @@ class TestMultiModelWorkflows(unittest.TestCase):
             symbol="NVDA",
             strategy_route="PRE_TRAVEL_EARLY_IGNITION",
             study_date="2026-10-15",
-            ts_event_ns=300,
-            ts_recv_ns=200,
-            decision_ns=250,
+            ts_event_ns=1_792_074_600_030_000_000,
+            ts_recv_ns=1_792_074_600_020_000_000,
+            decision_ns=1_792_074_600_025_000_000,
             rvol_tod=2.5,
             vol_z_tod=2.7,
             ofi=0.35,
@@ -1638,6 +1638,68 @@ class TestMultiModelWorkflows(unittest.TestCase):
                 )
                 self.assertIn("100.93.211.101", broker_plan["orca_worker_start_argv"])
                 self.assertIn("100.93.211.101", broker_plan["orca_folder_worktree_cmd"])
+
+    def test_v3102_adr0026_nan_inf_fail_closed_decision_ns_wall_and_feed_key_bijection(self) -> None:
+        from sota_mmw import cc_lead_hub as cch
+        from sota_mmw import symbol_ranking_datafeeds as srd
+
+        base_kw = {
+            "symbol": "AAPL",
+            "strategy_route": "PRE_TRAVEL_EARLY_IGNITION",
+            "study_date": "2026-10-15",
+            "ts_event_ns": 1_792_074_600_000_000_000,
+            "ts_recv_ns": 1_792_074_600_005_000_000,
+            "decision_ns": 1_792_074_600_010_000_000,
+            "rvol_tod": 2.45,
+            "vol_z_tod": 2.80,
+            "ofi": 0.35,
+            "dry_powder_sec": 18.5,
+            "spread_collar_bps": 7.5,
+            "hard_stop_pct": 1.65,
+            "broker_port": 8787,
+        }
+        self.assertTrue(srd.evaluate_symbol_ranking_to_strategy_handoff(**base_kw)["approved"])
+
+        # Defect A: NaN or +-Inf on ANY numeric input must fail closed
+        for field_name in ("rvol_tod", "vol_z_tod", "ofi", "dry_powder_sec", "spread_collar_bps", "hard_stop_pct"):
+            for bad_val in (float("nan"), float("inf"), float("-inf")):
+                res_bad = srd.evaluate_symbol_ranking_to_strategy_handoff(**{**base_kw, field_name: bad_val})
+                self.assertFalse(res_bad["approved"], f"{field_name}={bad_val} must fail closed")
+
+        # Defect B: January 2027 decision_ns with study_date='2026-10-15' must fail closed
+        jan_2027_ns = 1_800_000_000_000_000_000  # 2027-01-15T08:00:00Z
+        res_wall_bypass = srd.evaluate_symbol_ranking_to_strategy_handoff(
+            **{
+                **base_kw,
+                "ts_event_ns": jan_2027_ns - 20,
+                "ts_recv_ns": jan_2027_ns - 10,
+                "decision_ns": jan_2027_ns,
+            }
+        )
+        self.assertFalse(res_wall_bypass["approved"])
+        self.assertTrue(any("PREWALL_DECISION_NS_VIOLATION" in v for v in res_wall_bypass["violations"]))
+
+        # Defect C: Bijective feed_ids == feeds.keys() & all 6 routes resolve required_feeds
+        mf = srd.build_symbol_ranking_foundation_manifest()
+        for fid in mf["feed_ids"]:
+            self.assertIn(fid, mf["feeds"])
+            for req_key in (
+                "feed_id",
+                "short_id",
+                "v2_compat_feeds",
+                "window_et",
+                "upstream",
+                "pit_and_microstructure_rules",
+            ):
+                self.assertIn(req_key, mf["feeds"][fid])
+        for r_id in mf["strategy_routes"]:
+            resolved_feeds = srd.resolve_route_required_feeds(r_id)
+            self.assertGreaterEqual(len(resolved_feeds), 5)
+
+        # Defect D: sota_workflow_run_argv uses --backend claude (never --mode live-cli)
+        assign = cch.build_orca_lead_e2e_convergence_assignment(repo="cc-sota-harness")
+        self.assertIn("--backend", assign["sota_workflow_run_argv"])
+        self.assertNotIn("--mode", assign["sota_workflow_run_argv"])
 
 
 if __name__ == "__main__":
