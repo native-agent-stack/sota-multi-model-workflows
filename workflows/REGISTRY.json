@@ -1,6 +1,6 @@
 {
-  "version": "3.1.0",
-  "description": "Canonical v3.1.0 registry of 11 self-bootstrapping SOTA `run_workflow` scripts. Every script automatically loads live peer leases, handovers, lessons, HLZ trial multiplicity N, `sota-doctor` (11/11), `sota-org-doctor`, and `ECOSYSTEM_CONVERGENCE_LOCK.json` via `_sota_kit.py` and writes completion checkpoints back to `~/.agents/bus/peer_bus.db`.",
+  "version": "3.2.0",
+  "description": "Canonical v3.2.0 registry of 12 self-bootstrapping SOTA `run_workflow` & Multi-Model `AO` (`Agent Orchestrator`) scripts. Every script automatically loads live peer leases, handovers, lessons, HLZ trial multiplicity N, `sota-doctor` (11/11), `sota-org-doctor`, and `ECOSYSTEM_CONVERGENCE_LOCK.json` via `_sota_kit.py` and writes completion checkpoints back to `~/.agents/bus/peer_bus.db`.",
   "workflows": [
     {
       "id": "master-sota-harness",
@@ -153,6 +153,31 @@
         }
       },
       "when_to_use": "Dual-Machine Portable M5 Max (64 GB) + Stationary Noesis (64c/128 GB/RTX 4090) Orca mesh telemetry, FF repo sync, ADR-0020 broker-isolation audit, and cross-machine placement."
+    },
+    {
+      "id": "multi-model-ao-convergence",
+      "script_path": "~/.agents/workflows/ao_multi_model_convergence_workflow.py",
+      "skill": "sota-workflow",
+      "agents": ["sota-deep-synthesizer", "sota-falsifier", "sota-code-verifier", "self"],
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "repo": {"type": "string"},
+          "task_kind": {
+            "type": "string",
+            "enum": [
+              "architecture_adr",
+              "prewall_quant_factor",
+              "execution_risk_code",
+              "cross_repo_refactor",
+              "combinatorial_gpu_sweep"
+            ]
+          },
+          "goal": {"type": "string"},
+          "fast_deterministic_only": {"type": "boolean"}
+        }
+      },
+      "when_to_use": "8-slot Multi-Model Agent Orchestrator (AO) closed-loop workflow: isolated worktree + WAL lease, cross-vendor runtime routing across 7 model families, frozen-assertion verification, bounded CI/review reaction, and SHA-256 landing receipt."
     }
   ]
 }

@@ -1,8 +1,8 @@
 {
-  "schemaVersion": "3.0.0",
+  "schemaVersion": "3.2.0",
   "repository": "https://github.com/native-agent-stack/sota-multi-model-workflows",
   "visibility": "PUBLIC",
-  "workflowCount": 10,
+  "workflowCount": 12,
   "workflows": [
     "master-sota-harness",
     "org-compounding-promotion",
@@ -13,12 +13,17 @@
     "early-mover-compounding",
     "rd-agent-hypothesis-bus",
     "cross-peer-orca-review",
-    "skillopt-gepa-evolution"
+    "skillopt-gepa-evolution",
+    "dual-workstation-orca",
+    "multi-model-ao-convergence"
   ],
   "supportedHarnesses": [
     "antigravity",
-    "claude-code",
-    "openai-codex",
+    "claude-code-omc",
+    "openai-codex-omx",
+    "opencode-omo",
+    "pi-omp",
+    "goose",
     "deepseek-dsh",
     "orca"
   ],
@@ -28,7 +33,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 7,
+    "adrCount": 8,
     "records": [
       {
         "id": "ADR-0001",
@@ -124,6 +129,23 @@
           "https://github.com/native-agent-stack/native-agent-stack",
           "https://github.com/native-agent-stack/sota-compounding-lab",
           "https://github.com/native-agent-stack/sota-multi-model-workflows"
+        ]
+      },
+      {
+        "id": "ADR-0008",
+        "layer": "Multi-Model Agent Orchestration, Worktree Isolation & CI Reaction (`L3\u2013L9` \u00d7 `T0\u2013T8`)",
+        "title": "Multi-Model Agent Orchestrator (`AO`) 8-Slot Lifecycle & Reactive Worktree Convergence",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "E4 (Unit Tested, GitHub Actions Verified & Live `run_workflow` Probed)",
+        "file": "docs/adr/ADR-0008-multi-model-ao-lifecycle-and-reactive-worktree-convergence.md",
+        "githubUrls": [
+          "https://github.com/ComposioHQ/agent-orchestrator",
+          "https://github.com/google-antigravity/antigravity-sdk-python",
+          "https://github.com/native-agent-stack/agy-sota-harness",
+          "https://github.com/native-agent-stack/cc-sota-harness",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/stablyai/orca"
         ]
       }
     ]
