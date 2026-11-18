@@ -410,31 +410,37 @@ def run_preflight_summary(live_org: bool = False) -> dict[str, Any]:
 
     doc_bin = home / ".agents" / "bin" / "sota-doctor"
     if doc_bin.is_file():
-        proc = subprocess.run(agent_bin_argv(doc_bin), capture_output=True, text=True, timeout=15, check=False)
         try:
-            dj = json.loads(proc.stdout)
-            out["sota_doctor"] = {
-                "status": dj.get("status"),
-                "checks_passed": dj.get("checks_passed"),
-                "checks_total": dj.get("checks_total"),
-            }
-        except json.JSONDecodeError:
-            out["sota_doctor"] = {"exit_code": proc.returncode}
+            proc = subprocess.run(agent_bin_argv(doc_bin), capture_output=True, text=True, timeout=35, check=False)
+            try:
+                dj = json.loads(proc.stdout)
+                out["sota_doctor"] = {
+                    "status": dj.get("status"),
+                    "checks_passed": dj.get("checks_passed"),
+                    "checks_total": dj.get("checks_total"),
+                }
+            except json.JSONDecodeError:
+                out["sota_doctor"] = {"exit_code": proc.returncode}
+        except (subprocess.TimeoutExpired, OSError):
+            out["sota_doctor"] = {"status": "TIMEOUT_DEGRADED"}
 
     org_bin = home / ".agents" / "bin" / "sota-org-doctor"
     if org_bin.is_file():
         flag = "--live" if live_org else "--offline"
-        proc = subprocess.run(agent_bin_argv(org_bin, flag), capture_output=True, text=True, timeout=30, check=False)
         try:
-            oj = json.loads(proc.stdout)
-            out["sota_org_doctor"] = {
-                "status": oj.get("status"),
-                "mode": oj.get("mode"),
-                "repos_total": oj.get("repos_total"),
-                "violations_count": len(oj.get("violations") or []),
-            }
-        except json.JSONDecodeError:
-            out["sota_org_doctor"] = {"exit_code": proc.returncode}
+            proc = subprocess.run(agent_bin_argv(org_bin, flag), capture_output=True, text=True, timeout=35, check=False)
+            try:
+                oj = json.loads(proc.stdout)
+                out["sota_org_doctor"] = {
+                    "status": oj.get("status"),
+                    "mode": oj.get("mode"),
+                    "repos_total": oj.get("repos_total"),
+                    "violations_count": len(oj.get("violations") or []),
+                }
+            except json.JSONDecodeError:
+                out["sota_org_doctor"] = {"exit_code": proc.returncode}
+        except (subprocess.TimeoutExpired, OSError):
+            out["sota_org_doctor"] = {"status": "TIMEOUT_DEGRADED"}
 
     lock_file = resolve_ecosystem_repo_dir("native-agent-stack") / "ECOSYSTEM_CONVERGENCE_LOCK.json"
     if lock_file.is_file():
