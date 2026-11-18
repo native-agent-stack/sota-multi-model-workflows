@@ -1,6 +1,6 @@
 {
-  "version": "3.4.0",
-  "description": "Canonical v3.4.0 registry of 13 self-bootstrapping SOTA `run_workflow`, Multi-Model `AO` (`Agent Orchestrator`), and 7-Feed `sota-research-feeds.v2` Research-Convergence scripts (`Mac M5 Max <-> Noesis` cross-OS parity). Every script explicitly loads `sota-research-feeds.v2`, `ADR-0004` 3-tier SHA provenance (`PHILOSOPHY_ONLY` sibling-repo authority), live peer leases, handovers, lessons, HLZ trial multiplicity N, `sota-doctor` (11/11), `sota-org-doctor`, and `ECOSYSTEM_CONVERGENCE_LOCK.json` via `_sota_kit.py`.",
+  "version": "3.5.0",
+  "description": "Canonical v3.5.0 registry of 14 self-bootstrapping SOTA `run_workflow`, Claude-Lead Central Multi-Runtime (`OMC`/`OMX`/`Orca`), Multi-Model `AO` (`Agent Orchestrator`), and 7-Feed `sota-research-feeds.v2` Research-Convergence scripts (`Mac M5 Max <-> Noesis` cross-OS parity). Every script explicitly loads `sota-research-feeds.v2`, `ADR-0004` 3-tier SHA provenance (`PHILOSOPHY_ONLY` sibling-repo authority), live peer leases, handovers, lessons, HLZ trial multiplicity N, `sota-doctor`, `sota-org-doctor`, and `ECOSYSTEM_CONVERGENCE_LOCK.json` via `_sota_kit.py`.",
   "workflows": [
     {
       "id": "master-sota-harness",
@@ -211,6 +211,40 @@
         }
       },
       "when_to_use": "End-to-end 4-phase Research-Convergence workflow: ADR-0004 18-repo upstream SHA + 7-feed sota-research-feeds.v2 PIT recon, converged strategy template scaffolding & pre-wall (<=2026-10-15) sim/backtest, parallel RAW/ALL + SEC acceptanceDateTime + FINRA T-1 falsifier & code gate, and :8787/:8799/:4002 paper-lane manifest landing."
+    },
+    {
+      "id": "cc-lead-multi-runtime-workers",
+      "script_path": "~/.agents/workflows/cc_lead_multi_runtime_workers_workflow.py",
+      "skill": "cc-lead-multi-runtime-orchestrator",
+      "agents": [
+        "sota-deep-synthesizer",
+        "sota-falsifier",
+        "sota-code-verifier"
+      ],
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "repo": {"type": "string"},
+          "task_class": {
+            "type": "string",
+            "enum": [
+              "lead_architecture_adr_and_spec",
+              "parallel_worktree_implementation",
+              "cross_family_adversarial_code_and_math_audit",
+              "quant_prewall_hypothesis_falsification",
+              "long_horizon_1m_shelf_and_filing_synthesis",
+              "combinatorial_gpu_sweep"
+            ]
+          },
+          "placement": {
+            "type": "string",
+            "enum": ["auto", "local", "noesis"]
+          },
+          "goal": {"type": "string"},
+          "fast_deterministic_only": {"type": "boolean"}
+        }
+      },
+      "when_to_use": "Claude Code (cc-lead + OMC v2) central multi-session orchestrator synthesizing & verifying 5-channel runtime worker dispatches across omc ultragoal, omc team, omc ask / Codex OMX exec, Orca supervised child worktrees (Mac M5 Max <-> Noesis 64c/RTX4090), OpenCode OMO / DeepSeek DSH / Muse / Grok, and hcom + sota-bus."
     }
   ]
 }

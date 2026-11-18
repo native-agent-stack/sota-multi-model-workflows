@@ -36,6 +36,12 @@ from sota_mmw.ao_lifecycle import (
     qualify_ao_lifecycle_attempt,
     resolve_ao_multi_model_route,
 )
+from sota_mmw.cc_lead_hub import (
+    CC_LEAD_CENTRAL_CONTRACT,
+    RUNTIME_WORKER_ROSTER,
+    CCLeadPlanRequest,
+    build_cc_lead_execution_plan,
+)
 from sota_mmw.peer_bus_schema import PortablePeerBus
 from sota_mmw.promotion_gate import (
     StrategyCandidateManifest,
@@ -100,19 +106,20 @@ class TestMultiModelWorkflows(unittest.TestCase):
     def test_workflow_registry_ast_and_merge_gate(self) -> None:
         reg = json.loads((ROOT / "workflows" / "REGISTRY.json").read_text(encoding="utf-8"))
         manifest = json.loads((ROOT / "SOTA_WORKFLOW_MANIFEST.json").read_text(encoding="utf-8"))
-        self.assertEqual(reg["version"], "3.4.0")
-        self.assertEqual(manifest["schemaVersion"], "3.4.0")
-        self.assertEqual(len(reg["workflows"]), 13)
-        self.assertEqual(manifest["workflowCount"], 13)
+        self.assertEqual(reg["version"], "3.5.0")
+        self.assertEqual(manifest["schemaVersion"], "3.5.0")
+        self.assertEqual(len(reg["workflows"]), 14)
+        self.assertEqual(manifest["workflowCount"], 14)
         ids = [w["id"] for w in reg["workflows"]]
         self.assertEqual(ids, manifest["workflows"])
         self.assertIn("multi-model-ao-convergence", ids)
         self.assertIn("dual-workstation-orca", ids)
         self.assertIn("research-convergence-landing", ids)
+        self.assertIn("cc-lead-multi-runtime-workers", ids)
 
         expected_keys = {"id", "script_path", "skill", "agents", "args_schema", "when_to_use"}
         top_level_wf_files = sorted(p for p in (ROOT / "workflows").glob("*.py") if not p.name.startswith("_"))
-        self.assertEqual(len(top_level_wf_files), 13)
+        self.assertEqual(len(top_level_wf_files), 14)
 
         for wf in reg["workflows"]:
             self.assertEqual(set(wf.keys()), expected_keys)
@@ -628,6 +635,107 @@ class TestMultiModelWorkflows(unittest.TestCase):
             self.assertTrue(
                 detect_disjoint_peer_lease("sota-mmw", session_id="s2", db_path=db_file, requested_paths=["docs/*"])
             )
+
+    def test_cc_lead_central_orchestrator_and_workflow_14(self) -> None:
+        self.assertEqual(CC_LEAD_CENTRAL_CONTRACT["lead_runtime"], "claude")
+        self.assertEqual(CC_LEAD_CENTRAL_CONTRACT["lead_model_id"], "claude-fable-5-2")
+        self.assertTrue(CC_LEAD_CENTRAL_CONTRACT["one_model_per_conversation"])
+        self.assertGreaterEqual(len(RUNTIME_WORKER_ROSTER), 9)
+
+        with tempfile.TemporaryDirectory() as td:
+            db_file = Path(td) / "peer_bus.db"
+            bus = PortablePeerBus(db_file)
+
+            # 1. Valid Noesis GPU sweep routes to noesis_64c_rtx4090 with >=3 canonical vendors
+            plan = build_cc_lead_execution_plan(
+                CCLeadPlanRequest(
+                    repo="sota-compounding-lab",
+                    goal="Run pre-wall CPCV sweep with Claude OMC lead, Codex OMX critic & DeepSeek DSH batch",
+                    task_class="combinatorial_gpu_sweep",
+                    placement="auto",
+                    session_id="cc-lead-1",
+                ),
+                mesh_state="dual_mesh_docked",
+                bus_db_path=db_file,
+            )
+            self.assertEqual(plan["target_host"], "noesis_64c_rtx4090")
+            self.assertEqual(plan["orca_repo_selector"], "id:46980ada-367d-4ba8-a487-a44940db96fd")
+            self.assertGreaterEqual(plan["canonical_vendors_count"], 3)
+            self.assertTrue(plan["isolation_and_lease"]["lease_disjoint"])
+            self.assertIn("OMC_RUNTIME_V2=1", plan["channels"]["2_omc_team_swarm_cmd"])
+            self.assertIn("omc ultragoal create-goals", plan["channels"]["1_cc_lead_ultragoal_cmd"])
+            self.assertEqual(len(plan["channels"]["4_orca_supervised_worker_dispatches"]), 3)
+
+            # 2. Foreign overlapping lease flips lease_disjoint=False
+            bus.claim_lease("sota-compounding-lab", "agy", "foreign-peer", ["src/*"], "active edit")
+            plan_blocked = build_cc_lead_execution_plan(
+                CCLeadPlanRequest(
+                    repo="sota-compounding-lab",
+                    goal="Edit src/sota_compounding",
+                    task_class="lead_architecture_adr_and_spec",
+                    session_id="cc-lead-1",
+                    requested_paths=("src/sota_compounding/engine.py",),
+                ),
+                bus_db_path=db_file,
+            )
+            self.assertFalse(plan_blocked["isolation_and_lease"]["lease_disjoint"])
+
+            # 3. Hephaestus GPT model, post-wall prewall date, and live broker endpoints fail closed
+            with self.assertRaises(ValueError):
+                build_cc_lead_execution_plan(
+                    CCLeadPlanRequest(
+                        repo="cc-sota-harness",
+                        goal="Refactor modules",
+                        hephaestus_model_override="gpt-6.2-astra",
+                    ),
+                    bus_db_path=db_file,
+                )
+            with self.assertRaises(ValueError):
+                build_cc_lead_execution_plan(
+                    CCLeadPlanRequest(
+                        repo="sota-compounding-lab",
+                        goal="Test factor",
+                        task_class="quant_prewall_hypothesis_falsification",
+                        study_end_date="2026-11-01",
+                    ),
+                    bus_db_path=db_file,
+                )
+            with self.assertRaises(PermissionError):
+                build_cc_lead_execution_plan(
+                    CCLeadPlanRequest(
+                        repo="astrolabe",
+                        goal="Connect IBKR port=4001",
+                    ),
+                    bus_db_path=db_file,
+                )
+
+        # 4. Execute Workflow #14 in <workflow> namespace without __file__
+        wf14 = ROOT / "workflows" / "cc_lead_multi_runtime_workers_workflow.py"
+        src14 = wf14.read_text(encoding="utf-8")
+        code14 = compile(src14, "<workflow>", "exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+        ns14: dict[str, object] = {
+            "__name__": "__main__",
+            "args": {
+                "repo": "cc-sota-harness",
+                "task_class": "cross_family_adversarial_code_and_math_audit",
+                "fast_deterministic_only": True,
+            },
+            "log": lambda *_a: None,
+            "phase": lambda *_a: None,
+        }
+        buf14 = io.StringIO()
+        with (
+            mock.patch.object(kit, "run_preflight_summary", return_value={"sota_doctor": {"status": "PASS"}}),
+            mock.patch.object(kit, "record_workflow_run") as rec14,
+            redirect_stdout(buf14),
+        ):
+            r14 = eval(code14, ns14)
+            if isinstance(r14, types.CoroutineType):
+                asyncio.run(r14)
+        out14 = json.loads(buf14.getvalue())
+        self.assertEqual(out14["cc_lead_plan"]["schema_version"], "sota-cc-lead-hub.v1")
+        self.assertEqual(len(out14["cc_lead_plan"]["plan_sha256"]), 64)
+        rec14.assert_called_once()
 
 
 if __name__ == "__main__":
