@@ -18,15 +18,21 @@ phase("Phase 1: Dual-Machine Orca Mesh Telemetry & Preflight")
 
 peer_brief = kit.load_peer_brief(target_repo)
 preflight = kit.run_preflight_summary(live_org=False)
-ws_bin = str(Path.home() / ".agents" / "bin" / "sota-workstation")
+ws_bin = Path.home() / ".agents" / "bin" / "sota-workstation"
 
-st_proc = subprocess.run([ws_bin, "status", "--json"], capture_output=True, text=True, timeout=15, check=False)
+st_proc = subprocess.run(
+    kit.agent_bin_argv(ws_bin, "status", "--json"),
+    capture_output=True,
+    text=True,
+    timeout=15,
+    check=False,
+)
 ws_status = json.loads(st_proc.stdout) if st_proc.returncode == 0 else {"ok": False, "stderr": st_proc.stderr}
 
 sync_receipt: dict[str, object] | None = None
 if sync_repos:
     sy_proc = subprocess.run(
-        [ws_bin, "sync", "--repo", target_repo, "--json"],
+        kit.agent_bin_argv(ws_bin, "sync", "--repo", target_repo, "--json"),
         capture_output=True,
         text=True,
         timeout=25,

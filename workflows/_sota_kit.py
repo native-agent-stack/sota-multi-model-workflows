@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -167,6 +168,14 @@ def format_research_convergence_brief(rc: dict[str, Any] | None = None) -> str:
     )
 
 
+def agent_bin_argv(bin_path: Path | str, *args: str) -> list[str]:
+    """Build cross-OS (`darwin` / `linux` / `win32`) subprocess argv for `~/.agents/bin/*` scripts."""
+    p_str = str(bin_path)
+    if os.name == "nt" and not p_str.lower().endswith((".exe", ".cmd", ".bat")):
+        return [sys.executable, p_str, *args]
+    return [p_str, *args]
+
+
 def run_preflight_summary(live_org: bool = False) -> dict[str, Any]:
     """Run deterministic local + org preflight checks (`sota-doctor`, `sota-org-doctor`, umbrella lock)."""
     home = Path.home()
@@ -178,7 +187,7 @@ def run_preflight_summary(live_org: bool = False) -> dict[str, Any]:
 
     doc_bin = home / ".agents" / "bin" / "sota-doctor"
     if doc_bin.is_file():
-        proc = subprocess.run([str(doc_bin)], capture_output=True, text=True, timeout=15, check=False)
+        proc = subprocess.run(agent_bin_argv(doc_bin), capture_output=True, text=True, timeout=15, check=False)
         try:
             dj = json.loads(proc.stdout)
             out["sota_doctor"] = {
@@ -192,7 +201,7 @@ def run_preflight_summary(live_org: bool = False) -> dict[str, Any]:
     org_bin = home / ".agents" / "bin" / "sota-org-doctor"
     if org_bin.is_file():
         flag = "--live" if live_org else "--offline"
-        proc = subprocess.run([str(org_bin), flag], capture_output=True, text=True, timeout=30, check=False)
+        proc = subprocess.run(agent_bin_argv(org_bin, flag), capture_output=True, text=True, timeout=30, check=False)
         try:
             oj = json.loads(proc.stdout)
             out["sota_org_doctor"] = {

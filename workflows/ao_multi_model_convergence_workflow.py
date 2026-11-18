@@ -59,7 +59,13 @@ ws_bin = Path.home() / ".agents" / "bin" / "sota-workstation"
 mesh_state = "portable_roaming_ac"
 ws_summary: dict[str, object] = {"available": False}
 if ws_bin.is_file():
-    ws_proc = subprocess.run([str(ws_bin), "status", "--json"], capture_output=True, text=True, timeout=15, check=False)
+    ws_proc = subprocess.run(
+        kit.agent_bin_argv(ws_bin, "status", "--json"),
+        capture_output=True,
+        text=True,
+        timeout=15,
+        check=False,
+    )
     if ws_proc.returncode == 0:
         try:
             ws_json = json.loads(ws_proc.stdout)
