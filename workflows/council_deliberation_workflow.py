@@ -13,10 +13,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path.home() / ".agents" / "workflows"))
 import _sota_kit as kit
 
-cfg = args or {}  # noqa: F821
+cfg = kit.get_workflow_args(globals())
 question = str(
-    cfg.get("question")
-    or "Audit the current workspace architecture and recommend the highest-leverage next step."
+    cfg.get("question") or "Audit the current workspace architecture and recommend the highest-leverage next step."
 )
 repo_hint = str(cfg.get("repo") or "")
 scope_note = f"Target repository: ~/Documents/{repo_hint}. " if repo_hint else ""
@@ -89,9 +88,7 @@ perspectives = await parallel(  # noqa: F821
 )
 
 for idx, p in enumerate(perspectives, start=1):
-    log(
-        f"--- Seat #{idx} ({seats[idx - 1][0]}) [{p['evidence_grade']}] ---\n{json.dumps(p, indent=2)}"
-    )  # noqa: F821
+    log(f"--- Seat #{idx} ({seats[idx - 1][0]}) [{p['evidence_grade']}] ---\n{json.dumps(p, indent=2)}")  # noqa: F821
 
 phase("Phase 2: Disagreement Surfacing & Adjudicated Verdict")  # noqa: F821
 
@@ -110,8 +107,7 @@ kit.record_workflow_run(
     repo=repo_hint or "council-deliberation",
     workflow_id="council",
     done_summary=f"[{verdict['evidence_grade']}] {verdict['bluf_decision']}",
-    verified_by="; ".join(verdict["verification_gate_commands"][:3])
-    or "council-adjudicated",
+    verified_by="; ".join(verdict["verification_gate_commands"][:3]) or "council-adjudicated",
     next_priority=verdict["next_priority"],
 )
 

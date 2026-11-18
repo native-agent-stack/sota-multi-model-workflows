@@ -1,15 +1,16 @@
 {
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "3.0.0",
   "repository": "https://github.com/native-agent-stack/sota-multi-model-workflows",
   "visibility": "PUBLIC",
-  "workflowCount": 9,
+  "workflowCount": 10,
   "workflows": [
     "master-sota-harness",
+    "org-compounding-promotion",
+    "ecosystem-convergence",
     "council-deliberation",
     "autoresearch-loop",
     "security-and-release-gate",
     "early-mover-compounding",
-    "ecosystem-convergence",
     "rd-agent-hypothesis-bus",
     "cross-peer-orca-review",
     "skillopt-gepa-evolution"
@@ -27,7 +28,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 6,
+    "adrCount": 7,
     "records": [
       {
         "id": "ADR-0001",
@@ -109,6 +110,20 @@
           "https://github.com/actions/checkout",
           "https://github.com/native-agent-stack/.github",
           "https://github.com/step-security/harden-runner"
+        ]
+      },
+      {
+        "id": "ADR-0007",
+        "layer": "Workflow Orchestration & Org Governance (`L5` \u00d7 `L8` \u00d7 `T1\u2013T8`)",
+        "title": "Ten-Workflow v3.0.0 Convergence, Deterministic Preflight & 5-Stage Org Promotion",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "E4 (10 Workflows & Live `run_workflow` Verified)",
+        "file": "docs/adr/ADR-0007-v3-ten-workflow-compounding-and-org-convergence.md",
+        "githubUrls": [
+          "https://github.com/native-agent-stack/native-agent-stack",
+          "https://github.com/native-agent-stack/sota-compounding-lab",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows"
         ]
       }
     ]

@@ -8,35 +8,22 @@ Pass `Args={"goal": "...", "repo": "optional-repo-name", "mode": "research|engin
 """
 
 import json
-import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path.home() / ".agents" / "workflows"))
 import _sota_kit as kit
 
-cfg = args or {}  # noqa: F821
-goal = str(
-    cfg.get("goal")
-    or "Audit active workspace health, verify SOTA gates, and identify highest-EV next step."
-)
-repo = str(cfg.get("repo") or (Path(WORKSPACES[0]).name if WORKSPACES else ""))  # noqa: F821
+cfg = kit.get_workflow_args(globals())
+goal = str(cfg.get("goal") or "Audit active workspace health, verify SOTA gates, and identify highest-EV next step.")
+ws0 = kit.get_primary_workspace(globals())
+repo = str(cfg.get("repo") or (Path(ws0).name if ws0 else ""))
 mode = str(cfg.get("mode") or "quant-trading")
 
-# Phase 0: Deterministic Python Self-Bootstrap (Peer Bus + sota-doctor Preflight)
+# Phase 0: Deterministic Python Self-Bootstrap (Peer Bus + sota-doctor + sota-org-doctor + Umbrella Lock)
 peer_brief = kit.load_peer_brief(repo)
-doc_proc = subprocess.run(
-    [str(Path.home() / ".agents" / "bin" / "sota-doctor")],
-    capture_output=True,
-    text=True,
-    timeout=10,
-    check=False,
-)
-try:
-    doc_json = json.loads(doc_proc.stdout)
-    doctor_line = f"[sota-doctor preflight: {doc_json.get('status')} ({doc_json.get('checks_passed')}/{doc_json.get('checks_total')})]"
-except json.JSONDecodeError:
-    doctor_line = f"[sota-doctor preflight exit={doc_proc.returncode}]"
+preflight = kit.run_preflight_summary(live_org=False)
+doctor_line = f"[v3.0.0 preflight: {json.dumps(preflight)}]"
 
 bootstrap_header = f"{doctor_line}\n{peer_brief}"
 log(bootstrap_header)  # noqa: F821
@@ -166,12 +153,8 @@ kit.record_workflow_run(
     repo=repo or "sota-master-workflow",
     workflow_id="master-sota-harness",
     done_summary=f"[{audits[1]['verdict']}/{audits[1]['evidence_grade']}] {exec_out['summary'][:240]}",
-    verified_by="; ".join((audits[1]["gate_receipts"] + audits[0]["gate_receipts"])[:4])
-    or "falsifier+verifier",
-    open_risks="; ".join(
-        (audits[0]["confirmed_issues"] + audits[1]["confirmed_issues"])[:3]
-    )
-    or "none",
+    verified_by="; ".join((audits[1]["gate_receipts"] + audits[0]["gate_receipts"])[:4]) or "falsifier+verifier",
+    open_risks="; ".join((audits[0]["confirmed_issues"] + audits[1]["confirmed_issues"])[:3]) or "none",
     next_priority=audits[1]["next_priority"] or audits[0]["next_priority"],
 )
 

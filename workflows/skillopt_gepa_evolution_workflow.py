@@ -14,9 +14,7 @@ phase("1. Zero-Copy In-Session Trajectory & Historical Friction Scan")
 
 steps = await trajectory(last=40)
 error_slices = [
-    {"index": s.index, "tool": s.tool, "head": (s.output or "")[:240]}
-    for s in steps
-    if s.status == "ERROR"
+    {"index": s.index, "tool": s.tool, "head": (s.output or "")[:240]} for s in steps if s.status == "ERROR"
 ]
 cleared_cnt = sum(1 for s in steps if s.status == "CLEARED")
 log(f"Trajectory slice: {len(steps)} steps, {len(error_slices)} errors, {cleared_cnt} cleared.")

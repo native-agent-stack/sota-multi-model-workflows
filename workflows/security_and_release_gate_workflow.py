@@ -11,8 +11,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path.home() / ".agents" / "workflows"))
 import _sota_kit as kit
 
-cfg = args or {}  # noqa: F821
-repo_path = str(cfg.get("repo_path") or (WORKSPACES[0] if WORKSPACES else "."))  # noqa: F821
+cfg = kit.get_workflow_args(globals())
+repo_path = str(cfg.get("repo_path") or kit.get_primary_workspace(globals(), "."))
 repo_name = Path(repo_path).resolve().name
 peer_brief = kit.load_peer_brief(repo_name)
 
@@ -89,9 +89,7 @@ kit.record_workflow_run(
     done_summary=f"Release Gate {final_report['gate_verdict']}: {final_report['deterministic_checks_summary'][:180]}",
     verified_by=f"P0-P2={len(final_report['confirmed_p0_p2_defects'])}, P3={len(final_report['recorded_minor_p3'])}, Refuted={len(final_report['refuted_false_positives'])}",
     open_risks="; ".join(final_report["confirmed_p0_p2_defects"][:2]) or "none",
-    next_priority="Fix P0-P2 blockers"
-    if final_report["confirmed_p0_p2_defects"]
-    else "Ready for cited PR/merge",
+    next_priority="Fix P0-P2 blockers" if final_report["confirmed_p0_p2_defects"] else "Ready for cited PR/merge",
 )
 
 out_text = json.dumps(final_report, indent=2)

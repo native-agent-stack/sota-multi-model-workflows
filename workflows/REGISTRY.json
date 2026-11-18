@@ -1,6 +1,6 @@
 {
-  "version": "1.1.0",
-  "description": "Canonical registry of self-bootstrapping SOTA `run_workflow` scripts. Every script automatically loads live peer leases, handovers, lessons, and HLZ trial multiplicity N via `_sota_kit.py` and writes completion checkpoints back to `~/.agents/bus/peer_bus.db`.",
+  "version": "3.0.0",
+  "description": "Canonical v3.0.0 registry of 10 self-bootstrapping SOTA `run_workflow` scripts. Every script automatically loads live peer leases, handovers, lessons, HLZ trial multiplicity N, `sota-doctor`, `sota-org-doctor`, and `ECOSYSTEM_CONVERGENCE_LOCK.json` via `_sota_kit.py` and writes completion checkpoints back to `~/.agents/bus/peer_bus.db`.",
   "workflows": [
     {
       "id": "master-sota-harness",
@@ -17,6 +17,35 @@
         "required": ["goal"]
       },
       "when_to_use": "Unified 5-phase end-to-end native workflow harnessing all 4 MCP servers, skills, execution, adversarial falsification, two-pass verification, and peer-bus handover."
+    },
+    {
+      "id": "org-compounding-promotion",
+      "script_path": "~/.agents/workflows/org_compounding_promotion_workflow.py",
+      "skill": "sota-workflow",
+      "agents": ["sota-falsifier", "sota-code-verifier", "sota-deep-synthesizer"],
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "strategy_id": {"type": "string"},
+          "broker_lane": {"type": "string", "enum": ["ALPACA_PAPER", "IBKR_PAPER"]},
+          "live_org": {"type": "boolean"}
+        }
+      },
+      "when_to_use": "End-to-end 5-stage quantitative promotion workflow (Meridian Sim -> Pre-Wall <=2026-10-15 -> Alpaca 200/min & IBKR :4002 Paper -> Empirical-Bayes Shrinkage -> SHA-256 Broker Manifest + 4-invariant sota-org-doctor)."
+    },
+    {
+      "id": "ecosystem-convergence",
+      "script_path": "~/.agents/workflows/ecosystem_convergence_workflow.py",
+      "skill": "sota-peer-bus-and-handover",
+      "agents": ["sota-code-verifier", "sota-deep-synthesizer"],
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "fast_deterministic_only": {"type": "boolean"},
+          "live_org": {"type": "boolean"}
+        }
+      },
+      "when_to_use": "Deterministic 13/13 AGY + 10/10 DSH + v3.0.0 Umbrella + 22-repo sota-org-doctor audit (supports instant <2s fast_deterministic_only mode or full parallel verifier/synthesizer review)."
     },
     {
       "id": "council-deliberation",
@@ -72,17 +101,6 @@
         "properties": {}
       },
       "when_to_use": "Parallel audit of Pre-Travel Early Movers, 200 req/min Alpaca Paper fills/slippage, and Adversarial Falsifier checks."
-    },
-    {
-      "id": "ecosystem-convergence",
-      "script_path": "~/.agents/workflows/ecosystem_convergence_workflow.py",
-      "skill": "sota-peer-bus-and-handover",
-      "agents": ["research"],
-      "args_schema": {
-        "type": "object",
-        "properties": {}
-      },
-      "when_to_use": "Parallel convergence audit across agy-sota-harness, dsh-sota-harness, sota-mover-ranker, and live peer-bus/sota-doctor checks."
     },
     {
       "id": "rd-agent-hypothesis-bus",

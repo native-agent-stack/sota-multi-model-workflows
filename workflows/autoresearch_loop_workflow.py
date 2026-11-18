@@ -11,12 +11,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path.home() / ".agents" / "workflows"))
 import _sota_kit as kit
 
-cfg = args or {}  # noqa: F821
+cfg = kit.get_workflow_args(globals())
 repo = str(cfg.get("repo") or "sota-mover-ranker")
 hyp_id = str(cfg.get("hypothesis_id") or "H_AUTO_CANDIDATE")
 hyp_prompt = str(
-    cfg.get("hypothesis")
-    or "Identify the next highest-lift pre-wall microstructure hypothesis from prior lessons."
+    cfg.get("hypothesis") or "Identify the next highest-lift pre-wall microstructure hypothesis from prior lessons."
 )
 peer_brief = kit.load_peer_brief(repo)
 
@@ -76,11 +75,9 @@ phase("Stage 1: Prior Search & Immutable SHA-256 Pre-Registration")  # noqa: F82
 
 spec = await agent(  # noqa: F821
     f"{peer_brief}\n\nTarget repo: ~/Documents/{repo} | Candidate ID: {hyp_id}\nGoal: {hyp_prompt}\n"
-    '1. Search `~/.agents/bin/sota-bus search "'
-    + hyp_id
-    + '"` and check UPSTREAM.md.\n'
+    '1. Search `~/.agents/bin/sota-bus search "' + hyp_id + '"` and check UPSTREAM.md.\n'
     "2. Pre-register the immutable spec via `~/.agents/bin/sota-bus preregister` BEFORE reading check/OOS data.\n"
-    "3. Respect pre-wall boundaries (<=2026-10-15 in sota-mover-ranker; held-out lock in edge).",
+    "3. Respect pre-wall boundaries (strictly <=2026-10-15 across all SOTA research & compounding repos).",
     schema=SPEC_SCHEMA,
     role="RD-Agent Pre-Registration Architect",
     type_name="sota-rd-proposer",
@@ -122,8 +119,6 @@ kit.record_workflow_run(
     next_priority=falsification["next_iteration"],
 )
 
-out_text = json.dumps(
-    {"spec": spec, "metrics": emp_result, "adjudication": falsification}, indent=2
-)
+out_text = json.dumps({"spec": spec, "metrics": emp_result, "adjudication": falsification}, indent=2)
 log(out_text)  # noqa: F821
 print(out_text)

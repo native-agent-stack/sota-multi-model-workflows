@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import sys
@@ -22,7 +23,14 @@ SHA_PIN_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+@[0-9a-f]{40}$")
 
 def main() -> int:
     errors: list[str] = []
-    tracked = subprocess.run(["git", "-C", str(ROOT), "ls-files"], capture_output=True, text=True, check=True)
+    clean_env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    tracked = subprocess.run(
+        ["git", "-C", str(ROOT), "ls-files"],
+        capture_output=True,
+        text=True,
+        check=True,
+        env=clean_env,
+    )
     for rel in (ln.strip() for ln in tracked.stdout.splitlines() if ln.strip()):
         fp = ROOT / rel
         if not fp.is_file():
@@ -43,6 +51,7 @@ def main() -> int:
         capture_output=True,
         text=True,
         check=False,
+        env=clean_env,
     )
     if cat.returncode != 0:
         errors.append(f"ADR catalog gate failed: {cat.stderr or cat.stdout}")

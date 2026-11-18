@@ -1,79 +1,103 @@
 # ruff: noqa: E402, F704, F821, PLE1142
-"""AGY SOTA Schema-Typed `run_workflow`: Full-Ecosystem Triad & Peer-Bus Convergence Audit (`L0-L12`)."""
+"""AGY SOTA `run_workflow` (`v3.0.0`): Full-Ecosystem, 22-Repo Org Firewall & Harness Probe Convergence."""
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path.home() / ".agents" / "workflows"))
 import _sota_kit as kit
 
-peer_brief = kit.load_peer_brief("agy-sota-harness")
-log(peer_brief)
+cfg = kit.get_workflow_args(globals())
+live_org = bool(cfg.get("live_org", False))
+fast_deterministic_only = bool(cfg.get("fast_deterministic_only", False))
 
-TARGETS = [
-    ("agy-sota-harness", "Run `python3 harness/run_probes.py` and verify 13/13 L0-L12 probes pass."),
-    ("dsh-sota-harness", "Verify README.md L0-L9 anchors and clean `git status --short`."),
-    ("sota-mover-ranker", "Run `python3 scripts/merge_gate.py` and verify 18/18 shelf pins & privacy gates pass."),
-    ("peer-bus-and-skills", "Inspect `~/.agents/bin/sota-bus status`, `~/.agents/bin/sota-doctor`, and `~/.agents/bin/sota-core convergence`."),
+phase("Phase 1: Deterministic Local, Org & Harness Probe Execution")
+
+peer_brief = kit.load_peer_brief("native-agent-stack")
+preflight = kit.run_preflight_summary(live_org=live_org)
+
+docs = Path.home() / "Documents"
+probe_cmds = [
+    ("agy-sota-harness-13-probes", ["python3", str(docs / "agy-sota-harness" / "harness" / "run_probes.py")]),
+    ("dsh-sota-harness-10-probes", ["node", str(docs / "dsh-sota-harness" / "harness" / "run-probes.mjs")]),
+    (
+        "umbrella-v3-lock",
+        ["python3", str(docs / "native-agent-stack" / "scripts" / "architecture_catalog.py"), "--check"],
+    ),
 ]
 
-TARGET_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "surface": {"type": "string"},
-        "healthy": {"type": "boolean"},
-        "evidence": {"type": "string"},
-        "blockers": {"type": "array", "items": {"type": "string"}},
-    },
-    "required": ["surface", "healthy", "evidence", "blockers"],
+probe_receipts: list[dict[str, object]] = []
+for name, cmd in probe_cmds:
+    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=20, check=False)
+    tail = (proc.stdout or proc.stderr or "").strip().splitlines()[-2:]
+    probe_receipts.append({"probe": name, "ok": proc.returncode == 0, "tail": " | ".join(tail)})
+
+all_deterministic_ok = (
+    isinstance(preflight.get("sota_doctor"), dict)
+    and preflight["sota_doctor"].get("status") == "PASS"
+    and isinstance(preflight.get("sota_org_doctor"), dict)
+    and preflight["sota_org_doctor"].get("status") == "PASS"
+    and all(bool(r["ok"]) for r in probe_receipts)
+)
+
+deterministic_bundle = {
+    "all_deterministic_ok": all_deterministic_ok,
+    "preflight": preflight,
+    "probe_receipts": probe_receipts,
 }
+log(json.dumps(deterministic_bundle, indent=2))
 
-phase("Parallel Full-Ecosystem Harness & Peer-Bus Audit")
+if fast_deterministic_only:
+    kit.record_workflow_run(
+        repo="native-agent-stack",
+        workflow_id="ecosystem-convergence-fast",
+        done_summary=f"Deterministic v3.0.0 Convergence PASS={all_deterministic_ok} (live_org={live_org})",
+        verified_by="; ".join(f"{r['probe']}:{r['ok']}" for r in probe_receipts),
+        next_priority="Ready for autonomous research & paper compounding",
+    )
+    print(json.dumps(deterministic_bundle, indent=2))
+else:
+    SUMMARY_SCHEMA = {
+        "type": "object",
+        "properties": {
+            "all_converged": {"type": "boolean"},
+            "executive_brief": {"type": "string"},
+            "open_risks": {"type": "array", "items": {"type": "string"}},
+            "next_actions": {"type": "array", "items": {"type": "string"}},
+        },
+        "required": ["all_converged", "executive_brief", "open_risks", "next_actions"],
+    }
 
-results = await parallel(
-    TARGETS,
-    lambda item: agent(
-        f"{peer_brief}\n\n"
-        f"Audit surface `{item[0]}` (strictly read-only; never print keys, PA/DU IDs, or balances): {item[1]}",
-        schema=TARGET_SCHEMA,
-        role=f"Audit {item[0]}",
-        type_name="research",
-        model="flash",
-    ),
-)
+    phase("Phase 2: Parallel Verifier & Deep-Synthesizer Adjudication")
 
-for r in results:
-    log(f"[{r['surface']}] healthy={r['healthy']} | {r['evidence']}")
+    reviews = await parallel(
+        [
+            (
+                "Harness & Org Firewall Verifier",
+                "sota-code-verifier",
+                f"{peer_brief}\n\nDeterministic Receipts:\n{json.dumps(deterministic_bundle, indent=2)}\n"
+                "Verify zero regressions across L0-L12 probes, MADR 4.0 catalogs, and the 22-repo Three-Tier org boundary.",
+            ),
+            (
+                "Cross-Peer Continuity & Next-Move Synthesizer",
+                "sota-deep-synthesizer",
+                f"{peer_brief}\n\nDeterministic Receipts:\n{json.dumps(deterministic_bundle, indent=2)}\n"
+                "Synthesize convergence posture and recommend the highest-EV next pre-wall or compounding action.",
+            ),
+        ],
+        lambda item: agent(item[2], schema=SUMMARY_SCHEMA, role=item[0], type_name=item[1]),
+    )
 
-SUMMARY_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "all_converged": {"type": "boolean"},
-        "healthy_count": {"type": "integer"},
-        "executive_brief": {"type": "string"},
-        "next_actions": {"type": "array", "items": {"type": "string"}},
-    },
-    "required": ["all_converged", "healthy_count", "executive_brief", "next_actions"],
-}
-
-phase("Convergence Verdict")
-
-verdict = await agent(
-    f"{peer_brief}\n\n"
-    f"Synthesize these {len(results)} harness convergence checks into a crisp executive verdict:\n{json.dumps(results)}",
-    schema=SUMMARY_SCHEMA,
-    role="SOTA Ecosystem Judge",
-    type_name="research",
-)
-
-kit.record_workflow_run(
-    repo="agy-sota-harness",
-    workflow_id="ecosystem-convergence",
-    done_summary=f"converged={verdict['all_converged']} ({verdict['healthy_count']}/{len(TARGETS)}): {verdict['executive_brief'][:320]}",
-    verified_by="; ".join(f"{r['surface']}:{r['healthy']}" for r in results),
-    next_priority=verdict["next_actions"][0] if verdict["next_actions"] else "Monitor peer convergence",
-)
-
-log(verdict["executive_brief"])
-print(verdict)
+    verdict = reviews[1]
+    kit.record_workflow_run(
+        repo="native-agent-stack",
+        workflow_id="ecosystem-convergence",
+        done_summary=f"converged={verdict['all_converged']}: {verdict['executive_brief'][:320]}",
+        verified_by="; ".join(f"{r['probe']}:{r['ok']}" for r in probe_receipts),
+        open_risks="; ".join(verdict["open_risks"][:2]) or "none",
+        next_priority=verdict["next_actions"][0] if verdict["next_actions"] else "Monitor peer bus",
+    )
+    log(verdict["executive_brief"])
+    print(json.dumps({"deterministic": deterministic_bundle, "reviews": reviews}, indent=2))
