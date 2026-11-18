@@ -14,6 +14,7 @@ SECRET_PATTERNS = (
     ("Alpaca Key Prefix", re.compile(r"\b(?:AK|PK)[0-9A-Z]{16,28}\b")),
     ("Private Key Header", re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----")),
     ("Local Home Path", re.compile(r"/" + r"Users/[A-Za-z0-9._-]+/")),
+    ("Unescaped Single-Brace GH Expression", re.compile(r"\$\{\s*github\.")),
 )
 USES_RE = re.compile(r"^\s*-?\s*uses:\s*([^#\s]+)", re.MULTILINE)
 SHA_PIN_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+@[0-9a-f]{40}$")

@@ -10,13 +10,13 @@ permissions: {}
 
 concurrency:
   group: mmw-ci-${{ github.ref }}
-  cancel-in-progress: ${ github.event_name == 'pull_request' }
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   org-reusable-gate:
     permissions:
       contents: read
-    uses: native-agent-stack/.github/.github/workflows/reusable-sota-gate.yml@4fe823289ed3eae6ecf2c3fa38217002f5ea4f6f
+    uses: native-agent-stack/.github/.github/workflows/reusable-sota-gate.yml@7db7d438d5c1c07b1d9d5c5bcaec35f2552d8b8d
 
   verify-matrix:
     runs-on: ubuntu-24.04
