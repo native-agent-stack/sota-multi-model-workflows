@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "3.9.8",
+  "schemaVersion": "3.9.9",
   "repository": "https://github.com/native-agent-stack/sota-multi-model-workflows",
   "visibility": "PUBLIC",
   "workflowCount": 18,
@@ -39,7 +39,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 20,
+    "adrCount": 21,
     "records": [
       {
         "id": "ADR-0001",
@@ -343,6 +343,22 @@
         "githubUrls": [
           "https://github.com/Yeachan-Heo/oh-my-claudecode",
           "https://github.com/gastownhall/beads",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/stablyai/orca",
+          "https://github.com/tobi/qmd"
+        ]
+      },
+      {
+        "id": "ADR-0021",
+        "layer": "Multi-Model Runtime Routing, Memory & Cross-Workstation Automation (`L3` x `L5` x `L7` x `L10` x `L11` x `L13`)",
+        "title": "v3.9.9 Post-Restart CC-Lead Live-Route Audit, OMC 5.8.6 Compiled dist/ Callbacks, CreateProcessW Chunked Sync & 2,325-Vector qmd Embed",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "E4 (Live `cc-lead` Route Smoke `#173`/`#179`/`#180`, Compiled OMC `5.8.6` `dist/` Callback `#178`, `2,325` `qmd` Vectors & `24h` Chunked E2EE Sync Verified)",
+        "file": "docs/adr/ADR-0021-v399-post-restart-cc-lead-live-route-audit-omc-dist-createprocessw-chunked-sync-and-qmd-vectors.md",
+        "githubUrls": [
+          "https://github.com/Yeachan-Heo/oh-my-claudecode",
+          "https://github.com/can1357/oh-my-pi",
           "https://github.com/native-agent-stack/sota-multi-model-workflows",
           "https://github.com/stablyai/orca",
           "https://github.com/tobi/qmd"

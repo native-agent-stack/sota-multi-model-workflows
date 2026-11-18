@@ -461,9 +461,9 @@ def select_workflow_and_skills(
         "cc_lead_omc_team": cc_plan["channels"]["2_omc_team_swarm_cmd"],
         "cc_lead_ultragoal": cc_plan["channels"]["1_cc_lead_ultragoal_cmd"],
         "codex_omx_exec": f"omx exec -c 'model=\"gpt-6.2-astra\"' {safe_goal}",
-        "opencode_omo_hephaestus": f"opencode run -m moonshot/kimi-k3.1-pro {safe_goal}",
-        "deepseek_dsh_prewall": f"dsh run --profile quant-prewall --prompt {safe_goal}",
-        "pi_omp_role_worker": f"omp --model @worker --effort high {safe_goal}",
+        "opencode_omo_hephaestus": f"opencode run {safe_goal}",
+        "deepseek_dsh_prewall": f"dsh headless {safe_goal}",
+        "pi_omp_role_worker": f"omp --model @worker --thinking=high -p {safe_goal}",
         "goose_autonomous": f"goose run --text {safe_goal}",
     }
 

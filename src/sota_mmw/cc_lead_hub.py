@@ -53,6 +53,8 @@ CC_LEAD_CENTRAL_CONTRACT: dict[str, Any] = {
         "OMC_GROK_DEFAULT_MODEL": "grok-4.7",
         "OMC_JEV_MAX_EFFORT": "xhigh",
     },
+    "live_authenticated_worker_routes": ("cc-lead", "codex", "antigravity", "opencode", "dsh"),
+    "binary_present_user_auth_pending_routes": ("gemini-cli", "muse", "grok", "goose", "pi", "omp-direct", "ccr"),
 }
 
 RUNTIME_WORKER_ROSTER: dict[str, dict[str, str]] = {
@@ -113,7 +115,7 @@ RUNTIME_WORKER_ROSTER: dict[str, dict[str, str]] = {
     "deepseek-dsh": {
         "binary": "dsh",
         "orca_agent": "opencode",
-        "omc_spec": "1:gemini:verifier",
+        "omc_spec": "1:antigravity:verifier",
         "vendor": "deepseek",
         "model": "deepseek-v4-pro",
         "effort": "high",
@@ -166,7 +168,7 @@ TASK_CLASS_PROFILES: dict[str, dict[str, Any]] = {
         "requires_3vendor_stage3": False,
     },
     "parallel_worktree_implementation": {
-        "omc_team_spec": "1:claude:executor,1:codex:test-engineer,1:antigravity:analyst,1:gemini:verifier",
+        "omc_team_spec": "1:claude:executor,1:codex:test-engineer,1:antigravity:analyst,1:antigravity:verifier",
         "orca_workers": ("claude-sonnet-omc", "codex-sol-omx", "antigravity-carbon", "opencode-kimi-omo"),
         "hephaestus_model": "kimi-k3.1-pro",
         "requires_prewall_lock": False,
@@ -194,7 +196,7 @@ TASK_CLASS_PROFILES: dict[str, dict[str, Any]] = {
         "requires_3vendor_stage3": False,
     },
     "combinatorial_gpu_sweep": {
-        "omc_team_spec": "1:claude:scientist,1:codex:critic,1:gemini:verifier",
+        "omc_team_spec": "1:claude:scientist,1:codex:critic,1:antigravity:verifier",
         "orca_workers": ("claude-opus-falsifier", "codex-astra-omx", "deepseek-dsh"),
         "hephaestus_model": "kimi-k3.1-pro",
         "requires_prewall_lock": True,

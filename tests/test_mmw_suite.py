@@ -129,8 +129,8 @@ class TestMultiModelWorkflows(unittest.TestCase):
     def test_workflow_registry_ast_and_merge_gate(self) -> None:
         reg = json.loads((ROOT / "workflows" / "REGISTRY.json").read_text(encoding="utf-8"))
         manifest = json.loads((ROOT / "SOTA_WORKFLOW_MANIFEST.json").read_text(encoding="utf-8"))
-        self.assertEqual(reg["version"], "3.9.8")
-        self.assertEqual(manifest["schemaVersion"], "3.9.8")
+        self.assertEqual(reg["version"], "3.9.9")
+        self.assertEqual(manifest["schemaVersion"], "3.9.9")
         self.assertEqual(len(reg["workflows"]), 18)
         self.assertEqual(manifest["workflowCount"], 18)
         ids = [w["id"] for w in reg["workflows"]]
@@ -1173,11 +1173,11 @@ class TestMultiModelWorkflows(unittest.TestCase):
             cv.DEFAULT_PREWALL_LAKE_SHA256,
             "a253421e873441740d5d4b410d993cfa7345fe34b88ec4ab7f4eecd537b3f234",
         )
-        self.assertEqual(cv.DEFAULT_ECOSYSTEM_SEMVER, "3.9.8")
+        self.assertEqual(cv.DEFAULT_ECOSYSTEM_SEMVER, "3.9.9")
         st_v390 = cv.build_compounding_version_status()
         self.assertTrue(st_v390["ok"])
-        self.assertEqual(st_v390["ecosystem_version"], "3.9.8")
-        self.assertEqual(st_v390["latest_verified_transition"]["adr_id"], "ADR-0020")
+        self.assertEqual(st_v390["ecosystem_version"], "3.9.9")
+        self.assertEqual(st_v390["latest_verified_transition"]["adr_id"], "ADR-0021")
 
         # 2. T1..T5 x H0..H7 bijection (13 sub-lanes covering all 18 active repos) & 9-feed DF1..DF9 gate
         self.assertEqual(len(dml.STAGE_AND_LAYER_SUBLANES), 13)
@@ -1340,8 +1340,18 @@ class TestMultiModelWorkflows(unittest.TestCase):
                 asyncio.run(r18)
         out18 = json.loads(buf18.getvalue())
         self.assertTrue(out18["all_gates_passed"])
-        self.assertEqual(out18["schema_version"], "3.9.8")
+        self.assertEqual(out18["schema_version"], "3.9.9")
         rec18.assert_called_once()
+        self.assertEqual(rec18.call_args.args, ())
+        self.assertIn("repo", rec18.call_args.kwargs)
+        self.assertIn("workflow_id", rec18.call_args.kwargs)
+        self.assertEqual(
+            cch.CC_LEAD_CENTRAL_CONTRACT["live_authenticated_worker_routes"],
+            ("cc-lead", "codex", "antigravity", "opencode", "dsh"),
+        )
+        en_rt = nwe.select_workflow_and_skills(goal="Audit pre-wall DSH route", repo="cc-sota-harness")["runtime_enactments"]
+        self.assertTrue(en_rt["deepseek_dsh_prewall"].startswith("dsh headless "))
+        self.assertIn("--thinking=high -p", en_rt["pi_omp_role_worker"])
 
 
 if __name__ == "__main__":
