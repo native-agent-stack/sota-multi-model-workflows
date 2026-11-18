@@ -1,6 +1,6 @@
 {
-  "version": "3.9.1",
-  "description": "Canonical v3.9.0 registry of 16 self-bootstrapping SOTA `run_workflow`, 9-Feed `sota-ranking-datafeeds.v3.8` (`DF1..DF9`) & Two-Track Compounding Versioning (`ADR-0015`/`ADR-0016`), Dual-Machine Orca Trading/Harness Lanes v2 (`T1..T3` <-> `T1..T5` & `H1..H3` <-> `H0..H7`, RTH broker contention shield, `sota-orca-lane-hub.v2`), Claude-Lead Central Multi-Runtime (`OMC`/`OMX`/`Orca`/`AO`/`OMO`/`OMP`/`Goose`), Multi-Model `AO` (`Agent Orchestrator`), and `sota-research-feeds.v2` Research-Convergence scripts (`Mac M5 Max <-> Noesis Win32 <-> Noesis-Carbon WSL2` 3-surface parity). Every script explicitly executes `kit.verify_workflow_research_convergence(...)` binding the 6 Trading Lane DataFeed APIs (`:8787`, `:8799`, `:4002`), 9 Ranking DataFeeds (`DF1..DF9`), 4 Strategy Templates + Pine v6, 8 Trading Engine Sources, 18 40-hex upstream pins, `ADR-0004` (`PHILOSOPHY_ONLY` sibling-repo authority), live peer leases, HLZ trial multiplicity N>=90, `sota-doctor`, `sota-org-doctor`, and `ECOSYSTEM_CONVERGENCE_LOCK.json` via `_sota_kit.py`.",
+  "version": "3.9.3",
+  "description": "Canonical v3.10.0 registry of 17 self-bootstrapping SOTA `run_workflow`, 46-Skill Cross-Harness/Orca Enactment (`ADR-0018`), 9-Feed `sota-ranking-datafeeds.v3.8` (`DF1..DF9`) & Two-Track Compounding Versioning (`ADR-0015`..`ADR-0018`), Dual-Machine Orca Trading/Harness Lanes v2 (`T1..T3` <-> `T1..T5` & `H1..H3` <-> `H0..H7`, RTH broker contention shield, `sota-orca-lane-hub.v2`, Dual-Machine Orca Automations), Claude-Lead Central Multi-Runtime (`OMC`/`OMX`/`Orca`/`AO`/`OMO`/`OMP`/`Goose`), Multi-Model `AO` (`Agent Orchestrator`), and `sota-research-feeds.v2` Research-Convergence scripts (`Mac M5 Max <-> Noesis Win32 <-> Noesis-Carbon WSL2` 3-surface parity). Every script explicitly executes `kit.verify_workflow_research_convergence(...)` binding all 46 SOTA Skills, 14 Layers (`L0..L13`), 18-Repo MADR 4.0 ADR Catalogs, 6 Trading Lane DataFeed APIs (`:8787`, `:8799`, `:4002`), 9 Ranking DataFeeds (`DF1..DF9`), 4 Strategy Templates + Pine v6, 8 Trading Engine Sources, 18 40-hex upstream pins, `ADR-0004` (`PHILOSOPHY_ONLY` sibling-repo authority), live peer leases, HLZ trial multiplicity N>=93, `sota-doctor`, `sota-org-doctor`, and `ECOSYSTEM_CONVERGENCE_LOCK.json` via `_sota_kit.py`.",
   "workflows": [
     {
       "id": "master-sota-harness",
@@ -302,6 +302,24 @@
         }
       },
       "when_to_use": "SOTA v3.8.0 9-Feed Ranking System DataFeeds (DF1..DF9, backward-compatible superset of sota-research-feeds.v2), 4-hash cryptographic SemVer lineage, HLZ N>=90 multiplicity, and two-track ALPHA_STRATEGY_MINOR vs PROTECTIVE_FILTER_OR_GOVERNANCE promotion & ADR verification."
+    },
+    {
+      "id": "sota-skills-adr-and-orca-grand-workflow",
+      "script_path": "~/.agents/workflows/sota_skills_adr_and_orca_grand_workflow.py",
+      "skill": "sota-workflow",
+      "agents": [
+        "sota-deep-synthesizer",
+        "sota-code-verifier"
+      ],
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "goal": {"type": "string"},
+          "repo": {"type": "string"},
+          "layer": {"type": "string"}
+        }
+      },
+      "when_to_use": "Grand v3.10.0 unified native workflow enacting all 46 SOTA skills, 9-Feed DF1..DF9 PIT Research-Convergence, all 14 layers (L0..L13), all 18 repository MADR 4.0 ADR catalogs, and 11 multi-model runtime workers across Dual-Machine Orca (Mac M5 Max + Stationary Noesis + Noesis-Carbon WSL2)."
     }
   ]
 }

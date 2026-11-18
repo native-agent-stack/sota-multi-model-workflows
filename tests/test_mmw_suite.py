@@ -129,10 +129,10 @@ class TestMultiModelWorkflows(unittest.TestCase):
     def test_workflow_registry_ast_and_merge_gate(self) -> None:
         reg = json.loads((ROOT / "workflows" / "REGISTRY.json").read_text(encoding="utf-8"))
         manifest = json.loads((ROOT / "SOTA_WORKFLOW_MANIFEST.json").read_text(encoding="utf-8"))
-        self.assertEqual(reg["version"], "3.9.1")
-        self.assertEqual(manifest["schemaVersion"], "3.9.1")
-        self.assertEqual(len(reg["workflows"]), 16)
-        self.assertEqual(manifest["workflowCount"], 16)
+        self.assertEqual(reg["version"], "3.9.3")
+        self.assertEqual(manifest["schemaVersion"], "3.9.3")
+        self.assertEqual(len(reg["workflows"]), 17)
+        self.assertEqual(manifest["workflowCount"], 17)
         ids = [w["id"] for w in reg["workflows"]]
         self.assertEqual(ids, manifest["workflows"])
         self.assertIn("multi-model-ao-convergence", ids)
@@ -141,10 +141,11 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertIn("cc-lead-multi-runtime-workers", ids)
         self.assertIn("dual-machine-trading-and-harness-lanes", ids)
         self.assertIn("compounding-versioning-and-ranking-adr", ids)
+        self.assertIn("sota-skills-adr-and-orca-grand-workflow", ids)
 
         expected_keys = {"id", "script_path", "skill", "agents", "args_schema", "when_to_use"}
         top_level_wf_files = sorted(p for p in (ROOT / "workflows").glob("*.py") if not p.name.startswith("_"))
-        self.assertEqual(len(top_level_wf_files), 16)
+        self.assertEqual(len(top_level_wf_files), 17)
 
         for wf in reg["workflows"]:
             self.assertEqual(set(wf.keys()), expected_keys)
@@ -840,9 +841,9 @@ class TestMultiModelWorkflows(unittest.TestCase):
             resolve_ecosystem_repo_dir,
         )
 
-        # 1. Every single one of the 16 canonical workflows must call kit.verify_workflow_research_convergence
+        # 1. Every single one of the 17 canonical workflows must call kit.verify_workflow_research_convergence
         wf_files = sorted((ROOT / "workflows").glob("*_workflow.py"))
-        self.assertEqual(len(wf_files), 16)
+        self.assertEqual(len(wf_files), 17)
         for wf_path in wf_files:
             txt = wf_path.read_text(encoding="utf-8")
             self.assertIn(
@@ -1171,11 +1172,11 @@ class TestMultiModelWorkflows(unittest.TestCase):
             cv.DEFAULT_PREWALL_LAKE_SHA256,
             "a253421e873441740d5d4b410d993cfa7345fe34b88ec4ab7f4eecd537b3f234",
         )
-        self.assertEqual(cv.DEFAULT_ECOSYSTEM_SEMVER, "3.9.1")
+        self.assertEqual(cv.DEFAULT_ECOSYSTEM_SEMVER, "3.9.3")
         st_v390 = cv.build_compounding_version_status()
         self.assertTrue(st_v390["ok"])
-        self.assertEqual(st_v390["ecosystem_version"], "3.9.1")
-        self.assertEqual(st_v390["latest_verified_transition"]["adr_id"], "ADR-0017")
+        self.assertEqual(st_v390["ecosystem_version"], "3.9.3")
+        self.assertEqual(st_v390["latest_verified_transition"]["adr_id"], "ADR-0018")
 
         # 2. T1..T5 x H0..H7 bijection (13 sub-lanes covering all 18 active repos) & 9-feed DF1..DF9 gate
         self.assertEqual(len(dml.STAGE_AND_LAYER_SUBLANES), 13)
@@ -1213,6 +1214,76 @@ class TestMultiModelWorkflows(unittest.TestCase):
             self.assertEqual(hr_mf["schemaVersion"], "sota-orca-lane-hub.v2")
             self.assertEqual(tr_mf["rankingDatafeedsCount"], 9)
             self.assertEqual(hr_mf["orchestrationFrameworksCount"], 8)
+
+    def test_v3100_native_workflow_enactor_46skills_14layers_18repo_adrs(self) -> None:
+        from sota_mmw import native_workflow_enactor as nwe
+
+        self.assertEqual(len(nwe.CANONICAL_46_SOTA_SKILLS), 46)
+        self.assertEqual(len(nwe.CANONICAL_14_LAYERS_MATRIX), 14)
+        self.assertEqual(len(nwe.ACTIVE_18_REPOS), 18)
+
+        enacted = nwe.select_workflow_and_skills(
+            goal="Enact all SOTA skills and ADRs across grand Orca multi-model ecosystem",
+            repo="sota-multi-model-workflows",
+            layer="all",
+        )
+        self.assertTrue(enacted["ok"])
+        self.assertEqual(enacted["workflow_id"], "sota-skills-adr-and-orca-grand-workflow")
+        self.assertEqual(enacted["layers_count"], 14)
+        self.assertEqual(enacted["ranking_feeds_count"], 9)
+        self.assertEqual(len(enacted["enactment_sha256"]), 64)
+        self.assertIn("antigravity_run_workflow", enacted["runtime_enactments"])
+        self.assertIn("orca_supervised_worker", enacted["runtime_enactments"])
+        self.assertIn("cc_lead_omc_team", enacted["runtime_enactments"])
+        self.assertIn("codex_omx_exec", enacted["runtime_enactments"])
+        self.assertEqual(enacted["multi_model_fleet"]["runtime_workers_count"], 11)
+        self.assertEqual(enacted["multi_model_fleet"]["orchestration_frameworks_count"], 8)
+        self.assertEqual(enacted["multi_model_fleet"]["model_vendors_count"], 7)
+
+        # Execute Grand Workflow #17 deterministically with mocked workflow primitives
+        wf17_src = (ROOT / "workflows" / "sota_skills_adr_and_orca_grand_workflow.py").read_text(encoding="utf-8")
+        logs_captured: list[str] = []
+
+        async def _fake_agent(prompt: str, schema: dict, role: str = "", type_name: str = "self") -> dict:
+            if "skills_verified_count" in schema.get("properties", {}):
+                return {
+                    "surface_and_doctor_status": "14/14 PASS",
+                    "skills_verified_count": 46,
+                    "layers_verified": [f"L{i}" for i in range(14)],
+                    "adr_catalog_highlights": ["ADR-0018"],
+                    "ranking_and_prewall_gates_ok": True,
+                    "evidence_grade": "E4",
+                }
+            return {
+                "dual_machine_mesh_status": "Mac M5 Max <-> Noesis 100.110.115.22 ONLINE",
+                "orca_automations_and_hubs": ["trading-lanes", "harness-lanes"],
+                "runtime_worker_routes": ["cc-lead", "codex-omx", "orca"],
+                "single_broker_firewall_intact": True,
+                "verdict": "PASS",
+            }
+
+        async def _fake_parallel(items: list, fn):
+            return [await fn(it) for it in items]
+
+        ns: dict[str, object] = {
+            "args": {"goal": "Verify v3.10.0 Grand SOTA Workflow", "repo": "sota-multi-model-workflows", "layer": "all"},
+            "WORKSPACES": (str(ROOT),),
+            "log": lambda *a: logs_captured.append(" ".join(str(x) for x in a)),
+            "phase": lambda _name: None,
+            "agent": _fake_agent,
+            "parallel": _fake_parallel,
+        }
+        code_obj = compile(wf17_src, "<workflow>", "exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+        with mock.patch("workflows._sota_kit.record_workflow_run") as rec17:
+            coro = eval(code_obj, ns)
+            if coro is not None:
+                import asyncio
+                asyncio.run(coro)
+            rec17.assert_called_once()
+        fr = ns.get("final_receipt")
+        self.assertIsInstance(fr, dict)
+        assert isinstance(fr, dict)
+        self.assertTrue(fr["all_gates_passed"])
 
 
 if __name__ == "__main__":

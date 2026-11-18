@@ -1,8 +1,8 @@
 {
-  "schemaVersion": "3.9.1",
+  "schemaVersion": "3.9.3",
   "repository": "https://github.com/native-agent-stack/sota-multi-model-workflows",
   "visibility": "PUBLIC",
-  "workflowCount": 16,
+  "workflowCount": 17,
   "workflows": [
     "master-sota-harness",
     "org-compounding-promotion",
@@ -19,7 +19,8 @@
     "research-convergence-landing",
     "cc-lead-multi-runtime-workers",
     "dual-machine-trading-and-harness-lanes",
-    "compounding-versioning-and-ranking-adr"
+    "compounding-versioning-and-ranking-adr",
+    "sota-skills-adr-and-orca-grand-workflow"
   ],
   "supportedHarnesses": [
     "antigravity",
@@ -37,7 +38,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 17,
+    "adrCount": 18,
     "records": [
       {
         "id": "ADR-0001",
@@ -294,6 +295,23 @@
           "https://github.com/native-agent-stack/canon",
           "https://github.com/native-agent-stack/sota-compounding-lab",
           "https://github.com/native-agent-stack/sota-mover-ranker",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/stablyai/orca"
+        ]
+      },
+      {
+        "id": "ADR-0018",
+        "layer": "Multi-Model Orchestration, SOTA Skills, ADR Governance & Dual-Machine Orca Enactment (`L0\u2013L13` \u00d7 `T1\u2013T3` \u00d7 `H1\u2013H3`)",
+        "title": "v3.10.0 Unified 46-Skill Cross-Harness Enactment, 17-Workflow Registry, 14-Layer \u00d7 18-Repo ADR Router & Dual-Machine Orca Automations",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "E4 (`46/46` SOTA Skills Converged Across AGY+Claude+Codex+Orca, `17/17` Native Workflows, `18`-Repo ADR Index, Dual-Machine Orca Automations & `18/18` Unit Suite Verified)",
+        "file": "docs/adr/ADR-0018-v3100-native-46skill-17workflow-14layer-18repo-adr-and-orca-grand-enactment.md",
+        "githubUrls": [
+          "https://github.com/Yeachan-Heo/oh-my-claudecode",
+          "https://github.com/Yeachan-Heo/oh-my-codex",
+          "https://github.com/native-agent-stack/agy-sota-harness",
+          "https://github.com/native-agent-stack/cc-sota-harness",
           "https://github.com/native-agent-stack/sota-multi-model-workflows",
           "https://github.com/stablyai/orca"
         ]
