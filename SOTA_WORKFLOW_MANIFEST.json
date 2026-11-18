@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "3.3.0",
+  "schemaVersion": "3.4.0",
   "repository": "https://github.com/native-agent-stack/sota-multi-model-workflows",
   "visibility": "PUBLIC",
   "workflowCount": 13,

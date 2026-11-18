@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path.home() / ".agents" / "workflows"))
 import _sota_kit as kit
 
 peer_brief = kit.load_peer_brief("agy-sota-harness")
+rc_ctx = kit.load_research_convergence_context()
 log(peer_brief)
 
 phase("1. Zero-Copy In-Session Trajectory & Historical Friction Scan")
@@ -39,6 +40,8 @@ phase("2. SkillOpt & GEPA Curation (`sota-skillopt-curator`)")
 
 plan = await agent(
     f"{peer_brief}\n\n"
+    f"Research-Convergence (`{rc_ctx['schema_version']}`, `sota-research-feeds.v2`, ADR-0004 3-tier SHA provenance, "
+    "`PHILOSOPHY_ONLY` sibling-repo authority, `Mac M5 Max <-> Noesis` cross-OS parity).\n"
     f"Run `~/.agents/bin/sota-core friction` and inspect `~/.agents/wiki/LESSONS.md` alongside current session "
     f"errors={error_slices} (cleared={cleared_cnt}). Propose minimal, validation-gated hook/AST-rule or SKILL.md "
     "improvements (executable guards over prose).",

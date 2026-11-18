@@ -3,7 +3,7 @@
 Portable, zero-secret multi-model workflow DAGs (`Antigravity`, `Claude Code`, `OpenAI Codex`, `DeepSeek Harness`, `Orca` worktrees), 7-feed `sota-research-feeds.v2` Research-Convergence contracts, transactional SQLite WAL peer-bus coordination, and the **5-Stage Sim -> Backtest -> Paper -> Empirical-Bayes Fine-Tune -> Broker (`Alpaca` / `IBKR`) Promotion Gate**.
 
 ## Capabilities
-1. **13 Self-Bootstrapping Multi-Model, `AO` & Research-Convergence Workflows (`workflows/REGISTRY.json` `v3.3.0`):**
+1. **13 Self-Bootstrapping Multi-Model, `AO` & Research-Convergence Workflows (`workflows/REGISTRY.json` `v3.4.0` — 13/13 Explicit `sota-research-feeds.v2` & `Mac M5 Max <-> Noesis` Parity):**
    - `master-sota-harness`, `research-convergence-landing`, `multi-model-ao-convergence`, `org-compounding-promotion`, `ecosystem-convergence`, `dual-workstation-orca`, `council-deliberation`, `autoresearch-loop`, `cross-peer-orca-review`, `early-mover-compounding`, `rd-agent-hypothesis-bus`, `security-and-release-gate`, and `skillopt-gepa-evolution`.
 2. **3-Tier Research-Convergence & 7-Feed PIT Contract (`src/sota_mmw/research_convergence_contract.py` & `workflows/_sota_kit.py`):**
    - Enforces `ADR-0004` 64-hex input `SHA-256` + 40-hex upstream commit SHAs (`~/Documents/upstream/PINS.md`), the 7-feed `sota-research-feeds.v2` point-in-time specification (`alpaca_sip`, `alpaca_boats` + `2026-12-06` `23/5` flag, `alpaca_raw_vs_all_adjustment`, `sec_edgar_acceptance_datetime` `15m` half-life + `424B*`/`S-3` dilution block, `finra_regsho_cnmsshvol_t1`, `corporate_actions_split_guard`, `ibkr_paper_4002_l1`), and Turn-0 injection into all 13 workflows.

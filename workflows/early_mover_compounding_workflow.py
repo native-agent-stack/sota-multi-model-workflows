@@ -11,7 +11,8 @@ sys.path.insert(0, str(Path.home() / ".agents" / "workflows"))
 import _sota_kit as kit
 
 peer_brief = kit.load_peer_brief("sota-mover-ranker")
-log(peer_brief)  # noqa: F821
+rc_ctx = kit.load_research_convergence_context()
+log(f"{peer_brief}\n[Explicit RC: {rc_ctx['schema_version']} / sota-research-feeds.v2 / PHILOSOPHY_ONLY]")  # noqa: F821
 
 SYNTHESIS_SCHEMA = {
     "type": "object",

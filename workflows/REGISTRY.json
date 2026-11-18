@@ -1,6 +1,6 @@
 {
-  "version": "3.3.0",
-  "description": "Canonical v3.3.0 registry of 13 self-bootstrapping SOTA `run_workflow`, Multi-Model `AO` (`Agent Orchestrator`), and 7-Feed `sota-research-feeds.v2` Research-Convergence scripts. Every script automatically loads live peer leases, handovers, lessons, HLZ trial multiplicity N, `sota-doctor` (11/11), `sota-org-doctor`, `ECOSYSTEM_CONVERGENCE_LOCK.json`, and `ADR-0004` 3-tier Research-Convergence context via `_sota_kit.py` and writes completion checkpoints back to `~/.agents/bus/peer_bus.db`.",
+  "version": "3.4.0",
+  "description": "Canonical v3.4.0 registry of 13 self-bootstrapping SOTA `run_workflow`, Multi-Model `AO` (`Agent Orchestrator`), and 7-Feed `sota-research-feeds.v2` Research-Convergence scripts (`Mac M5 Max <-> Noesis` cross-OS parity). Every script explicitly loads `sota-research-feeds.v2`, `ADR-0004` 3-tier SHA provenance (`PHILOSOPHY_ONLY` sibling-repo authority), live peer leases, handovers, lessons, HLZ trial multiplicity N, `sota-doctor` (11/11), `sota-org-doctor`, and `ECOSYSTEM_CONVERGENCE_LOCK.json` via `_sota_kit.py`.",
   "workflows": [
     {
       "id": "master-sota-harness",

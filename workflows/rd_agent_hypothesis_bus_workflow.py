@@ -15,7 +15,8 @@ import _sota_kit as kit
 cfg = args if "args" in globals() and isinstance(args, dict) else {}
 repo_hint = str(cfg.get("repo") or "sota-mover-ranker")
 peer_brief = kit.load_peer_brief(repo_hint)
-log(peer_brief)
+rc_ctx = kit.load_research_convergence_context()
+log(f"{peer_brief}\n[Explicit RC: {rc_ctx['schema_version']} / sota-research-feeds.v2 / PHILOSOPHY_ONLY]")
 
 HYPOTHESIS_SCHEMA = {
     "type": "object",

@@ -15,6 +15,7 @@ cfg = kit.get_workflow_args(globals())
 repo_path = str(cfg.get("repo_path") or kit.get_primary_workspace(globals(), "."))
 repo_name = Path(repo_path).resolve().name
 peer_brief = kit.load_peer_brief(repo_name)
+rc_ctx = kit.load_research_convergence_context()
 
 GATE_SCHEMA = {
     "type": "object",
@@ -47,7 +48,9 @@ checks = await parallel(  # noqa: F821
         ),
         (
             "Firewall, Secret & Public-Tree Leak Auditor",
-            f"{peer_brief}\n\nIn `{repo_path}`, inspect `git status -s` and `git diff` plus run `gitleaks detect --no-git --source .` "
+            f"{peer_brief}\n\nResearch-Convergence (`{rc_ctx['schema_version']}`, `sota-research-feeds.v2`, ADR-0004 "
+            "3-tier SHA provenance, `PHILOSOPHY_ONLY` sibling-repo authority, `Mac M5 Max <-> Noesis` cross-OS parity).\n"
+            f"In `{repo_path}`, inspect `git status -s` and `git diff` plus run `gitleaks detect --no-git --source .` "
             "if available. Verify zero live-broker imports/ports (`4001`, `7496`, `"
             ".claude/"
             "bin/live`), zero `PA...`/`DU...` IDs, "

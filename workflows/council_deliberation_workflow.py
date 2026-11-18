@@ -20,6 +20,7 @@ question = str(
 repo_hint = str(cfg.get("repo") or "")
 scope_note = f"Target repository: ~/Documents/{repo_hint}. " if repo_hint else ""
 peer_brief = kit.load_peer_brief(repo_hint)
+rc_ctx = kit.load_research_convergence_context()
 
 SEAT_SCHEMA = {
     "type": "object",
@@ -58,6 +59,8 @@ seats = [
         "First-Principles & Upstream Architect",
         "sota-deep-synthesizer",
         f"{peer_brief}\n\n{scope_note}Question: {question}\n"
+        f"Research-Convergence (`{rc_ctx['schema_version']}`, `sota-research-feeds.v2`, ADR-0004 3-tier SHA provenance, "
+        "`PHILOSOPHY_ONLY` sibling-repo authority, `Mac M5 Max <-> Noesis` parity).\n"
         "Inspect ~/Documents/upstream/PINS.md and UPSTREAM.md first. Propose the minimal-diff, upstream-first design "
         "(Karpathy/Ponytail rule). Never print keys, account IDs, or balances.",
     ),
@@ -65,15 +68,17 @@ seats = [
         "Empirical Statistical & Execution Pragmatist",
         "self",
         f"{peer_brief}\n\n{scope_note}Question: {question}\n"
-        "Evaluate empirical measurability, rate-limit/latency constraints, 1x & 2x transaction/compute costs, "
-        "and HLZ multiple-testing / MDE power gates. Never print keys, account IDs, or balances.",
+        "Evaluate empirical measurability, 7-feed `sota-research-feeds.v2` PIT constraints, rate-limit/latency budgets, "
+        "1x & 2x transaction/compute costs, and HLZ multiple-testing / MinTRL / MDE power gates. "
+        "Never print keys, account IDs, or balances.",
     ),
     (
         "Adversarial Premortem & Boundary Red-Team",
         "sota-falsifier",
         f"{peer_brief}\n\n{scope_note}Question: {question}\n"
-        "Assume this design fails 30 days from now. Enumerate exact lookahead, clock/timezone, dilution, "
-        "wide-NBBO adverse selection, context-bloat, or boundary hazards.",
+        "Assume this design fails 30 days from now. Enumerate exact lookahead (`RAW`/`ALL`, SEC `acceptanceDateTime`, "
+        "FINRA `T-1`), clock/timezone, dilution, wide-NBBO adverse selection, `Mac M5 Max <-> Noesis` split-brain, "
+        "or boundary hazards.",
     ),
 ]
 

@@ -42,6 +42,7 @@ target_lane = str(cfg.get("broker_lane") or "ALPACA_PAPER")
 fast_deterministic_only = bool(cfg.get("fast_deterministic_only", False))
 peer_brief = kit.load_peer_brief("sota-compounding-lab")
 preflight = kit.run_preflight_summary(live_org=bool(cfg.get("live_org", False)))
+research_convergence = kit.load_research_convergence_context()
 
 default_prefix = "DU" if target_lane == "IBKR_PAPER" else "PA"
 default_port = 4002 if target_lane == "IBKR_PAPER" else None
@@ -68,7 +69,11 @@ candidate_manifest = StrategyCandidateManifest(
 )
 deterministic_gate = evaluate_promotion_gate(candidate_manifest)
 
-log(f"{peer_brief}\nPreflight: {json.dumps(preflight)}\nPromotionGate: {json.dumps(deterministic_gate)}")
+log(
+    f"{peer_brief}\nPreflight: {json.dumps(preflight)}\n"
+    f"ResearchConvergence (`sota-research-feeds.v2`, `PHILOSOPHY_ONLY`): {research_convergence['schema_version']}\n"
+    f"PromotionGate: {json.dumps(deterministic_gate)}"
+)
 
 STAGE_SCHEMA = {
     "type": "object",

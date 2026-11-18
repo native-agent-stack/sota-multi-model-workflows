@@ -10,6 +10,7 @@ import _sota_kit as kit
 cfg = args if "args" in globals() and isinstance(args, dict) else {}
 target_repo = str(cfg.get("repo") or "agy-sota-harness")
 peer_brief = kit.load_peer_brief(target_repo)
+rc_ctx = kit.load_research_convergence_context()
 log(peer_brief)
 
 GATE_SCHEMA = {
@@ -27,6 +28,8 @@ phase("Two-Pass Deterministic & Security Verification")
 
 audit = await agent(
     f"{peer_brief}\n\n"
+    f"Research-Convergence Contract (`{rc_ctx['schema_version']}`, `sota-research-feeds.v2`, ADR-0004 3-tier SHA "
+    f"provenance, `PHILOSOPHY_ONLY` sibling-repo authority, `Mac M5 Max <-> Noesis` cross-OS parity).\n"
     f"Run the two-pass deterministic & P0-P3 self-refuting verification gate on `~/Documents/{target_repo}` "
     f"(`ruff`, `ty`, `sg scan`, `pytest`, `merge_gate.py` if present) and check `~/.agents/bin/sota-bus status --repo {target_repo}`. "
     "Never print secrets or account IDs.",

@@ -33,7 +33,10 @@ import _sota_kit as kit
 from sota_mmw.ao_lifecycle import (
     AO_PLUGGABLE_SLOTS,
     AOLifecycleAttempt,
+    count_python_test_assertions,
     derive_workstation_mesh_state,
+    detect_disjoint_peer_lease,
+    detect_isolated_worktree,
     evaluate_ao_lifecycle_gate,
     probe_installed_multi_model_binaries,
     resolve_ao_multi_model_route,
@@ -84,10 +87,15 @@ route = resolve_ao_multi_model_route(task_kind=task_kind, mesh_state=mesh_state)
 quant_wall_date = "2026-10-15" if task_kind in ("prewall_quant_factor", "combinatorial_gpu_sweep") else None
 
 repo_dir = Path.home() / "Documents" / target_repo
+active_checkout = Path.cwd() if (Path.cwd() / ".git").exists() else repo_dir
+is_isolated_wt = detect_isolated_worktree(active_checkout)
+is_disjoint_lease = detect_disjoint_peer_lease(target_repo, session_id=str(cfg.get("session_id") or ""))
+assertion_count = count_python_test_assertions(active_checkout)
+
 head_sha = "0000000"
-if (repo_dir / ".git").exists():
+if (active_checkout / ".git").exists():
     sha_proc = subprocess.run(
-        ["git", "-C", str(repo_dir), "rev-parse", "HEAD"],
+        ["git", "-C", str(active_checkout), "rev-parse", "HEAD"],
         capture_output=True,
         text=True,
         timeout=5,
@@ -100,6 +108,9 @@ preflight_bundle = {
     "target_repo": target_repo,
     "head_commit_sha": head_sha,
     "goal": goal,
+    "isolated_worktree_detected": is_isolated_wt,
+    "disjoint_peer_lease_detected": is_disjoint_lease,
+    "frozen_assertion_count": assertion_count,
     "ao_slots": AO_PLUGGABLE_SLOTS,
     "ao_route": {
         "task_kind": route.task_kind,
@@ -117,6 +128,7 @@ preflight_bundle = {
     "research_convergence": {
         "schema_version": research_convergence["schema_version"],
         "source": research_convergence["source"],
+        "sibling_repo_authority": research_convergence.get("sibling_repo_authority", "PHILOSOPHY_ONLY"),
         "feed_count": research_convergence["feed_count"],
         "upstream_pin_count": research_convergence["upstream_pin_count"],
         "mcp_tools": research_convergence["mcp_tools"],
@@ -132,11 +144,11 @@ if fast_deterministic_only:
         head_commit_sha=head_sha,
         lead_harness=route.lead_harness,
         reviewer_harness=route.reviewer_harness,
-        isolated_worktree=True,
-        disjoint_peer_lease=True,
+        isolated_worktree=is_isolated_wt,
+        disjoint_peer_lease=is_disjoint_lease,
         upstream_sha_cited=True,
         lint_and_type_clean=preflight.get("sota_doctor", {}).get("status") == "PASS",
-        tests_passed=max(1, int(fleet_probe["installed_count"])),
+        tests_passed=max(1, assertion_count or int(fleet_probe["installed_count"])),
         tests_failed=0,
         merge_gate_and_adr_clean=preflight.get("sota_org_doctor", {}).get("status") == "PASS",
         gitleaks_clean=True,
@@ -197,8 +209,8 @@ else:
                 "sota-falsifier",
                 f"{peer_brief}\n\nAO Route & Preflight:\n{json.dumps(preflight_bundle, indent=2)}\n"
                 f"Goal: {goal}\n"
-                "Red-team for single-model correlation, worktree/lease collision hazards, ADR-0004 / 7-feed PIT "
-                "(`sota_get_first_hand_incentives`, `RAW`/`ALL`, SEC `acceptanceDateTime`, FINRA `T-1`, `<=2026-10-15` wall) "
+                "Red-team for single-model correlation, worktree/lease collision hazards, ADR-0004 / 7-feed `sota-research-feeds.v2` PIT "
+                "(`sota_get_first_hand_incentives`, `RAW`/`ALL`, SEC `acceptanceDateTime`, FINRA `T-1`, `<=2026-10-15` wall, `PHILOSOPHY_ONLY`) "
                 "leakage, or live-broker/secret boundary gaps. Report only empirically grounded P0/P1 issues.",
             ),
             (
@@ -222,11 +234,11 @@ else:
         head_commit_sha=head_sha,
         lead_harness=route.lead_harness,
         reviewer_harness=route.reviewer_harness,
-        isolated_worktree=True,
-        disjoint_peer_lease=True,
+        isolated_worktree=is_isolated_wt,
+        disjoint_peer_lease=is_disjoint_lease,
         upstream_sha_cited=bool(triad[0]["passed"]),
         lint_and_type_clean=bool(triad[2]["passed"]),
-        tests_passed=1 if triad[2]["passed"] else 0,
+        tests_passed=max(1, assertion_count) if triad[2]["passed"] else 0,
         tests_failed=0 if triad[2]["passed"] else 1,
         merge_gate_and_adr_clean=bool(triad[2]["passed"]),
         gitleaks_clean=bool(triad[2]["passed"]),

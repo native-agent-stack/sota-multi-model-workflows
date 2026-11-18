@@ -91,6 +91,7 @@ bootstrap_bundle = {
     "research_convergence": {
         "schema_version": rc_context["schema_version"],
         "source": rc_context["source"],
+        "sibling_repo_authority": rc_context.get("sibling_repo_authority", "PHILOSOPHY_ONLY"),
         "feed_count": rc_context["feed_count"],
         "canonical_datafeeds": rc_context["canonical_datafeeds"],
         "strategy_templates": rc_context["strategy_templates"],

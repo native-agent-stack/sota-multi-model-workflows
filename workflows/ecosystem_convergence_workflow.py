@@ -17,6 +17,7 @@ phase("Phase 1: Deterministic Local, Org & Harness Probe Execution")
 
 peer_brief = kit.load_peer_brief("native-agent-stack")
 preflight = kit.run_preflight_summary(live_org=live_org)
+research_convergence = kit.load_research_convergence_context()
 
 docs = Path.home() / "Documents"
 probe_cmds = [
@@ -45,6 +46,13 @@ all_deterministic_ok = (
 deterministic_bundle = {
     "all_deterministic_ok": all_deterministic_ok,
     "preflight": preflight,
+    "research_convergence": {
+        "schema_version": research_convergence["schema_version"],
+        "convergence_adr": research_convergence["convergence_adr"],
+        "sibling_repo_authority": research_convergence.get("sibling_repo_authority", "PHILOSOPHY_ONLY"),
+        "feed_count": research_convergence["feed_count"],
+        "upstream_pin_count": research_convergence["upstream_pin_count"],
+    },
     "probe_receipts": probe_receipts,
 }
 log(json.dumps(deterministic_bundle, indent=2))
@@ -78,7 +86,9 @@ else:
                 "Harness & Org Firewall Verifier",
                 "sota-code-verifier",
                 f"{peer_brief}\n\nDeterministic Receipts:\n{json.dumps(deterministic_bundle, indent=2)}\n"
-                "Verify zero regressions across L0-L12 probes, MADR 4.0 catalogs, and the 22-repo Three-Tier org boundary.",
+                "Verify zero regressions across L0-L12 probes, MADR 4.0 catalogs, ADR-0004 3-tier SHA provenance, "
+                "`sota-research-feeds.v2` 7-feed PIT contract (`PHILOSOPHY_ONLY` sibling-repo authority), "
+                "`Mac M5 Max <-> Noesis` parity, and the 22-repo Three-Tier org boundary.",
             ),
             (
                 "Cross-Peer Continuity & Next-Move Synthesizer",

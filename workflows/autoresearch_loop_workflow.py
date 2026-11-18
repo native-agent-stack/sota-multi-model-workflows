@@ -18,6 +18,7 @@ hyp_prompt = str(
     cfg.get("hypothesis") or "Identify the next highest-lift pre-wall microstructure hypothesis from prior lessons."
 )
 peer_brief = kit.load_peer_brief(repo)
+rc_ctx = kit.load_research_convergence_context()
 
 SPEC_SCHEMA = {
     "type": "object",
@@ -70,7 +71,7 @@ FALSIFY_SCHEMA = {
     "required": ["verdict", "evidence_grade", "red_team_findings", "next_iteration"],
 }
 
-log(peer_brief)  # noqa: F821
+log(f"{peer_brief}\n[Explicit RC: {rc_ctx['schema_version']} / PHILOSOPHY_ONLY]")  # noqa: F821
 phase("Stage 1: Prior Search & Immutable SHA-256 Pre-Registration")  # noqa: F821
 
 spec = await agent(  # noqa: F821

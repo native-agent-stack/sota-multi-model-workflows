@@ -1,8 +1,9 @@
-"""Shared Self-Bootstrapping Helper (`v3.3.0`) for SOTA `run_workflow` Orchestration Scripts.
+"""Shared Self-Bootstrapping Helper (`v3.4.0`) for SOTA `run_workflow` Orchestration Scripts.
 
 Automatically loads live cross-peer leases, handovers, compiled lessons, HLZ trial multiplicity N,
 `sota-doctor` (`11/11`), `sota-org-doctor` (`4` org invariants), `ECOSYSTEM_CONVERGENCE_LOCK.json`,
-and the 7-feed `sota-research-feeds.v2` Research-Convergence & Strategy Template contract (`ADR-0004` / `ADR-0011`)
+and the 7-feed `sota-research-feeds.v2` Research-Convergence & Strategy Template contract (`ADR-0004` / `ADR-0011`,
+`PHILOSOPHY_ONLY` sibling-repo authority, and `Mac M5 Max <-> Noesis` cross-OS parity)
 before spawning workflow agents, and writes redacted workflow checkpoints back to `peer_bus.db`.
 """
 
@@ -135,6 +136,8 @@ def load_research_convergence_context(
         "schema_version": schema_version,
         "source": source,
         "convergence_adr": "ADR-0004",
+        "sibling_repo_authority": "PHILOSOPHY_ONLY",
+        "dual_workstation_hosts": ["portable_mac_m5_max", "stationary_noesis_win32_wsl"],
         "feed_count": len(CANONICAL_DATAFEEDS),
         "canonical_datafeeds": list(CANONICAL_DATAFEEDS.keys()),
         "datafeed_specs": CANONICAL_DATAFEEDS,

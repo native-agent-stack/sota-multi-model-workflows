@@ -13,6 +13,8 @@ import re
 from typing import Any
 
 RESEARCH_FEEDS_SCHEMA_VERSION = "sota-research-feeds.v2"
+SIBLING_REPO_AUTHORITY = "PHILOSOPHY_ONLY"
+DUAL_WORKSTATION_HOSTS: tuple[str, str] = ("portable_mac_m5_max", "stationary_noesis_win32_wsl")
 PRE_WALL_MAX_DATE = "2026-10-15"
 PRE_WALL_DATE_OBJ = dt.date(2026, 10, 15)
 MAX_HARD_STOP_PCT = 2.00

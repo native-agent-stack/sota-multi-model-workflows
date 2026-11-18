@@ -8,15 +8,21 @@ Dual-Machine `Mac M5 Max <-> Noesis 64c/RTX4090` Orca Workstation Lane (`ADR-002
 
 from __future__ import annotations
 
+import ast
 import dataclasses
 import datetime as dt
 import hashlib
 import json
 import os
 import shutil
+import sqlite3
+import subprocess
+import time
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
+
+from sota_mmw.peer_bus_schema import _paths_overlap
 
 CONCRETE_VENDORS: frozenset[str] = frozenset({"google", "anthropic", "openai", "deepseek"})
 AO_STUDY_WALL_DATE = dt.date(2026, 10, 15)
@@ -336,3 +342,118 @@ def probe_installed_multi_model_binaries(extra_dirs: Sequence[Path] | None = Non
         "installed_binaries": present,
         "missing_binaries": missing,
     }
+
+
+def detect_isolated_worktree(cwd: Path | str | None = None) -> bool:
+    """Return True iff `cwd` is an isolated git linked worktree (`--git-dir != --git-common-dir`)."""
+    target = Path(cwd).resolve() if cwd is not None else Path.cwd().resolve()
+    if not target.is_dir():
+        return False
+    clean_env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(target), "rev-parse", "--git-dir", "--git-common-dir"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+            env=clean_env,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    if proc.returncode != 0:
+        return False
+    lines = [ln.strip() for ln in proc.stdout.splitlines() if ln.strip()]
+    if len(lines) < 2:
+        return False
+    git_dir = (target / lines[0]).resolve() if not Path(lines[0]).is_absolute() else Path(lines[0]).resolve()
+    common_dir = (target / lines[1]).resolve() if not Path(lines[1]).is_absolute() else Path(lines[1]).resolve()
+    return git_dir != common_dir
+
+
+def detect_disjoint_peer_lease(
+    repo: str,
+    session_id: str = "",
+    db_path: Path | None = None,
+    requested_paths: Sequence[str] = ("*",),
+) -> bool:
+    """Verify zero unexpired foreign session lease collisions on `repo` in `peer_bus.db`."""
+    target_db = db_path if db_path is not None else (Path.home() / ".agents" / "bus" / "peer_bus.db")
+    if not target_db.is_file():
+        return True
+    req_paths = list(requested_paths) if requested_paths else ["*"]
+    now_epoch = time.time()
+    now_dt = dt.datetime.now(dt.UTC)
+    active_sessions: list[tuple[str, list[str]]] = []
+
+    try:
+        conn = sqlite3.connect(str(target_db), timeout=3.0)
+        try:
+            tables = {str(r[0]) for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+            if "peer_leases" in tables:
+                for sid, pjson in conn.execute(
+                    "SELECT session_id, paths_json FROM peer_leases WHERE repo = ? AND expires_at > ?",
+                    (repo, now_epoch),
+                ).fetchall():
+                    parsed_paths = json.loads(pjson or '["*"]')
+                    active_sessions.append((str(sid), [str(x) for x in parsed_paths]))
+            if "leases" in tables:
+                for sid, pjson, exp_utc in conn.execute(
+                    "SELECT session_id, paths_json, expires_utc FROM leases WHERE repo = ?",
+                    (repo,),
+                ).fetchall():
+                    try:
+                        if dt.datetime.fromisoformat(str(exp_utc)) <= now_dt:
+                            continue
+                    except ValueError:
+                        continue
+                    parsed_paths = json.loads(pjson or '["*"]')
+                    active_sessions.append((str(sid), [str(x) for x in parsed_paths]))
+        finally:
+            conn.close()
+    except Exception:  # noqa: BLE001
+        return False
+
+    if session_id:
+        for foreign_sid, foreign_paths in active_sessions:
+            if foreign_sid != session_id and any(_paths_overlap(rp, fp) for rp in req_paths for fp in foreign_paths):
+                return False
+        return True
+
+    # When session_id is unspecified, verify at most one non-colliding owner holds leases on `repo`
+    for idx, (sid_a, paths_a) in enumerate(active_sessions):
+        for sid_b, paths_b in active_sessions[idx + 1 :]:
+            if sid_a != sid_b and any(_paths_overlap(pa, pb) for pa in paths_a for pb in paths_b):
+                return False
+    return True
+
+
+def count_python_test_assertions(root: Path | str) -> int:
+    """Count AST `assert`, `self.assert*`, and `pytest.raises` checks under `root/tests` (or `root`)."""
+    base = Path(root)
+    scan_root = base / "tests" if (base / "tests").is_dir() else base
+    if not scan_root.exists():
+        return 0
+    total = 0
+    for py_file in sorted(scan_root.rglob("*.py")):
+        if any(part in (".git", ".venv", "__pycache__") for part in py_file.parts):
+            continue
+        try:
+            tree = ast.parse(py_file.read_text(encoding="utf-8"), filename=str(py_file))
+        except (OSError, SyntaxError, UnicodeDecodeError):
+            continue
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assert) or (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and (
+                    node.func.attr.startswith("assert")
+                    or (
+                        node.func.attr == "raises"
+                        and isinstance(node.func.value, ast.Name)
+                        and node.func.value.id == "pytest"
+                    )
+                )
+            ):
+                total += 1
+    return total

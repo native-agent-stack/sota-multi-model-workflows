@@ -28,7 +28,10 @@ from sota_mmw.ao_lifecycle import (
     AO_PLUGGABLE_SLOTS,
     CONCRETE_VENDORS,
     AOLifecycleAttempt,
+    count_python_test_assertions,
     derive_workstation_mesh_state,
+    detect_disjoint_peer_lease,
+    detect_isolated_worktree,
     evaluate_ao_lifecycle_gate,
     qualify_ao_lifecycle_attempt,
     resolve_ao_multi_model_route,
@@ -97,8 +100,8 @@ class TestMultiModelWorkflows(unittest.TestCase):
     def test_workflow_registry_ast_and_merge_gate(self) -> None:
         reg = json.loads((ROOT / "workflows" / "REGISTRY.json").read_text(encoding="utf-8"))
         manifest = json.loads((ROOT / "SOTA_WORKFLOW_MANIFEST.json").read_text(encoding="utf-8"))
-        self.assertEqual(reg["version"], "3.3.0")
-        self.assertEqual(manifest["schemaVersion"], "3.3.0")
+        self.assertEqual(reg["version"], "3.4.0")
+        self.assertEqual(manifest["schemaVersion"], "3.4.0")
         self.assertEqual(len(reg["workflows"]), 13)
         self.assertEqual(manifest["workflowCount"], 13)
         ids = [w["id"] for w in reg["workflows"]]
@@ -108,6 +111,9 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertIn("research-convergence-landing", ids)
 
         expected_keys = {"id", "script_path", "skill", "agents", "args_schema", "when_to_use"}
+        top_level_wf_files = sorted(p for p in (ROOT / "workflows").glob("*.py") if not p.name.startswith("_"))
+        self.assertEqual(len(top_level_wf_files), 13)
+
         for wf in reg["workflows"]:
             self.assertEqual(set(wf.keys()), expected_keys)
             script_name = Path(wf["script_path"]).name
@@ -115,6 +121,21 @@ class TestMultiModelWorkflows(unittest.TestCase):
             self.assertTrue(local_script.is_file(), msg=f"Missing workflow script: {script_name}")
             src = local_script.read_text(encoding="utf-8")
             self.assertIn("_sota_kit", src)
+            self.assertIn(
+                "load_research_convergence_context",
+                src,
+                msg=f"{script_name} missing explicit load_research_convergence_context() call",
+            )
+            self.assertIn(
+                "sota-research-feeds.v2",
+                src,
+                msg=f"{script_name} missing explicit sota-research-feeds.v2 contract reference",
+            )
+            self.assertIn(
+                "PHILOSOPHY_ONLY",
+                src,
+                msg=f"{script_name} missing explicit PHILOSOPHY_ONLY sibling-repo authority",
+            )
             compile(src, "<workflow>", "exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
             tree = ast.parse(src)
             uses_dunder_file = any(isinstance(node, ast.Name) and node.id == "__file__" for node in ast.walk(tree))
@@ -505,14 +526,50 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertTrue(_triggers("C:\\" + "Users\\runner\\repo\\"))
         self.assertTrue(_triggers("C:/" + "Users/runner/repo/"))
 
-    def test_cross_os_agent_bin_argv_parity(self) -> None:
-        sys.path.insert(0, str(ROOT / "workflows"))
-        import _sota_kit as kit
+    def test_cross_os_agent_bin_argv_parity_and_ao_dynamic_detectors(self) -> None:
+        argv_posix = kit.agent_bin_argv(Path("~/.agents/bin/sota-workstation"), "status", "--json")
+        self.assertEqual(argv_posix[-2:], ["status", "--json"])
+        with mock.patch("workflows._sota_kit.os.name", "nt"):
+            argv_win = kit.agent_bin_argv(Path("C:/sota-workstation/.agents/bin/sota-workstation"), "status", "--json")
+            self.assertEqual(argv_win[0], sys.executable)
+            self.assertEqual(argv_win[-2:], ["status", "--json"])
+            argv_exe = kit.agent_bin_argv(Path("C:/sota-workstation/orca.exe"), "status")
+            self.assertEqual(argv_exe[0], str(Path("C:/sota-workstation/orca.exe")))
 
-        argv = kit.agent_bin_argv(Path("~/.agents/bin/sota-workstation"), "status", "--json")
-        self.assertEqual(argv[-2:], ["status", "--json"])
-        if sys.platform == "win32":
-            self.assertEqual(argv[0], sys.executable)
+        # Count AST assertions in this repository's tests/
+        assertion_cnt = count_python_test_assertions(ROOT)
+        self.assertGreaterEqual(assertion_cnt, 50)
+
+        # Verify detect_isolated_worktree against temporary primary repo + linked worktree
+        with tempfile.TemporaryDirectory() as td:
+            primary_repo = Path(td) / "primary"
+            linked_wt = Path(td) / "linked-wt"
+            primary_repo.mkdir()
+            subprocess.run(["git", "-C", str(primary_repo), "init", "-q"], check=True)
+            subprocess.run(["git", "-C", str(primary_repo), "config", "user.email", "t@example.com"], check=True)
+            subprocess.run(["git", "-C", str(primary_repo), "config", "user.name", "t"], check=True)
+            (primary_repo / "README.md").write_text("init\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(primary_repo), "add", "README.md"], check=True)
+            subprocess.run(["git", "-C", str(primary_repo), "commit", "-q", "-m", "init"], check=True)
+            subprocess.run(
+                ["git", "-C", str(primary_repo), "worktree", "add", "-q", "-b", "wt-b", str(linked_wt)],
+                check=True,
+            )
+            self.assertFalse(detect_isolated_worktree(primary_repo))
+            self.assertTrue(detect_isolated_worktree(linked_wt))
+
+            # Verify detect_disjoint_peer_lease against PortablePeerBus SQLite WAL
+            db_file = Path(td) / "peer_bus.db"
+            bus = PortablePeerBus(db_file)
+            self.assertTrue(detect_disjoint_peer_lease("sota-mmw", session_id="s1", db_path=db_file))
+            bus.claim_lease("sota-mmw", "agy", "s1", ["src/*"], "s1 work")
+            self.assertTrue(detect_disjoint_peer_lease("sota-mmw", session_id="s1", db_path=db_file))
+            self.assertFalse(
+                detect_disjoint_peer_lease("sota-mmw", session_id="s2", db_path=db_file, requested_paths=["src/a.py"])
+            )
+            self.assertTrue(
+                detect_disjoint_peer_lease("sota-mmw", session_id="s2", db_path=db_file, requested_paths=["docs/*"])
+            )
 
 
 if __name__ == "__main__":

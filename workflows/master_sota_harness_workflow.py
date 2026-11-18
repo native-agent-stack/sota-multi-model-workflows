@@ -23,7 +23,8 @@ mode = str(cfg.get("mode") or "quant-trading")
 # Phase 0: Deterministic Python Self-Bootstrap (Peer Bus + Research-Convergence + sota-doctor + sota-org-doctor)
 peer_brief = kit.load_peer_brief(repo)
 preflight = kit.run_preflight_summary(live_org=False)
-doctor_line = f"[v3.3.0 preflight: {json.dumps(preflight)}]"
+research_convergence = kit.load_research_convergence_context()
+doctor_line = f"[v3.4.0 preflight: {json.dumps(preflight)} | rc={research_convergence['schema_version']} ({research_convergence.get('sibling_repo_authority', 'PHILOSOPHY_ONLY')})]"
 
 bootstrap_header = f"{doctor_line}\n{peer_brief}"
 log(bootstrap_header)  # noqa: F821
