@@ -128,7 +128,7 @@ if not fast_deterministic_only and "agent" in globals():
             f"Orca Lead Envelope: {json.dumps({'repo': repo, 'assign_sha256': orca_lead_assignment['assign_sha256'], 'surface': orca_lead_assignment['surface']})}\n"
             "Verify pre-wall <=2026-10-15, bitemporal ordering, ADR-0022 <=2.00% stop, "
             "8-runtime enhancement parity, and readiness for Orca Lead E2E execution.",
-            CONVERGENCE_STAGE_SCHEMA,
+            schema=CONVERGENCE_STAGE_SCHEMA,
             role=role,
             type_name=tname,
         )
