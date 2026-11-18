@@ -148,7 +148,7 @@ TASK_CLASS_PROFILES: dict[str, dict[str, Any]] = {
     },
     "parallel_worktree_implementation": {
         "omc_team_spec": "1:claude:executor,1:codex:test-engineer,1:antigravity:analyst,1:gemini:verifier",
-        "orca_workers": ("claude-sonnet-omc", "codex-sol-omx", "opencode-kimi-omo"),
+        "orca_workers": ("claude-sonnet-omc", "codex-sol-omx", "antigravity-carbon", "opencode-kimi-omo"),
         "hephaestus_model": "kimi-k3.1-pro",
         "requires_prewall_lock": False,
         "requires_3vendor_stage3": True,

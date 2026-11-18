@@ -39,6 +39,7 @@ from sota_mmw.ao_lifecycle import (
 from sota_mmw.cc_lead_hub import (
     CC_LEAD_CENTRAL_CONTRACT,
     RUNTIME_WORKER_ROSTER,
+    TASK_CLASS_PROFILES,
     CCLeadPlanRequest,
     build_cc_lead_execution_plan,
 )
@@ -665,6 +666,20 @@ class TestMultiModelWorkflows(unittest.TestCase):
             self.assertIn("OMC_RUNTIME_V2=1", plan["channels"]["2_omc_team_swarm_cmd"])
             self.assertIn("omc ultragoal create-goals", plan["channels"]["1_cc_lead_ultragoal_cmd"])
             self.assertEqual(len(plan["channels"]["4_orca_supervised_worker_dispatches"]), 3)
+
+            # Verify every registered task_class builds cleanly without vendor-diversity errors
+            for tc_name in TASK_CLASS_PROFILES:
+                p_tc = build_cc_lead_execution_plan(
+                    CCLeadPlanRequest(
+                        repo="cc-sota-harness",
+                        goal=f"Verify {tc_name}",
+                        task_class=tc_name,
+                        session_id="cc-lead-1",
+                    ),
+                    mesh_state="dual_mesh_docked",
+                    bus_db_path=db_file,
+                )
+                self.assertEqual(p_tc["task_class"], tc_name)
 
             # 2. Foreign overlapping lease flips lease_disjoint=False
             bus.claim_lease("sota-compounding-lab", "agy", "foreign-peer", ["src/*"], "active edit")
