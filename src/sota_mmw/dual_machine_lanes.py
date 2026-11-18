@@ -137,7 +137,7 @@ ORCHESTRATION_FRAMEWORKS_MATRIX: dict[str, dict[str, Any]] = {
     "goose_and_dsh_open_harnesses": {
         "upstream": "block/goose + native-agent-stack/dsh-sota-harness",
         "versions": {"goose": "1.59.2", "dsh": "0.2.2-rc.2"},
-        "models": ("goose-1.59", "deepseek-v4-pro"),
+        "models": ("goose-1.59", "deepseek-flash"),
         "capabilities": (
             "AAIF MCP autonomous recipes",
             "10-layer offline DSH probes",

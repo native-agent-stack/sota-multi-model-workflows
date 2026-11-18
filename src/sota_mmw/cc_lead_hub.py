@@ -7,7 +7,7 @@ dispatching isolated worktree and cross-session workers across:
 2. `omc team` & `omc interop` (`OMC_RUNTIME_V2=1` multi-vendor tmux worktree swarms)
 3. `omc ask` & `omx exec` / `omx mission` (`gpt-6.2-astra` / `gpt-6.2-sol` / `gemini-4-carbon-high` / `grok-4.7` / `muse-spark-1.3`)
 4. `orca orchestration worker-start` (`Mac M5 Max <-> Noesis 64c/128GB/RTX4090` supervised DAG workers, zero polling)
-5. Polyglot Open-Weights & Bus (`opencode`/`OMO` `kimi-k3.1-pro` non-GPT `Hephaestus`, `dsh` `deepseek-v4-pro`, `pi`/`omp`, `goose`, `hcom`, SQLite WAL `sota-bus`)
+5. Polyglot Open-Weights & Bus (`opencode`/`OMO` `claude-sonnet-5-5` non-GPT `Hephaestus`, `dsh` `deepseek-flash`, `pi`/`omp`, `goose`, `hcom`, SQLite WAL `sota-bus`)
 """
 
 from __future__ import annotations
@@ -81,9 +81,66 @@ QUALITY_DIRECTIVE_POWERHOUSE_FLEET: dict[str, dict[str, Any]] = {
     "deepseek_dsh_prewall": {
         "vendor": "DeepSeek",
         "benchmark_authority": "https://artificialanalysis.ai/models (Top Cost-Efficiency Pre-Wall Batch Sweep)",
-        "model": "deepseek-v4-pro",
+        "model": "deepseek-flash",
         "runtimes": ("dsh",),
         "default_effort": "high",
+    },
+}
+
+ENHANCED_8_RUNTIME_SOTA_PROFILES: dict[str, dict[str, Any]] = {
+    "claude-code-omc": {
+        "lead_model": "claude-fable-5-2",
+        "worker_model": "claude-sonnet-5-5",
+        "critic_model": "claude-opus-5-5",
+        "effort": "xhigh",
+        "mcps_verified": 4,
+        "tools_verified": 49,
+        "sota_enhancements": ("OMC_RUNTIME_V2=1", "ultragoal", "1h_600k_cache", "win32_orca_fallback"),
+    },
+    "openai-codex-omx": {
+        "lead_model": "gpt-6.2-astra",
+        "worker_model": "gpt-6.2-sol",
+        "effort": "xhigh",
+        "mcps_verified": 4,
+        "sota_enhancements": ("PreToolUse_live_capital_firewall", "stdin_devnull_exec", "skip_git_repo_check"),
+    },
+    "antigravity": {
+        "lead_model": "gemini-4-carbon-high",
+        "context_window": "1M+",
+        "effort": "high",
+        "mcps_verified": 4,
+        "sota_enhancements": ("native_run_workflow_19", "protobuf_safe_mcp", "8stage_convergence"),
+    },
+    "deepseek-dsh": {
+        "lead_model": "deepseek-flash",
+        "effort": "high",
+        "mcps_verified": 4,
+        "sota_enhancements": ("Noesis-Carbon_ext4_bridge", "prewall_<=2026-10-15_sweeps"),
+    },
+    "opencode-omo": {
+        "lead_model": "claude-sonnet-5-5",
+        "hephaestus_non_gpt_enforced": True,
+        "effort": "high",
+        "mcps_verified": 4,
+        "sota_enhancements": ("non_gpt_hephaestus_ast_codemod", "sota-workflow_run_compatible"),
+    },
+    "pi-omp": {
+        "lead_model": "openai-codex/gpt-6.2-sol",
+        "effort": "high",
+        "mcps_verified": 4,
+        "sota_enhancements": ("worker_role_routing", "cross_os_json_parity"),
+    },
+    "goose": {
+        "lead_model": "explicit_honest_availability_probe",
+        "effort": "high",
+        "mcps_verified": 4,
+        "sota_enhancements": ("honest_exit_127_shim_when_uninstalled", "aaif_mcp_recipe_contract"),
+    },
+    "orca": {
+        "lead_model": "stablyai/orca_v1.4.261_supervisor",
+        "effort": "xhigh",
+        "mcps_verified": 4,
+        "sota_enhancements": ("cc-lead_automations", "worker_start_child_worktree", "zero_polling_6770"),
     },
 }
 
@@ -175,7 +232,7 @@ RUNTIME_WORKER_ROSTER: dict[str, dict[str, str]] = {
         "orca_agent": "opencode",
         "omc_spec": "1:antigravity:verifier",
         "vendor": "deepseek",
-        "model": "deepseek-v4-pro",
+        "model": "deepseek-flash",
         "effort": "high",
         "slot": "Cost-efficient pre-wall (<=2026-10-15) batch evaluation & 10-layer DSH probes",
     },
@@ -260,6 +317,13 @@ TASK_CLASS_PROFILES: dict[str, dict[str, Any]] = {
         "requires_prewall_lock": True,
         "requires_3vendor_stage3": True,
     },
+    "orca_lead_e2e_research_convergence": {
+        "omc_team_spec": "1:claude:architect,1:codex:critic,1:antigravity:analyst",
+        "orca_workers": ("codex-astra-omx", "antigravity-carbon", "deepseek-dsh", "pi-omp-worker"),
+        "hephaestus_model": "claude-sonnet-5-5",
+        "requires_prewall_lock": True,
+        "requires_3vendor_stage3": True,
+    },
 }
 
 NOESIS_PROVISIONED_ORCA_REPOS: dict[str, str] = {
@@ -334,9 +398,29 @@ def probe_cc_runtime_fleet() -> dict[str, Any]:
     search_path = os.pathsep.join([*extra_dirs, os.environ.get("PATH", "")])
     installed: list[str] = []
     missing: list[str] = []
+    verified_live_callable: list[str] = []
+    shim_or_auth_pending: list[str] = []
+    auth_pending_routes = set(CC_LEAD_CENTRAL_CONTRACT["binary_present_user_auth_pending_routes"])
     for b in binaries:
-        if shutil.which(b, path=search_path):
+        resolved = shutil.which(b, path=search_path)
+        if resolved:
             installed.append(b)
+            is_unavailable_shim = False
+            if resolved.lower().endswith((".cmd", ".bat")):
+                try:
+                    shim_txt = Path(resolved).read_text(encoding="utf-8", errors="ignore")
+                    if "UNAVAILABLE_SHIM" in shim_txt or "exit /b 127" in shim_txt:
+                        is_unavailable_shim = True
+                except OSError:
+                    pass
+            if (
+                is_unavailable_shim
+                or b in auth_pending_routes
+                or (b == "gemini" and "gemini-cli" in auth_pending_routes)
+            ):
+                shim_or_auth_pending.append(b)
+            else:
+                verified_live_callable.append(b)
         else:
             missing.append(b)
     return {
@@ -344,6 +428,11 @@ def probe_cc_runtime_fleet() -> dict[str, Any]:
         "installed_count": len(installed),
         "installed_binaries": installed,
         "missing_binaries": missing,
+        "host_os": os.name,
+        "on_noesis_host": is_running_on_noesis_host(),
+        "enhanced_runtimes_count": len(ENHANCED_8_RUNTIME_SOTA_PROFILES),
+        "verified_live_callable_on_host": verified_live_callable,
+        "shim_or_auth_pending_on_host": shim_or_auth_pending,
         "cc_lead_ready": "claude" in installed and "omc" in installed,
         "codex_omx_ready": "codex" in installed and "omx" in installed,
         "orca_supervisor_ready": "orca" in installed,
@@ -596,6 +685,11 @@ def build_cc_lead_execution_plan(
         "channels": {
             "1_cc_lead_ultragoal_cmd": ultragoal_cmd,
             "2_omc_team_swarm_cmd": omc_team_cmd,
+            "2b_win32_orca_and_codex_headless_cmds": {
+                "pwsh_env_setup": "$env:OMC_RUNTIME_V2='1'; $env:OMC_MODEL_HIGH='claude-fable-5-2'; $env:OMC_MODEL_MEDIUM='claude-sonnet-5-5'; $env:OMC_MODEL_LOW='claude-sonnet-5-5'",
+                "codex_headless_cmd": f"codex exec --skip-git-repo-check -c 'model=\"gpt-6.2-sol\"' {quoted_brief}",
+                "sota_workflow_run_cmd": f"sota-workflow run orca-lead-e2e-research-convergence --repo {shlex.quote(req.repo)} --json",
+            },
             "3_advisor_and_omx_cmds": advisor_and_omx_cmds,
             "4_orca_supervised_worker_dispatches": orca_dispatches,
             "5_bus_and_hcom_cmds": {
@@ -670,7 +764,7 @@ SMART_TASK_SUITABILITY_MATRIX: dict[str, dict[str, Any]] = {
         ),
         "primary_worker": "dsh",
         "primary_orca_agent": "codex",
-        "primary_model": "deepseek-v4-pro",
+        "primary_model": "deepseek-flash",
         "effort": "high",
         "challenger_worker": "codex",
         "challenger_model": "gpt-6.2-astra",
@@ -1074,6 +1168,115 @@ def build_multi_model_assign_envelope(
     }
 
 
+def build_orca_lead_e2e_convergence_assignment(
+    *,
+    repo: str = "cc-sota-harness",
+    goal: str = "Execute v3.10.0 8-Stage SOTA Research Convergence, DF1..DF12 Symbol Ranking verification, and multi-runtime E2E parity.",
+    surface: str = "auto",
+    sender_session: str = "orca-lead-e2e-coordinator",
+) -> dict[str, Any]:
+    """Build a non-colliding E2E Research Convergence Practice assignment envelope for Orca Lead (`cc-lead`)."""
+    for rx, label in (
+        (_LIVE_ALPACA_RE, "live Alpaca endpoint"),
+        (_LIVE_BIN_RE, "live broker binary"),
+        (_LIVE_IBKR_PORT_RE, "live IBKR port"),
+    ):
+        if rx.search(goal):
+            raise PermissionError(f"Hard firewall refused {label} in goal")
+    if repo not in NOESIS_PROVISIONED_ORCA_REPOS:
+        raise ValueError(f"Unknown repository '{repo}'")
+
+    on_noesis_self = is_running_on_noesis_host()
+    use_noesis = on_noesis_self or surface == "noesis"
+    resolved_surface = "noesis" if use_noesis else "local"
+    orca_repo = f"id:{NOESIS_PROVISIONED_ORCA_REPOS[repo]}" if use_noesis else repo
+    slug = re.sub(r"[^a-z0-9]+", "-", repo.lower()).strip("-") or "sota"
+    wt_name = f"e2e-convergence-{slug}"
+
+    task_body = (
+        f"[Orca-Lead E2E Research Convergence Practice v3.10.0 | repo={repo} | surface={resolved_surface}] "
+        f"{goal} Verify: (1) DF1..DF12 sota-symbol-ranking-datafeeds.v3.10; "
+        f"(2) 8-stage SOTA convergence (413+6 beyond-starred); "
+        f"(3) sota-workflow run orca-lead-e2e-research-convergence --repo {repo} --json; "
+        f"(4) ADR-0022 <=2.00% stop & singleActiveBrokerHostOnly."
+    )
+    bus_msg_argv = [
+        sys.executable,
+        str(Path.home() / ".agents" / "bus" / "sota_bus_engine.py"),
+        "msg",
+        "--from",
+        sender_session,
+        "--to",
+        "cc-lead",
+        "--repo",
+        repo,
+        task_body,
+    ]
+    workflow_run_argv = [
+        "sota-workflow",
+        "run",
+        "orca-lead-e2e-research-convergence",
+        "--repo",
+        repo,
+        "--mode",
+        "live-cli",
+        "--json",
+    ]
+    orca_worker_argv = [
+        "orca",
+        "orchestration",
+        "worker-start",
+        *orca_remote_on_args(use_noesis=use_noesis),
+        "--worktree",
+        "new-child",
+        "--repo",
+        orca_repo,
+        "--name",
+        wt_name,
+        "--agent",
+        "claude",
+        "--model",
+        "claude-fable-5-2",
+        "--effort",
+        "xhigh",
+        "--setup",
+        "run",
+        "--task-title",
+        f"[Orca-Lead E2E] SOTA v3.10.0 Convergence ({repo})",
+        "--spec",
+        task_body,
+        "--json",
+    ]
+    assign_sha256 = hashlib.sha256(
+        json.dumps(
+            {
+                "repo": repo,
+                "goal": goal,
+                "surface": resolved_surface,
+                "sender": sender_session,
+                "schema": "sota-orca-lead-e2e-assign.v1",
+            },
+            sort_keys=True,
+        ).encode("utf-8")
+    ).hexdigest()
+
+    return {
+        "schema_version": "sota-orca-lead-e2e-assign.v1",
+        "repo": repo,
+        "target_lead": "cc-lead",
+        "lead_model": "claude-fable-5-2",
+        "lead_effort": "xhigh",
+        "surface": resolved_surface,
+        "orca_repo_selector": orca_repo,
+        "non_colliding_message_handoff": True,
+        "assign_sha256": assign_sha256,
+        "sota_bus_message_argv": bus_msg_argv,
+        "sota_workflow_run_argv": workflow_run_argv,
+        "orca_worker_start_argv": orca_worker_argv,
+        "enhanced_8_runtime_profiles": ENHANCED_8_RUNTIME_SOTA_PROFILES,
+    }
+
+
 def _load_live_bus_and_mesh() -> tuple[int, float, str]:
     trials_n = 96
     next_t = 4.1905
@@ -1199,6 +1402,19 @@ def main(argv: list[str] | None = None) -> int:
     p_rl.add_argument("--surface", default="local", choices=("local", "noesis"))
     p_rl.add_argument("--execute", action="store_true")
 
+    p_al = sub.add_parser(
+        "assign-orca-lead",
+        help="Assign v3.10.0 E2E Research Convergence Practice to Orca Lead (cc-lead) without self-locking leases",
+    )
+    p_al.add_argument("--repo", default="cc-sota-harness")
+    p_al.add_argument(
+        "--goal",
+        default="Execute v3.10.0 8-Stage SOTA Research Convergence, DF1..DF12 Symbol Ranking verification, and multi-runtime E2E parity.",
+    )
+    p_al.add_argument("--surface", default="auto", choices=("auto", "local", "noesis"))
+    p_al.add_argument("--sender", default="orca-lead-e2e-coordinator")
+    p_al.add_argument("--execute", action="store_true")
+
     args = parser.parse_args(argv)
     trials_n, next_t, mesh = _load_live_bus_and_mesh()
 
@@ -1242,6 +1458,44 @@ def main(argv: list[str] | None = None) -> int:
         p_rel = subprocess.run(orca_cmd, capture_output=True, text=True, timeout=15, check=False)
         print(json.dumps({"executed": True, "returncode": p_rel.returncode, "stdout": p_rel.stdout.strip()}, indent=2))
         return 0 if p_rel.returncode == 0 else 1
+
+    if args.cmd == "assign-orca-lead":
+        env = build_orca_lead_e2e_convergence_assignment(
+            repo=args.repo,
+            goal=args.goal,
+            surface=args.surface,
+            sender_session=args.sender,
+        )
+        if not args.execute:
+            print(json.dumps({"executed": False, **env}, indent=2))
+            return 0
+        p_msg = subprocess.run(
+            env["sota_bus_message_argv"],
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=False,
+        )
+        msg_payload: Any = p_msg.stdout.strip()
+        try:
+            msg_payload = json.loads(msg_payload) if msg_payload else {}
+        except json.JSONDecodeError:
+            pass
+        print(
+            json.dumps(
+                {
+                    "executed": True,
+                    "ok": p_msg.returncode == 0,
+                    "returncode": p_msg.returncode,
+                    "bus_message_result": msg_payload,
+                    "stderr": p_msg.stderr.strip(),
+                    **env,
+                },
+                indent=2,
+            )
+        )
+        return 0 if p_msg.returncode == 0 else p_msg.returncode
 
     if args.cmd == "status":
         fleet = probe_cc_runtime_fleet()

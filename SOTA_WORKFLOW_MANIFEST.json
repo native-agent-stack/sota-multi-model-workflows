@@ -2,7 +2,7 @@
   "schemaVersion": "3.10.0",
   "repository": "https://github.com/native-agent-stack/sota-multi-model-workflows",
   "visibility": "PUBLIC",
-  "workflowCount": 18,
+  "workflowCount": 19,
   "workflows": [
     "master-sota-harness",
     "org-compounding-promotion",
@@ -21,7 +21,8 @@
     "dual-machine-trading-and-harness-lanes",
     "compounding-versioning-and-ranking-adr",
     "sota-skills-adr-and-orca-grand-workflow",
-    "multi-model-omc-memory-assign"
+    "multi-model-omc-memory-assign",
+    "orca-lead-e2e-research-convergence"
   ],
   "supportedHarnesses": [
     "antigravity",
@@ -39,7 +40,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 23,
+    "adrCount": 24,
     "records": [
       {
         "id": "ADR-0001",
@@ -394,6 +395,23 @@
           "https://github.com/can1357/oh-my-pi",
           "https://github.com/native-agent-stack/cc-sota-harness",
           "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/stablyai/orca"
+        ]
+      },
+      {
+        "id": "ADR-0024",
+        "layer": "Research Convergence, 12-Feed Symbol Ranking DataFeeds (`DF1..DF12`), 8-Runtime SOTA Fleet & Orca Lead (`cc-lead`) E2E Orchestration (`L0..L13` x `P0..P5` x `T1..T5` x `H0..H7`)",
+        "title": "`v3.10.0` 8-Stage SOTA Research Convergence, Finalized 12-Feed Symbol Ranking (`DF1..DF12`), Cross-Runtime `sota-workflow run` & Orca Lead (`cc-lead`) E2E Assignment",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "E4 (`DF1..DF12` -> `6` Auto-Trading Routes, JSON-RPC Notification Silence & Error Recovery Verified, `sota-workflow run` Across All `8` Runtimes, `sota-cc-hub assign-orca-lead` + Live Orca Automation `cc-lead` E2E, `ruff`/`ty`/Unit Suite/`merge_gate.py`/`gitleaks` `0` Leaks)",
+        "file": "docs/adr/ADR-0024-v3100-8stage-research-convergence-12feed-symbol-ranking-cross-runtime-workflow-runner-and-orca-lead-e2e.md",
+        "githubUrls": [
+          "https://github.com/databento/databento-python",
+          "https://github.com/microsoft/RD-Agent",
+          "https://github.com/microsoft/qlib",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/native-agent-stack/sota-upstream-shelf-lock",
           "https://github.com/stablyai/orca"
         ]
       }

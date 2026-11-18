@@ -508,6 +508,8 @@ def record_workflow_run(
     next_priority: str = "",
 ) -> None:
     """Persist a redacted workflow execution checkpoint into `peer_bus.db` and `HANDOVER.md`."""
+    if os.environ.get("SOTA_WORKFLOW_DRY_RUN", "").strip().lower() in ("1", "true", "yes"):
+        return
     if bus is None:
         return
     try:

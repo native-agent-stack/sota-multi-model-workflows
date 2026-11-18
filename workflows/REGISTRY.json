@@ -345,6 +345,28 @@
         }
       },
       "when_to_use": "v3.9.8 M1-M4 closed-loop 1-call multi-model worker assignment (--spec-file - FTS5 + 567-doc qmd memory brief, disjoint sota-bus lease, OMC_RUNTIME_V2=1 stop-callback ingestion, 3-surface E2EE memory delta sync, and 3-stage Beads bd + Orca --deps / gate-create wave DAG)."
+    },
+    {
+      "id": "orca-lead-e2e-research-convergence",
+      "script_path": "~/.agents/workflows/orca_lead_e2e_research_convergence_workflow.py",
+      "skill": "sota-workflow",
+      "agents": [
+        "sota-deep-synthesizer",
+        "sota-rd-proposer",
+        "sota-falsifier",
+        "sota-code-verifier"
+      ],
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "repo": {"type": "string"},
+          "goal": {"type": "string"},
+          "surface": {"type": "string", "enum": ["auto", "local", "noesis"]},
+          "strategy_route": {"type": "string"},
+          "fast_deterministic_only": {"type": "boolean"}
+        }
+      },
+      "when_to_use": "v3.10.0 E2E SOTA 8-Stage Research Convergence Practice (413 owner stars + 6 beyond-starred SOTA anchors), 12-Feed DF1..DF12 Symbol Ranking System DataFeeds -> 6 autonomous paper strategies, and cross-runtime Orca Lead (cc-lead) E2E assignment & verification."
     }
   ]
 }

@@ -131,8 +131,8 @@ class TestMultiModelWorkflows(unittest.TestCase):
         manifest = json.loads((ROOT / "SOTA_WORKFLOW_MANIFEST.json").read_text(encoding="utf-8"))
         self.assertEqual(reg["version"], "3.10.0")
         self.assertEqual(manifest["schemaVersion"], "3.10.0")
-        self.assertEqual(len(reg["workflows"]), 18)
-        self.assertEqual(manifest["workflowCount"], 18)
+        self.assertEqual(len(reg["workflows"]), 19)
+        self.assertEqual(manifest["workflowCount"], 19)
         ids = [w["id"] for w in reg["workflows"]]
         self.assertEqual(ids, manifest["workflows"])
         self.assertIn("multi-model-ao-convergence", ids)
@@ -143,10 +143,11 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertIn("compounding-versioning-and-ranking-adr", ids)
         self.assertIn("sota-skills-adr-and-orca-grand-workflow", ids)
         self.assertIn("multi-model-omc-memory-assign", ids)
+        self.assertIn("orca-lead-e2e-research-convergence", ids)
 
         expected_keys = {"id", "script_path", "skill", "agents", "args_schema", "when_to_use"}
         top_level_wf_files = sorted(p for p in (ROOT / "workflows").glob("*.py") if not p.name.startswith("_"))
-        self.assertEqual(len(top_level_wf_files), 18)
+        self.assertEqual(len(top_level_wf_files), 19)
 
         for wf in reg["workflows"]:
             self.assertEqual(set(wf.keys()), expected_keys)
@@ -676,29 +677,30 @@ class TestMultiModelWorkflows(unittest.TestCase):
             bus = PortablePeerBus(db_file)
 
             # 1. Valid Noesis GPU sweep routes to noesis_64c_rtx4090 with >=3 canonical vendors and --on 100.110.115.22
-            plan = build_cc_lead_execution_plan(
-                CCLeadPlanRequest(
-                    repo="sota-compounding-lab",
-                    goal="Run pre-wall CPCV sweep with Claude OMC lead, Codex OMX critic & DeepSeek DSH batch",
-                    task_class="combinatorial_gpu_sweep",
-                    placement="auto",
-                    session_id="cc-lead-1",
-                ),
-                mesh_state="dual_mesh_docked",
-                bus_db_path=db_file,
-            )
-            self.assertEqual(plan["target_host"], "noesis_64c_rtx4090")
-            self.assertEqual(plan["orca_repo_selector"], "id:46980ada-367d-4ba8-a487-a44940db96fd")
-            self.assertGreaterEqual(plan["canonical_vendors_count"], 3)
-            self.assertTrue(plan["isolation_and_lease"]["lease_disjoint"])
-            self.assertIn("OMC_RUNTIME_V2=1", plan["channels"]["2_omc_team_swarm_cmd"])
-            self.assertIn("omc ultragoal create-goals", plan["channels"]["1_cc_lead_ultragoal_cmd"])
-            dispatches = plan["channels"]["4_orca_supervised_worker_dispatches"]
-            self.assertEqual(len(dispatches), 3)
-            for d in dispatches:
-                self.assertIn("--on", d["argv"])
-                self.assertIn("100.110.115.22", d["argv"])
-                self.assertNotIn("--environment", d["argv"])
+            with mock.patch("sota_mmw.cc_lead_hub.is_running_on_noesis_host", return_value=False):
+                plan = build_cc_lead_execution_plan(
+                    CCLeadPlanRequest(
+                        repo="sota-compounding-lab",
+                        goal="Run pre-wall CPCV sweep with Claude OMC lead, Codex OMX critic & DeepSeek DSH batch",
+                        task_class="combinatorial_gpu_sweep",
+                        placement="auto",
+                        session_id="cc-lead-1",
+                    ),
+                    mesh_state="dual_mesh_docked",
+                    bus_db_path=db_file,
+                )
+                self.assertEqual(plan["target_host"], "noesis_64c_rtx4090")
+                self.assertEqual(plan["orca_repo_selector"], "id:46980ada-367d-4ba8-a487-a44940db96fd")
+                self.assertGreaterEqual(plan["canonical_vendors_count"], 3)
+                self.assertTrue(plan["isolation_and_lease"]["lease_disjoint"])
+                self.assertIn("OMC_RUNTIME_V2=1", plan["channels"]["2_omc_team_swarm_cmd"])
+                self.assertIn("omc ultragoal create-goals", plan["channels"]["1_cc_lead_ultragoal_cmd"])
+                dispatches = plan["channels"]["4_orca_supervised_worker_dispatches"]
+                self.assertEqual(len(dispatches), 3)
+                for d in dispatches:
+                    self.assertIn("--on", d["argv"])
+                    self.assertIn("100.110.115.22", d["argv"])
+                    self.assertNotIn("--environment", d["argv"])
 
             # Local placement omits --on; pi-omp-worker passes --model @worker --effort high; opencode omits --effort
             plan_local_omp = build_cc_lead_execution_plan(
@@ -842,9 +844,9 @@ class TestMultiModelWorkflows(unittest.TestCase):
             resolve_ecosystem_repo_dir,
         )
 
-        # 1. Every single one of the 18 canonical workflows must call kit.verify_workflow_research_convergence
+        # 1. Every single one of the 19 canonical workflows must call kit.verify_workflow_research_convergence
         wf_files = sorted((ROOT / "workflows").glob("*_workflow.py"))
-        self.assertEqual(len(wf_files), 18)
+        self.assertEqual(len(wf_files), 19)
         for wf_path in wf_files:
             txt = wf_path.read_text(encoding="utf-8")
             self.assertIn(
@@ -917,20 +919,24 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertEqual(overview["total_provisioned_repos"], 18)
 
         # 2. T3 pre-wall GPU/CPCV routes to stationary_noesis_win32 with --on 100.110.115.22 & roaming failover
-        t3_docked = resolve_dual_machine_lane_plan(
-            "sota-compounding-lab",
-            workload="combinatorial_gpu_sweep",
-            mesh_state="dual_mesh_docked",
-        )
-        self.assertEqual(t3_docked["selected_surface"], "stationary_noesis_win32")
-        self.assertTrue(t3_docked["use_noesis"])
-        self.assertIn("--on", t3_docked["orca_worker_start_argv"])
-        self.assertIn("100.110.115.22", t3_docked["orca_worker_start_argv"])
-        self.assertEqual(
-            t3_docked["orca_parent_worktree_selector"],
-            "folder:c4f93f9e-a710-4599-ac95-892082b03ec8",
-        )
-        self.assertGreaterEqual(t3_docked["concrete_vendor_count"], 3)
+        with (
+            mock.patch.object(dml, "is_running_on_noesis_host", return_value=False),
+            mock.patch("sota_mmw.cc_lead_hub.is_running_on_noesis_host", return_value=False),
+        ):
+            t3_docked = resolve_dual_machine_lane_plan(
+                "sota-compounding-lab",
+                workload="combinatorial_gpu_sweep",
+                mesh_state="dual_mesh_docked",
+            )
+            self.assertEqual(t3_docked["selected_surface"], "stationary_noesis_win32")
+            self.assertTrue(t3_docked["use_noesis"])
+            self.assertIn("--on", t3_docked["orca_worker_start_argv"])
+            self.assertIn("100.110.115.22", t3_docked["orca_worker_start_argv"])
+            self.assertEqual(
+                t3_docked["orca_parent_worktree_selector"],
+                "folder:c4f93f9e-a710-4599-ac95-892082b03ec8",
+            )
+            self.assertGreaterEqual(t3_docked["concrete_vendor_count"], 3)
 
         t3_roaming = resolve_dual_machine_lane_plan(
             "sota-compounding-lab",
@@ -1177,7 +1183,7 @@ class TestMultiModelWorkflows(unittest.TestCase):
         st_v390 = cv.build_compounding_version_status()
         self.assertTrue(st_v390["ok"])
         self.assertEqual(st_v390["ecosystem_version"], "3.10.0")
-        self.assertEqual(st_v390["latest_verified_transition"]["adr_id"], "ADR-0023")
+        self.assertEqual(st_v390["latest_verified_transition"]["adr_id"], "ADR-0024")
 
         # 2. T1..T5 x H0..H7 bijection (13 sub-lanes covering all 18 active repos) & 9-feed DF1..DF9 gate
         self.assertEqual(len(dml.STAGE_AND_LAYER_SUBLANES), 13)
@@ -1296,17 +1302,18 @@ class TestMultiModelWorkflows(unittest.TestCase):
         from sota_mmw import dual_machine_lanes as dml
         from sota_mmw import native_workflow_enactor as nwe
 
-        env_noesis = cch.build_multi_model_assign_envelope(
-            repo="sota-compounding-lab",
-            goal="Verify H096 15s dry-powder bid-survival protective filter",
-            worker="codex",
-            surface="noesis",
-        )
-        self.assertEqual(env_noesis["schema_version"], "sota-multi-model-assign.v1")
-        self.assertEqual(env_noesis["surface"], "noesis")
-        self.assertTrue(env_noesis["stdin_spec_file_mode"])
-        self.assertEqual(len(env_noesis["assign_sha256"]), 64)
-        self.assertIn("--on", env_noesis["orca_worker_release_template"])
+        with mock.patch.object(cch, "is_running_on_noesis_host", return_value=False):
+            env_noesis = cch.build_multi_model_assign_envelope(
+                repo="sota-compounding-lab",
+                goal="Verify H096 15s dry-powder bid-survival protective filter",
+                worker="codex",
+                surface="noesis",
+            )
+            self.assertEqual(env_noesis["schema_version"], "sota-multi-model-assign.v1")
+            self.assertEqual(env_noesis["surface"], "noesis")
+            self.assertTrue(env_noesis["stdin_spec_file_mode"])
+            self.assertEqual(len(env_noesis["assign_sha256"]), 64)
+            self.assertIn("--on", env_noesis["orca_worker_release_template"])
 
         with self.assertRaises(PermissionError):
             cch.build_multi_model_assign_envelope(
@@ -1324,7 +1331,7 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertTrue(all(len(n["depends_on"]) > 0 for n in stage3_nodes))
 
         st18 = nwe.build_grand_native_workflow_status()
-        self.assertEqual(st18["canonical_workflows_count"], 18)
+        self.assertEqual(st18["canonical_workflows_count"], 19)
 
         wf18_src = (ROOT / "workflows" / "multi_model_omc_memory_assign_workflow.py").read_text(encoding="utf-8")
         ns18: dict[str, object] = {
@@ -1458,6 +1465,125 @@ class TestMultiModelWorkflows(unittest.TestCase):
                 "folder:060eb055-834e-4ef2-8198-e3e224a35fbe",
             )
             self.assertNotIn("100.110.115.22", lane_self["orca_worker_start_argv"])
+
+    def test_v3100_adr0024_df12_symbol_ranking_mcp_silence_workflow_run_and_orca_lead_e2e(self) -> None:
+        from sota_mmw import cc_lead_hub as cch
+        from sota_mmw import compounding_versioning as cv
+        from sota_mmw import native_workflow_enactor as nwe
+        from sota_mmw import peer_bus_mcp_server as pbm
+        from sota_mmw import research_convergence_contract as rcc
+        from sota_mmw import symbol_ranking_datafeeds as srd
+
+        # 1. Finalized DF1..DF12 Symbol Ranking DataFeeds & 6 auto-trading strategy routes
+        mf = srd.build_symbol_ranking_foundation_manifest()
+        self.assertEqual(mf["schema_version"], "sota-symbol-ranking-datafeeds.v3.10")
+        self.assertEqual(mf["feed_count"], 12)
+        self.assertEqual(mf["strategy_route_count"], 6)
+        ok_handoff = srd.evaluate_symbol_ranking_to_strategy_handoff(
+            symbol="NVDA",
+            strategy_route="HYBRID_50_50_CORE_AND_WAVE2_REENTRY",
+            study_date="2026-10-15",
+            ts_event_ns=100,
+            ts_recv_ns=200,
+            decision_ns=300,
+            rvol_tod=2.5,
+            vol_z_tod=2.7,
+            ofi=0.35,
+            dry_powder_sec=16.0,
+            spread_collar_bps=6.5,
+            hard_stop_pct=1.75,
+            is_wave2_reentry=True,
+            cooldown_elapsed_sec=920.0,
+            pullback_held_zero_loss_floor=True,
+            broker_port=8787,
+        )
+        self.assertTrue(ok_handoff["approved"])
+
+        bad_bitemporal = srd.evaluate_symbol_ranking_to_strategy_handoff(
+            symbol="NVDA",
+            strategy_route="PRE_TRAVEL_EARLY_IGNITION",
+            study_date="2026-10-15",
+            ts_event_ns=300,
+            ts_recv_ns=200,
+            decision_ns=250,
+            rvol_tod=2.5,
+            vol_z_tod=2.7,
+            ofi=0.35,
+            dry_powder_sec=16.0,
+            spread_collar_bps=6.5,
+            hard_stop_pct=1.75,
+            broker_port=8787,
+        )
+        self.assertFalse(bad_bitemporal["approved"])
+        self.assertTrue(any("BITEMPORAL_PIT_VIOLATION" in v for v in bad_bitemporal["violations"]))
+
+        # 2. 8-Stage Advanced Research Convergence & Live Version status
+        adv = rcc.verify_advanced_sota_convergence_practice()
+        self.assertTrue(adv["valid"])
+        self.assertEqual(adv["stages_count"], 8)
+        self.assertEqual(adv["owner_starred_total_audited"], 413)
+        self.assertEqual(adv["beyond_starred_sota_count"], 6)
+        cv_st = cv.build_compounding_version_status()
+        self.assertEqual(cv_st["symbol_ranking_v310_feeds_count"], 12)
+
+        # 3. Canonical Peer-Bus MCP JSON-RPC 2.0 notification silence + isError recovery
+        self.assertEqual(len(pbm.TOOLS), 9)
+        self.assertIsNone(pbm.handle_jsonrpc_message({"jsonrpc": "2.0", "method": "notifications/initialized"}))
+        self.assertIsNone(pbm.handle_jsonrpc_message({"jsonrpc": "2.0", "id": None, "method": "ping"}))
+        init_resp = pbm.handle_jsonrpc_message({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}})
+        self.assertIsNotNone(init_resp)
+        assert init_resp is not None
+        self.assertEqual(init_resp["id"], 1)
+
+        def _boom(_name: str, _args: dict) -> dict:
+            raise RuntimeError("simulated tool failure")
+
+        err_resp = pbm.handle_jsonrpc_message(
+            {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "sota_bus_status", "arguments": {}}},
+            tool_dispatcher=_boom,
+        )
+        self.assertIsNotNone(err_resp)
+        assert err_resp is not None
+        self.assertTrue(err_resp["result"]["isError"])
+
+        # 4. Dry-run guard in _sota_kit + sota-workflow run + sota-cc-hub assign-orca-lead + live HLZ propagation
+        with (
+            mock.patch.dict("os.environ", {"SOTA_WORKFLOW_DRY_RUN": "1"}),
+            mock.patch.object(kit, "bus") as mocked_bus,
+        ):
+            kit.record_workflow_run(
+                repo="cc-sota-harness",
+                workflow_id="orca-lead-e2e-research-convergence",
+                done_summary="dry",
+                verified_by="test",
+            )
+            mocked_bus.get_conn.assert_not_called()
+
+        enacted = nwe.select_workflow_and_skills(
+            goal="Assign orca lead e2e convergence with df12 symbol ranking",
+            repo="cc-sota-harness",
+        )
+        self.assertEqual(enacted["workflow_id"], "orca-lead-e2e-research-convergence")
+        self.assertGreaterEqual(enacted["hlz_trials_n"], 90)
+        self.assertIn("cross_runtime_workflow_run", enacted["runtime_enactments"])
+
+        with mock.patch.dict("os.environ", {"SOTA_WORKFLOW_DRY_RUN": "1"}):
+            run_out = nwe.run_workflow_cli(
+                "orca-lead-e2e-research-convergence",
+                repo="cc-sota-harness",
+                mode="deterministic",
+                dry_run=True,
+                workflows_dir=ROOT / "workflows",
+            )
+        self.assertTrue(run_out["ok"])
+        self.assertTrue(run_out["receipt"]["all_gates_passed"])
+
+        fleet = cch.probe_cc_runtime_fleet()
+        self.assertEqual(fleet["enhanced_runtimes_count"], 8)
+        orca_assign = cch.build_orca_lead_e2e_convergence_assignment(repo="cc-sota-harness")
+        self.assertEqual(orca_assign["target_lead"], "cc-lead")
+        self.assertTrue(orca_assign["non_colliding_message_handoff"])
+        self.assertEqual(len(orca_assign["assign_sha256"]), 64)
 
 
 if __name__ == "__main__":

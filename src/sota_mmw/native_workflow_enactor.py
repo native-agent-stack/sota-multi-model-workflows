@@ -365,6 +365,8 @@ def select_workflow_and_skills(
 
     if workflow_id and workflow_id != "auto":
         chosen_wf = workflow_id
+    elif any(k in g_low for k in ("orca-lead", "orca lead", "e2e convergence", "df12", "symbol ranking")):
+        chosen_wf = "orca-lead-e2e-research-convergence"
     elif any(k in g_low for k in ("grand", "all layers", "all adrs", "enact", "native workflow", "sota skills")):
         chosen_wf = "sota-skills-adr-and-orca-grand-workflow"
     elif any(k in g_low for k in ("version", "semver", "ranking", "df1", "df9")):
@@ -405,6 +407,7 @@ def select_workflow_and_skills(
         "compounding-versioning-and-ranking-adr": "compounding_versioning_and_ranking_adr_workflow.py",
         "sota-skills-adr-and-orca-grand-workflow": "sota_skills_adr_and_orca_grand_workflow.py",
         "multi-model-omc-memory-assign": "multi_model_omc_memory_assign_workflow.py",
+        "orca-lead-e2e-research-convergence": "orca_lead_e2e_research_convergence_workflow.py",
     }
     script_name = wf_script_map.get(chosen_wf, "sota_skills_adr_and_orca_grand_workflow.py")
 
@@ -426,6 +429,7 @@ def select_workflow_and_skills(
         bound_skills.update(CANONICAL_14_LAYERS_MATRIX[lid]["skills"])
 
     target_repo = repo if repo in REPO_LANE_INDEX else "native-agent-stack"
+    cv_status = build_compounding_version_status()
     lane_plan = resolve_dual_machine_lane_plan(
         target_repo,
         workload="combinatorial_gpu_sweep" if "pre-wall" in g_low or "cpcv" in g_low else "parallel_worktree_impl",
@@ -435,7 +439,9 @@ def select_workflow_and_skills(
             repo=target_repo,
             goal=goal,
             task_class="parallel_worktree_implementation",
-        )
+        ),
+        hlz_trials_n=int(cv_status["trials_n"]),
+        hlz_next_t_hurdle=float(cv_status["next_trial_hlz_t_hurdle"]),
     )
     rc_env = build_workflow_research_convergence_envelope(
         workflow_id=chosen_wf,
@@ -443,7 +449,6 @@ def select_workflow_and_skills(
         archetype="PRE_TRAVEL_EARLY_IGNITION",
         upstream_pins=dict(UPSTREAM_SHELF_PINS_18),
     )
-    cv_status = build_compounding_version_status()
     adr_index = discover_ecosystem_adr_index()
 
     script_rel = f"~/.agents/workflows/{script_name}"
@@ -454,8 +459,9 @@ def select_workflow_and_skills(
             "tool": "run_workflow",
             "ScriptPath": script_rel,
             "Args": {"goal": goal, "repo": target_repo, "layer": norm_layer.lower()},
-            "Description": f"SOTA Native Workflow ({chosen_wf}) across {len(active_layers)} layers & 9-Feed PIT",
+            "Description": f"SOTA Native Workflow ({chosen_wf}) across {len(active_layers)} layers & 12-Feed DF1..DF12 PIT",
         },
+        "cross_runtime_workflow_run": f"sota-workflow run {chosen_wf} --repo {target_repo} --json",
         "orca_supervised_worker": lane_plan["orca_worker_start_cmd"],
         "orca_lane_hub_worktree": lane_plan["orca_folder_worktree_cmd"],
         "cc_lead_omc_team": cc_plan["channels"]["2_omc_team_swarm_cmd"],
@@ -529,7 +535,7 @@ def select_workflow_and_skills(
 
 
 def build_grand_native_workflow_status(home: Path | None = None) -> dict[str, Any]:
-    """Build complete status across all 46 skills, 18 workflows, 14 layers, 18 ADR catalogs, & Orca."""
+    """Build complete status across all 46 skills, 19 workflows, 14 layers, 18 ADR catalogs, & Orca."""
     skills_st = probe_installed_sota_skills(home=home)
     adr_idx = discover_ecosystem_adr_index(home=home)
     cv_st = build_compounding_version_status()
@@ -538,7 +544,7 @@ def build_grand_native_workflow_status(home: Path | None = None) -> dict[str, An
         "schema_version": NATIVE_WORKFLOW_ENACTOR_SCHEMA,
         "ecosystem_semver": DEFAULT_ECOSYSTEM_SEMVER,
         "workstation_surface": detect_workstation_surface(home=home),
-        "canonical_workflows_count": 18,
+        "canonical_workflows_count": 19,
         "canonical_skills_total": len(CANONICAL_46_SOTA_SKILLS),
         "skills_status": skills_st,
         "layers_count": len(CANONICAL_14_LAYERS_MATRIX),
@@ -547,6 +553,8 @@ def build_grand_native_workflow_status(home: Path | None = None) -> dict[str, An
         "harness_lanes_count": len(HARNESS_LANES),
         "ranking_datafeeds_schema": RANKING_DATAFEEDS_SCHEMA_VERSION,
         "ranking_feeds_count": len(CANONICAL_RANKING_DATAFEEDS_V38),
+        "symbol_ranking_v310_schema": cv_st["symbol_ranking_v310_schema"],
+        "symbol_ranking_v310_feeds_count": cv_st["symbol_ranking_v310_feeds_count"],
         "runtime_workers_count": len(RUNTIME_WORKER_ROSTER),
         "orchestration_frameworks_count": len(ORCHESTRATION_FRAMEWORKS_MATRIX),
         "model_vendors_count": len(CANONICAL_SEVEN_MODEL_VENDORS),
@@ -565,6 +573,162 @@ def build_grand_native_workflow_status(home: Path | None = None) -> dict[str, An
     }
 
 
+def _build_schema_fallback(schema: dict[str, Any], channel: str) -> dict[str, Any]:
+    props = schema.get("properties") or {}
+    out: dict[str, Any] = {}
+    reject_tokens = {"DISCARD", "REJECT", "FAIL", "BLOCK", "BLOCKED", "REVISE"}
+    for key, spec in props.items():
+        if not isinstance(spec, dict):
+            out[key] = channel
+            continue
+        enum_vals = spec.get("enum")
+        if enum_vals:
+            rejecting = [v for v in enum_vals if str(v).upper() in reject_tokens]
+            out[key] = rejecting[0] if ("verdict" in key.lower() and rejecting) else enum_vals[0]
+        elif spec.get("type") == "boolean":
+            out[key] = True
+        elif spec.get("type") == "integer":
+            out[key] = 1
+        elif spec.get("type") == "number":
+            out[key] = 1.0
+        elif spec.get("type") == "array":
+            out[key] = [channel]
+        else:
+            out[key] = channel
+    return out
+
+
+def run_workflow_cli(
+    workflow_id: str,
+    *,
+    repo: str = "cc-sota-harness",
+    args_dict: dict[str, Any] | None = None,
+    mode: str = "deterministic",
+    dry_run: bool = False,
+    workflows_dir: Path | None = None,
+) -> dict[str, Any]:
+    """Execute any canonical REGISTRY.json workflow from CLI across all 8 runtimes (with top-level await support)."""
+    import ast
+    import asyncio
+    import contextlib
+    import io
+    import os
+    import shutil
+    import subprocess
+    import types
+
+    reg_root = workflows_dir or (Path(__file__).resolve().parents[2] / "workflows")
+    if not (reg_root / "REGISTRY.json").is_file():
+        reg_root = Path.home() / ".agents" / "workflows"
+    reg = json.loads((reg_root / "REGISTRY.json").read_text(encoding="utf-8"))
+    match = next((w for w in reg.get("workflows", []) if w.get("id") == workflow_id), None)
+    if match is None:
+        raise ValueError(f"Unknown workflow_id {workflow_id!r}")
+
+    script_path = reg_root / Path(str(match["script_path"])).name
+    src = script_path.read_text(encoding="utf-8")
+    merged_args: dict[str, Any] = dict(args_dict or {})
+    merged_args.setdefault("repo", repo)
+    if "fast_deterministic_only" not in merged_args:
+        merged_args["fast_deterministic_only"] = mode == "deterministic"
+
+    repo_dir = resolve_ecosystem_repo_dir(repo)
+    logs: list[str] = []
+    phases: list[str] = []
+    live_calls = 0
+
+    def _invoke_codex_sync(codex_bin: str, sys_prompt: str) -> dict[str, Any] | None:
+        try:
+            proc = subprocess.run(
+                [codex_bin, "exec", "--skip-git-repo-check", "-c", 'model="gpt-6.2-sol"', sys_prompt],
+                cwd=str(repo_dir) if repo_dir.is_dir() else None,
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                text=True,
+                timeout=45,
+                check=False,
+            )
+            txt = proc.stdout.strip()
+            start = txt.find("{")
+            end = txt.rfind("}")
+            if proc.returncode == 0 and start >= 0 and end > start:
+                parsed = json.loads(txt[start : end + 1])
+                if isinstance(parsed, dict):
+                    return parsed
+        except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
+            pass
+        return None
+
+    async def _cli_agent(
+        prompt: str, schema: dict[str, Any], role: str = "", type_name: str = "self"
+    ) -> dict[str, Any]:
+        nonlocal live_calls
+        if mode == "live-cli":
+            codex_bin = shutil.which("codex")
+            if codex_bin:
+                sys_prompt = (
+                    f"Role: {role or type_name}. Return ONLY raw JSON matching keys "
+                    f"{sorted((schema.get('properties') or {}).keys())}.\n\n{prompt[:3500]}"
+                )
+                parsed = await asyncio.to_thread(_invoke_codex_sync, codex_bin, sys_prompt)
+                if parsed is not None:
+                    live_calls += 1
+                    return parsed
+        return _build_schema_fallback(schema, f"{mode}_fallback:{type_name}")
+
+    async def _cli_parallel(items: list[Any], fn: Any) -> list[Any]:
+        return [await fn(it) for it in items]
+
+    ns: dict[str, Any] = {
+        "__name__": "__main__",
+        "__file__": str(script_path),
+        "args": merged_args,
+        "WORKSPACES": (str(repo_dir),),
+        "log": lambda *a: logs.append(" ".join(str(x) for x in a)),
+        "phase": lambda name: phases.append(str(name)),
+        "agent": _cli_agent,
+        "parallel": _cli_parallel,
+    }
+    code_obj = compile(src, "<workflow>", "exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+    buf = io.StringIO()
+    prev_dry = os.environ.get("SOTA_WORKFLOW_DRY_RUN")
+    skip_bus_writes = bool(dry_run or mode == "deterministic")
+    try:
+        if skip_bus_writes:
+            os.environ["SOTA_WORKFLOW_DRY_RUN"] = "1"
+        with contextlib.redirect_stdout(buf):
+            coro = eval(code_obj, ns)
+            if isinstance(coro, types.CoroutineType):
+                asyncio.run(coro)
+    finally:
+        if prev_dry is None:
+            os.environ.pop("SOTA_WORKFLOW_DRY_RUN", None)
+        else:
+            os.environ["SOTA_WORKFLOW_DRY_RUN"] = prev_dry
+
+    stdout_text = buf.getvalue().strip()
+    parsed_output: Any = None
+    if stdout_text:
+        try:
+            parsed_output = json.loads(stdout_text)
+        except json.JSONDecodeError:
+            parsed_output = {"raw_stdout": stdout_text}
+
+    return {
+        "ok": True,
+        "workflow_id": workflow_id,
+        "repo": repo,
+        "mode": mode,
+        "dry_run": dry_run,
+        "placeholder_outputs": live_calls == 0,
+        "bus_writes_skipped": skip_bus_writes,
+        "live_cli_calls": live_calls,
+        "phases": phases,
+        "logs_count": len(logs),
+        "receipt": parsed_output if parsed_output is not None else ns.get("final_receipt"),
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="sota-workflow",
@@ -572,7 +736,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    p_st = sub.add_parser("status", help="Inspect 46 skills, 17 workflows, 14 layers, 18 ADR catalogs & Orca status")
+    p_st = sub.add_parser("status", help="Inspect 46 skills, 19 workflows, 14 layers, 18 ADR catalogs & Orca status")
     p_st.add_argument("--json", action="store_true")
 
     p_sk = sub.add_parser("skills", help="Audit 46 canonical SOTA skills across AGY, Claude, Codex & ~/.agents")
@@ -590,6 +754,14 @@ def main(argv: list[str] | None = None) -> int:
     p_en.add_argument("--layer", default="all")
     p_en.add_argument("--workflow", default="auto")
     p_en.add_argument("--json", action="store_true")
+
+    p_rn = sub.add_parser("run", help="Execute any canonical REGISTRY.json workflow from CLI across all 8 runtimes")
+    p_rn.add_argument("workflow_id", help="Workflow ID from REGISTRY.json")
+    p_rn.add_argument("--repo", default="cc-sota-harness")
+    p_rn.add_argument("--args-json", default="{}")
+    p_rn.add_argument("--mode", default="deterministic", choices=("deterministic", "live-cli"))
+    p_rn.add_argument("--dry-run", action="store_true")
+    p_rn.add_argument("--json", action="store_true")
 
     p_pc = sub.add_parser("precheck", help="Fast exit-0 precheck gate for scheduled Orca automations")
     p_pc.add_argument("--surface", default="auto")
@@ -617,6 +789,17 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(json.dumps(res, indent=2))
         return 0 if res["ok"] else 1
+    if args.cmd == "run":
+        extra_args = json.loads(args.args_json)
+        run_res = run_workflow_cli(
+            args.workflow_id,
+            repo=args.repo,
+            args_dict=extra_args if isinstance(extra_args, dict) else {},
+            mode=args.mode,
+            dry_run=args.dry_run,
+        )
+        print(json.dumps(run_res, indent=2))
+        return 0 if run_res["ok"] else 1
     if args.cmd == "precheck":
         st = build_grand_native_workflow_status()
         return 0 if st["ok"] else 1

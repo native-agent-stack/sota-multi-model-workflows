@@ -59,6 +59,8 @@ from sota_mmw.native_workflow_enactor import (
     probe_installed_sota_skills,
     select_workflow_and_skills,
 )
+from sota_mmw.peer_bus_mcp_server import TOOLS as PEER_BUS_MCP_TOOLS
+from sota_mmw.peer_bus_mcp_server import handle_jsonrpc_message as handle_peer_bus_jsonrpc
 from sota_mmw.peer_bus_schema import PortablePeerBus
 from sota_mmw.promotion_gate import (
     FORBIDDEN_IBKR_LIVE_PORTS,
@@ -90,6 +92,14 @@ from sota_mmw.research_convergence_contract import (
     resolve_ecosystem_repo_dir,
     verify_research_convergence_claim,
 )
+from sota_mmw.symbol_ranking_datafeeds import (
+    FINALIZED_12FEED_SYMBOL_RANKING_DATAFEEDS,
+    SYMBOL_RANKING_DATAFEEDS_V310_SCHEMA,
+    SYMBOL_RANKING_TO_AUTO_STRATEGY_ROUTES,
+    build_symbol_ranking_foundation_manifest,
+    compute_symbol_ranking_v310_sha256,
+    evaluate_symbol_ranking_to_strategy_handoff,
+)
 
 __all__ = [
     "ACTIVE_18_REPOS",
@@ -113,6 +123,7 @@ __all__ = [
     "DUAL_MACHINE_SURFACES",
     "DUAL_WORKSTATION_HOSTS",
     "DUAL_WORKSTATION_SURFACES",
+    "FINALIZED_12FEED_SYMBOL_RANKING_DATAFEEDS",
     "FORBIDDEN_IBKR_LIVE_PORTS",
     "HARNESS_LANES",
     "LANES_SCHEMA_VERSION",
@@ -121,6 +132,7 @@ __all__ = [
     "NATIVE_WORKFLOW_ENACTOR_SCHEMA",
     "ORCA_LANE_HUBS",
     "ORCHESTRATION_FRAMEWORKS_MATRIX",
+    "PEER_BUS_MCP_TOOLS",
     "PRE_WALL_MAX_DATE",
     "RANKING_DATAFEEDS_SCHEMA_VERSION",
     "REPO_LANE_INDEX",
@@ -130,6 +142,8 @@ __all__ = [
     "SKILL_FAMILIES",
     "STRATEGY_TEMPLATES_SCHEMA_VERSION",
     "STUDY_WALL_DATE",
+    "SYMBOL_RANKING_DATAFEEDS_V310_SCHEMA",
+    "SYMBOL_RANKING_TO_AUTO_STRATEGY_ROUTES",
     "TASK_CLASS_PROFILES",
     "TRADING_LANES",
     "UPSTREAM_SHELF_PINS_18",
@@ -144,9 +158,11 @@ __all__ = [
     "build_compounding_version_status",
     "build_grand_native_workflow_status",
     "build_lanes_overview",
+    "build_symbol_ranking_foundation_manifest",
     "build_workflow_research_convergence_envelope",
     "compute_hlz_t_hurdle",
     "compute_ranking_datafeed_contract_sha256",
+    "compute_symbol_ranking_v310_sha256",
     "compute_upstream_shelf_tree_sha256",
     "count_python_test_assertions",
     "derive_workstation_mesh_state",
@@ -156,6 +172,8 @@ __all__ = [
     "discover_ecosystem_adr_index",
     "evaluate_ao_lifecycle_gate",
     "evaluate_promotion_gate",
+    "evaluate_symbol_ranking_to_strategy_handoff",
+    "handle_peer_bus_jsonrpc",
     "parse_semver_tuple",
     "probe_cc_runtime_fleet",
     "probe_installed_multi_model_binaries",

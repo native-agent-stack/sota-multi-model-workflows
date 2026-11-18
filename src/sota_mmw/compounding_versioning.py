@@ -436,13 +436,13 @@ def build_compounding_version_status(
         prev_semver="3.9.9",
         next_semver=DEFAULT_ECOSYSTEM_SEMVER,
         promotion_kind="PROTECTIVE_FILTER_OR_GOVERNANCE",
-        adr_id="ADR-0023",
+        adr_id="ADR-0024",
         input_lake_sha256=DEFAULT_PREWALL_LAKE_SHA256,
         upstream_shelf_tree_sha256=shelf_sha,
         ranking_datafeed_contract_sha256=df_sha,
         trials_n=trials_n,
         lessons_count=lessons_count,
-        candidate_id="V3100_QUALITY_DIRECTIVE_3POWERHOUSE_DSH_PI_GPT62SOL_AND_CLAUDE_1TO1_FABLE_MIX",
+        candidate_id="V3100_RESEARCH_CONVERGENCE_12FEED_SYMBOL_RANKING_8RUNTIME_AND_ORCA_LEAD_E2E",
         dsr_probability=0.42,
         cpcv_positive_fold_pct=73.33,
         t_stat_date_clustered=1.2919,
@@ -454,14 +454,22 @@ def build_compounding_version_status(
     )
     verified = verify_compounding_version_transition(
         h090_rec,
-        prev_adr_id="ADR-0022",
+        prev_adr_id="ADR-0023",
         pins_path=pins_path,
     )
+    from sota_mmw.symbol_ranking_datafeeds import (
+        SYMBOL_RANKING_DATAFEEDS_V310_SCHEMA,
+        compute_symbol_ranking_v310_sha256,
+    )
+
     return {
         "ok": verified["approved"] and len(CANONICAL_RANKING_DATAFEEDS_V38) == 9,
         "schema_version": COMPOUNDING_VERSION_SCHEMA,
         "ecosystem_version": DEFAULT_ECOSYSTEM_SEMVER,
         "ranking_datafeeds_schema": RANKING_DATAFEEDS_SCHEMA_VERSION,
+        "symbol_ranking_v310_schema": SYMBOL_RANKING_DATAFEEDS_V310_SCHEMA,
+        "symbol_ranking_v310_feeds_count": 12,
+        "symbol_ranking_v310_contract_sha256": compute_symbol_ranking_v310_sha256(),
         "supersedes_research_feeds_schema": RESEARCH_FEEDS_SCHEMA_VERSION,
         "canonical_ranking_feeds_count": len(CANONICAL_RANKING_DATAFEEDS_V38),
         "canonical_ranking_feed_ids": list(CANONICAL_RANKING_DATAFEEDS_V38.keys()),
@@ -480,14 +488,19 @@ def build_compounding_version_status(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="sota-version",
-        description="SOTA v3.8.0 9-Feed Ranking System DataFeeds (DF1..DF9) & Compounding Versioning Verifier",
+        description="SOTA v3.10.0 Ranking System DataFeeds (DF1..DF9 compat + DF1..DF12 v3.10) & Compounding Versioning Verifier",
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    p_st = sub.add_parser("status", help="Emit v3.8.0 Compounding Versioning & HLZ N>=90 ledger status")
+    p_st = sub.add_parser("status", help="Emit v3.10.0 Compounding Versioning & HLZ N>=90 ledger status")
     p_st.add_argument("--json", action="store_true")
 
-    p_rf = sub.add_parser("ranking-feeds", help="Emit the 9 canonical DF1..DF9 PIT Ranking System DataFeeds")
+    p_rf = sub.add_parser(
+        "ranking-feeds", help="Emit canonical DF1..DF9 (or --v310 DF1..DF12) Symbol Ranking DataFeeds"
+    )
+    p_rf.add_argument(
+        "--v310", action="store_true", help="Emit finalized v3.10.0 12-Feed DF1..DF12 Symbol Ranking manifest"
+    )
     p_rf.add_argument("--json", action="store_true")
 
     p_vf = sub.add_parser("verify", help="Verify a CompoundingVersionRecord transition fail-closed")
@@ -520,13 +533,18 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if st["ok"] else 1
 
     if args.cmd == "ranking-feeds":
-        out_rf = {
-            "schema_version": RANKING_DATAFEEDS_SCHEMA_VERSION,
-            "supersedes_v2_schema": RESEARCH_FEEDS_SCHEMA_VERSION,
-            "feed_count": len(CANONICAL_RANKING_DATAFEEDS_V38),
-            "ranking_datafeed_contract_sha256": compute_ranking_datafeed_contract_sha256(),
-            "feeds": CANONICAL_RANKING_DATAFEEDS_V38,
-        }
+        if getattr(args, "v310", False):
+            from sota_mmw.symbol_ranking_datafeeds import build_symbol_ranking_foundation_manifest
+
+            out_rf = build_symbol_ranking_foundation_manifest()
+        else:
+            out_rf = {
+                "schema_version": RANKING_DATAFEEDS_SCHEMA_VERSION,
+                "supersedes_v2_schema": RESEARCH_FEEDS_SCHEMA_VERSION,
+                "feed_count": len(CANONICAL_RANKING_DATAFEEDS_V38),
+                "ranking_datafeed_contract_sha256": compute_ranking_datafeed_contract_sha256(),
+                "feeds": CANONICAL_RANKING_DATAFEEDS_V38,
+            }
         print(json.dumps(out_rf, indent=2, default=list))
         return 0
 
