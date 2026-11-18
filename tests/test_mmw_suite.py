@@ -505,6 +505,15 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertTrue(_triggers("C:\\" + "Users\\runner\\repo\\"))
         self.assertTrue(_triggers("C:/" + "Users/runner/repo/"))
 
+    def test_cross_os_agent_bin_argv_parity(self) -> None:
+        sys.path.insert(0, str(ROOT / "workflows"))
+        import _sota_kit as kit
+
+        argv = kit.agent_bin_argv(Path("~/.agents/bin/sota-workstation"), "status", "--json")
+        self.assertEqual(argv[-2:], ["status", "--json"])
+        if sys.platform == "win32":
+            self.assertEqual(argv[0], sys.executable)
+
 
 if __name__ == "__main__":
     unittest.main()
