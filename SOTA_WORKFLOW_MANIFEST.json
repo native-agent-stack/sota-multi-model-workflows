@@ -1,8 +1,8 @@
 {
-  "schemaVersion": "3.9.7",
+  "schemaVersion": "3.9.8",
   "repository": "https://github.com/native-agent-stack/sota-multi-model-workflows",
   "visibility": "PUBLIC",
-  "workflowCount": 17,
+  "workflowCount": 18,
   "workflows": [
     "master-sota-harness",
     "org-compounding-promotion",
@@ -20,7 +20,8 @@
     "cc-lead-multi-runtime-workers",
     "dual-machine-trading-and-harness-lanes",
     "compounding-versioning-and-ranking-adr",
-    "sota-skills-adr-and-orca-grand-workflow"
+    "sota-skills-adr-and-orca-grand-workflow",
+    "multi-model-omc-memory-assign"
   ],
   "supportedHarnesses": [
     "antigravity",
@@ -38,7 +39,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 19,
+    "adrCount": 20,
     "records": [
       {
         "id": "ADR-0001",
@@ -329,6 +330,22 @@
           "https://github.com/native-agent-stack/sota-compounding-lab",
           "https://github.com/native-agent-stack/sota-harness-foundation",
           "https://github.com/native-agent-stack/sota-multi-model-workflows"
+        ]
+      },
+      {
+        "id": "ADR-0020",
+        "layer": "Multi-Model Orchestration, Memory & Compounding Governance (`L3` x `L5` x `L7` x `L10` x `L11` x `L13`)",
+        "title": "v3.9.8 M1-M4 1-Call Multi-Model Task Assignment, OMC v2 Stop-Callbacks, 567-Doc qmd Memory Sync, Beads+Orca DAG & H096 Seal",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "E4 (Deterministic Unit Suite, 18-Workflow AST Gate, Live E2EE 3-Surface Memory Sync & Trial #96 Verified)",
+        "file": "docs/adr/ADR-0020-v398-m1-m4-multi-model-assign-omc-qmd-memory-dag-and-h096-seal.md",
+        "githubUrls": [
+          "https://github.com/Yeachan-Heo/oh-my-claudecode",
+          "https://github.com/gastownhall/beads",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/stablyai/orca",
+          "https://github.com/tobi/qmd"
         ]
       }
     ]

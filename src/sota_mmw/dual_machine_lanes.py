@@ -649,6 +649,72 @@ def sync_orca_lane_hubs(hub_root: pathlib.Path | None = None) -> dict[str, Any]:
     }
 
 
+def build_multi_repo_beads_orca_dag(
+    *,
+    goal: str,
+    leaf_repos: tuple[str, ...] = ("meridian", "tsl", "trading-sota", "sota-mover-ranker"),
+    mid_repos: tuple[str, ...] = ("cc-sota-harness", "agy-sota-harness", "sota-multi-model-workflows"),
+    seal_repos: tuple[str, ...] = ("sota-private-vault", "native-agent-stack", ".github"),
+    surface: str = "dual_mesh_docked",
+) -> dict[str, Any]:
+    """Synthesize a persistent 3-stage Beads (bd) + Orca (--deps / gate-create) multi-repo DAG (M4, ADR-0020)."""
+    stages = (
+        ("stage1_leaf_repos", leaf_repos, ()),
+        ("stage2_harness_mid_repos", mid_repos, ("stage1_leaf_repos",)),
+        ("stage3_org_umbrella_seal", seal_repos, ("stage1_leaf_repos", "stage2_harness_mid_repos")),
+    )
+    nodes: list[dict[str, Any]] = []
+    for stage_id, repos, deps in stages:
+        for repo in repos:
+            if repo not in REPO_LANE_INDEX:
+                raise ValueError(f"Unknown repository '{repo}' in DAG")
+            route = resolve_dual_machine_lane_plan(repo, mesh_state=surface)
+            task_id = f"dag-{stage_id.split('_')[0]}-{repo.replace('.', 'dot')}"
+            dep_tasks = [
+                f"dag-{d.split('_')[0]}-{r.replace('.', 'dot')}"
+                for d in deps
+                for s_id, s_repos, _ in stages
+                if s_id == d
+                for r in s_repos
+            ]
+            bd_cmd = f"bd create --title {shlex.quote(f'[{stage_id}] {repo}: {goal[:64]}')} --type task"
+            orca_argv = [*route["orca_worker_start_argv"]]
+            if dep_tasks:
+                orca_argv.extend(["--deps", ",".join(dep_tasks)])
+            nodes.append(
+                {
+                    "task_id": task_id,
+                    "stage": stage_id,
+                    "repo": repo,
+                    "surface": route["selected_surface"],
+                    "depends_on": dep_tasks,
+                    "beads_create_cmd": bd_cmd,
+                    "orca_dag_worker_argv": orca_argv,
+                }
+            )
+    gate_cmd = [
+        "orca",
+        "orchestration",
+        "gate-create",
+        "--title",
+        f"22/22 Zero-Drift Seal Gate: {goal[:48]}",
+        "--deps",
+        ",".join(n["task_id"] for n in nodes if n["stage"] != "stage3_org_umbrella_seal"),
+    ]
+    dag_sha256 = hashlib.sha256(
+        json.dumps({"goal": goal, "nodes": [n["task_id"] for n in nodes]}, sort_keys=True).encode("utf-8")
+    ).hexdigest()
+    return {
+        "schema_version": "sota-beads-orca-dag.v1",
+        "goal": goal,
+        "stages_count": 3,
+        "nodes_count": len(nodes),
+        "dag_sha256": dag_sha256,
+        "orca_seal_gate_argv": gate_cmd,
+        "nodes": nodes,
+    }
+
+
 def build_lanes_overview(*, plane: str = "all", mesh_state: str = "dual_mesh_docked") -> dict[str, Any]:
     """Summarize Dual-Machine surfaces, 8 frameworks, and T1..T3 / H1..H3 (+ T1..T5 / H0..H7) lane assignments."""
     fleet = probe_cc_runtime_fleet()
@@ -706,8 +772,17 @@ def main(argv: list[str] | None = None) -> int:
     p_rt.add_argument("--mesh-state", default="")
     p_rt.add_argument("--active-broker-shield", action="store_true")
 
+    p_dg = sub.add_parser("dag", help="Build a 3-stage persistent Beads (bd) + Orca (--deps / gate-create) wave DAG")
+    p_dg.add_argument("--goal", default="Land v3.9.8 co-op convergence wave across leaf -> harness -> umbrella seal")
+    p_dg.add_argument("--json", action="store_true")
+
     args = parser.parse_args(argv)
     _trials_n, _next_t, live_mesh = _load_live_bus_and_mesh()
+
+    if args.cmd == "dag":
+        dag_out = build_multi_repo_beads_orca_dag(goal=args.goal, surface=live_mesh)
+        print(json.dumps(dag_out, indent=2))
+        return 0
 
     if args.cmd == "status":
         out = build_lanes_overview(plane=args.plane, mesh_state=live_mesh)

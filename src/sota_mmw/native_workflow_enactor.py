@@ -172,10 +172,10 @@ CANONICAL_14_LAYERS_MATRIX: dict[str, dict[str, Any]] = {
         "repos": ("canon", ".github", "native-agent-stack", "meridian"),
     },
     "L5": {
-        "name": "native-17-workflow-dags-and-enactor",
+        "name": "native-18-workflow-dags-and-enactor",
         "lane": "H2",
         "skills": ("sota-workflow", "orchestration", "planning-with-files"),
-        "workflows": ("sota-skills-adr-and-orca-grand-workflow", "master-sota-harness"),
+        "workflows": ("sota-skills-adr-and-orca-grand-workflow", "multi-model-omc-memory-assign", "master-sota-harness"),
         "repos": ("sota-multi-model-workflows", "agy-sota-harness"),
     },
     "L6": {
@@ -371,6 +371,8 @@ def select_workflow_and_skills(
         chosen_wf = "compounding-versioning-and-ranking-adr"
     elif any(k in g_low for k in ("lane", "dual-machine", "noesis", "t1", "h1")):
         chosen_wf = "dual-machine-trading-and-harness-lanes"
+    elif any(k in g_low for k in ("assign", "qmd", "memory-sync", "stop-callback")):
+        chosen_wf = "multi-model-omc-memory-assign"
     elif any(k in g_low for k in ("cc-lead", "omc", "multi-runtime", "11 worker")):
         chosen_wf = "cc-lead-multi-runtime-workers"
     elif any(k in g_low for k in ("hypothes", "pre-wall", "cpcv", "dsr", "hlz", "autoresearch")):
@@ -402,6 +404,7 @@ def select_workflow_and_skills(
         "dual-machine-trading-and-harness-lanes": "dual_machine_trading_and_harness_lanes_workflow.py",
         "compounding-versioning-and-ranking-adr": "compounding_versioning_and_ranking_adr_workflow.py",
         "sota-skills-adr-and-orca-grand-workflow": "sota_skills_adr_and_orca_grand_workflow.py",
+        "multi-model-omc-memory-assign": "multi_model_omc_memory_assign_workflow.py",
     }
     script_name = wf_script_map.get(chosen_wf, "sota_skills_adr_and_orca_grand_workflow.py")
 
@@ -526,7 +529,7 @@ def select_workflow_and_skills(
 
 
 def build_grand_native_workflow_status(home: Path | None = None) -> dict[str, Any]:
-    """Build complete status across all 46 skills, 17 workflows, 14 layers, 18 ADR catalogs, & Orca."""
+    """Build complete status across all 46 skills, 18 workflows, 14 layers, 18 ADR catalogs, & Orca."""
     skills_st = probe_installed_sota_skills(home=home)
     adr_idx = discover_ecosystem_adr_index(home=home)
     cv_st = build_compounding_version_status()
@@ -535,7 +538,7 @@ def build_grand_native_workflow_status(home: Path | None = None) -> dict[str, An
         "schema_version": NATIVE_WORKFLOW_ENACTOR_SCHEMA,
         "ecosystem_semver": DEFAULT_ECOSYSTEM_SEMVER,
         "workstation_surface": detect_workstation_surface(home=home),
-        "canonical_workflows_count": 17,
+        "canonical_workflows_count": 18,
         "canonical_skills_total": len(CANONICAL_46_SOTA_SKILLS),
         "skills_status": skills_st,
         "layers_count": len(CANONICAL_14_LAYERS_MATRIX),

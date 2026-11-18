@@ -442,8 +442,12 @@ def build_cc_lead_execution_plan(
     )
     omc_team_cmd = f"{env_exports} omc team {shlex.quote(str(profile['omc_team_spec']))} --no-decompose {quoted_brief}"
     advisor_and_omx_cmds = {
+        "claude_architect_ask": f"omc ask claude --agent-prompt architect --prompt {quoted_brief}",
         "codex_critic_ask": f"omc ask codex --agent-prompt critic --prompt {quoted_brief}",
+        "gemini_verifier_ask": f"omc ask gemini --agent-prompt verifier --prompt {quoted_brief}",
         "antigravity_shelf_ask": f"omc ask antigravity --agent-prompt analyst --prompt {quoted_brief}",
+        "grok_regime_ask": f"omc ask grok --agent-prompt analyst --prompt {quoted_brief}",
+        "cursor_editor_ask": f"omc ask cursor --agent-prompt executor --prompt {quoted_brief}",
         "muse_fifth_vendor_ask": f"omc ask muse --agent-prompt critic --prompt {quoted_brief}",
         "omx_exec_worker": f"omx exec -c 'model=\"gpt-6.2-sol\"' {quoted_brief}",
         "omc_omx_tmux_interop": "omc interop",
@@ -543,6 +547,80 @@ def build_cc_lead_execution_plan(
     }
 
 
+def build_multi_model_assign_envelope(
+    *,
+    repo: str,
+    goal: str,
+    worker: str = "codex",
+    surface: str = "auto",
+    paths: tuple[str, ...] = ("*",),
+    sender_session: str = "agy",
+) -> dict[str, Any]:
+    """Build a deterministic 1-call multi-model task assignment & auto-release envelope (M1, ADR-0020)."""
+    for rx, label in (
+        (_LIVE_ALPACA_RE, "live Alpaca endpoint"),
+        (_LIVE_BIN_RE, "live broker binary"),
+        (_LIVE_IBKR_PORT_RE, "live IBKR port"),
+    ):
+        if rx.search(goal):
+            raise PermissionError(f"Hard firewall refused {label} in goal")
+    valid_workers = (
+        "claude",
+        "codex",
+        "omp",
+        "opencode",
+        "muse",
+        "grok",
+        "antigravity",
+        "cc-lead",
+        "noesis-cc-lead",
+    )
+    if worker not in valid_workers:
+        raise ValueError(f"Unsupported worker '{worker}'; expected one of {valid_workers}")
+    if repo not in NOESIS_PROVISIONED_ORCA_REPOS:
+        raise ValueError(f"Unknown repository '{repo}'")
+    use_noesis = surface == "noesis" or worker == "noesis-cc-lead"
+    orca_repo = f"id:{NOESIS_PROVISIONED_ORCA_REPOS[repo]}" if use_noesis else repo
+    assign_sha256 = hashlib.sha256(
+        json.dumps(
+            {"repo": repo, "goal": goal, "worker": worker, "surface": surface, "paths": list(paths)},
+            sort_keys=True,
+        ).encode("utf-8")
+    ).hexdigest()
+    bus_cmd = [
+        sys.executable,
+        str(Path.home() / ".agents" / "bus" / "sota_bus_engine.py"),
+        "assign",
+        "--repo",
+        repo,
+        "--worker",
+        worker,
+        "--surface",
+        "noesis" if use_noesis else ("local" if surface == "local" else "auto"),
+        "--goal",
+        goal,
+        "--sender",
+        sender_session,
+        "--paths",
+        *paths,
+    ]
+    release_cmd = ["orca", "orchestration", "worker-release", *(
+        ["--on", "100.110.115.22"] if use_noesis else []
+    ), "--dispatch", "<dispatch_id>"]
+    return {
+        "schema_version": "sota-multi-model-assign.v1",
+        "repo": repo,
+        "worker": worker,
+        "surface": "noesis" if use_noesis else surface,
+        "orca_repo_selector": orca_repo,
+        "stdin_spec_file_mode": True,
+        "memory_sources": ("sota-bus-fts5", "qmd-567-docs"),
+        "assign_sha256": assign_sha256,
+        "sota_bus_assign_argv": bus_cmd,
+        "orca_worker_release_template": release_cmd,
+    }
+
+
 def _load_live_bus_and_mesh() -> tuple[int, float, str]:
     trials_n = 88
     next_t = 4.1709
@@ -620,8 +698,61 @@ def main(argv: list[str] | None = None) -> int:
     p_dp.add_argument("--paths", nargs="*", default=["*"])
     p_dp.add_argument("--execute", action="store_true", help="Launch supervised Orca workers if lease is disjoint")
 
+    p_as = sub.add_parser("assign", help="1-call multi-model worker assignment with FTS5+qmd memory brief & lease")
+    p_as.add_argument("--repo", required=True)
+    p_as.add_argument(
+        "--worker",
+        default="codex",
+        choices=("claude", "codex", "omp", "opencode", "muse", "grok", "antigravity", "cc-lead", "noesis-cc-lead"),
+    )
+    p_as.add_argument("--surface", default="auto", choices=("auto", "local", "noesis"))
+    p_as.add_argument("--goal", required=True)
+    p_as.add_argument("--sender", default="cc-lead")
+    p_as.add_argument("--paths", nargs="*", default=["*"])
+    p_as.add_argument("--execute", action="store_true")
+
+    p_rl = sub.add_parser("release", help="Release a completed Orca supervised worker dispatch & sota-bus lease")
+    p_rl.add_argument("--dispatch", required=True)
+    p_rl.add_argument("--repo", default="")
+    p_rl.add_argument("--session", default="")
+    p_rl.add_argument("--surface", default="local", choices=("local", "noesis"))
+    p_rl.add_argument("--execute", action="store_true")
+
     args = parser.parse_args(argv)
     trials_n, next_t, mesh = _load_live_bus_and_mesh()
+
+    if args.cmd == "assign":
+        env = build_multi_model_assign_envelope(
+            repo=args.repo,
+            goal=args.goal,
+            worker=args.worker,
+            surface=args.surface,
+            paths=tuple(args.paths or ["*"]),
+            sender_session=args.sender,
+        )
+        if not args.execute:
+            print(json.dumps({"executed": False, **env}, indent=2))
+            return 0
+        cmd = [*env["sota_bus_assign_argv"], "--execute"]
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=30, check=False)
+        sys.stdout.write(proc.stdout or json.dumps({"executed": True, "returncode": proc.returncode}, indent=2) + "\n")
+        return 0 if proc.returncode == 0 else proc.returncode
+
+    if args.cmd == "release":
+        orca_cmd = [
+            "orca",
+            "orchestration",
+            "worker-release",
+            *(["--on", "100.110.115.22"] if args.surface == "noesis" else []),
+            "--dispatch",
+            args.dispatch,
+        ]
+        if not args.execute:
+            print(json.dumps({"executed": False, "orca_release_argv": orca_cmd, "repo": args.repo}, indent=2))
+            return 0
+        p_rel = subprocess.run(orca_cmd, capture_output=True, text=True, timeout=15, check=False)
+        print(json.dumps({"executed": True, "returncode": p_rel.returncode, "stdout": p_rel.stdout.strip()}, indent=2))
+        return 0 if p_rel.returncode == 0 else 1
 
     if args.cmd == "status":
         fleet = probe_cc_runtime_fleet()

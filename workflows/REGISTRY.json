@@ -1,6 +1,6 @@
 {
-  "version": "3.9.7",
-  "description": "Canonical v3.10.0 registry of 17 self-bootstrapping SOTA `run_workflow`, 46-Skill Cross-Harness/Orca Enactment (`ADR-0018`), 9-Feed `sota-ranking-datafeeds.v3.8` (`DF1..DF9`) & Two-Track Compounding Versioning (`ADR-0015`..`ADR-0018`), Dual-Machine Orca Trading/Harness Lanes v2 (`T1..T3` <-> `T1..T5` & `H1..H3` <-> `H0..H7`, RTH broker contention shield, `sota-orca-lane-hub.v2`, Dual-Machine Orca Automations), Claude-Lead Central Multi-Runtime (`OMC`/`OMX`/`Orca`/`AO`/`OMO`/`OMP`/`Goose`), Multi-Model `AO` (`Agent Orchestrator`), and `sota-research-feeds.v2` Research-Convergence scripts (`Mac M5 Max <-> Noesis Win32 <-> Noesis-Carbon WSL2` 3-surface parity). Every script explicitly executes `kit.verify_workflow_research_convergence(...)` binding all 46 SOTA Skills, 14 Layers (`L0..L13`), 18-Repo MADR 4.0 ADR Catalogs, 6 Trading Lane DataFeed APIs (`:8787`, `:8799`, `:4002`), 9 Ranking DataFeeds (`DF1..DF9`), 4 Strategy Templates + Pine v6, 8 Trading Engine Sources, 18 40-hex upstream pins, `ADR-0004` (`PHILOSOPHY_ONLY` sibling-repo authority), live peer leases, HLZ trial multiplicity N>=93, `sota-doctor`, `sota-org-doctor`, and `ECOSYSTEM_CONVERGENCE_LOCK.json` via `_sota_kit.py`.",
+  "version": "3.9.8",
+  "description": "Canonical v3.9.8 / v3.10.0 registry of 18 self-bootstrapping SOTA `run_workflow`, 1-Call Multi-Model Task Assignment (`ADR-0020`, `sota_bus_assign_worker` + `OMC v2` stop-callbacks + `567`-doc `qmd` memory + `bd`/Orca DAG), 46-Skill Cross-Harness/Orca Enactment (`ADR-0018`), 9-Feed `sota-ranking-datafeeds.v3.8` (`DF1..DF9`) & Two-Track Compounding Versioning (`ADR-0015`..`ADR-0020`), Dual-Machine Orca Trading/Harness Lanes v2 (`T1..T3` <-> `T1..T5` & `H1..H3` <-> `H0..H7`, RTH broker contention shield, `sota-orca-lane-hub.v2`, Dual-Machine Orca Automations), Claude-Lead Central Multi-Runtime (`OMC`/`OMX`/`Orca`/`AO`/`OMO`/`OMP`/`Goose`), Multi-Model `AO` (`Agent Orchestrator`), and `sota-research-feeds.v2` Research-Convergence scripts (`Mac M5 Max <-> Noesis Win32 <-> Noesis-Carbon WSL2` 3-surface parity). Every script explicitly executes `kit.verify_workflow_research_convergence(...)` binding all 46 SOTA Skills, 14 Layers (`L0..L13`), 18-Repo MADR 4.0 ADR Catalogs, 6 Trading Lane DataFeed APIs (`:8787`, `:8799`, `:4002`), 9 Ranking DataFeeds (`DF1..DF9`), 4 Strategy Templates + Pine v6, 8 Trading Engine Sources, 18 40-hex upstream pins, `ADR-0004` (`PHILOSOPHY_ONLY` sibling-repo authority), live peer leases, HLZ trial multiplicity N>=96, `sota-doctor`, `sota-org-doctor`, and `ECOSYSTEM_CONVERGENCE_LOCK.json` via `_sota_kit.py`.",
   "workflows": [
     {
       "id": "master-sota-harness",
@@ -320,6 +320,31 @@
         }
       },
       "when_to_use": "Grand v3.10.0 unified native workflow enacting all 46 SOTA skills, 9-Feed DF1..DF9 PIT Research-Convergence, all 14 layers (L0..L13), all 18 repository MADR 4.0 ADR catalogs, and 11 multi-model runtime workers across Dual-Machine Orca (Mac M5 Max + Stationary Noesis + Noesis-Carbon WSL2)."
+    },
+    {
+      "id": "multi-model-omc-memory-assign",
+      "script_path": "~/.agents/workflows/multi_model_omc_memory_assign_workflow.py",
+      "skill": "cc-lead-multi-runtime-orchestrator",
+      "agents": [
+        "sota-code-verifier"
+      ],
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "repo": {"type": "string"},
+          "worker": {
+            "type": "string",
+            "enum": ["claude", "codex", "omp", "opencode", "muse", "grok", "antigravity", "cc-lead", "noesis-cc-lead"]
+          },
+          "surface": {
+            "type": "string",
+            "enum": ["auto", "local", "noesis"]
+          },
+          "goal": {"type": "string"},
+          "fast_deterministic_only": {"type": "boolean"}
+        }
+      },
+      "when_to_use": "v3.9.8 M1-M4 closed-loop 1-call multi-model worker assignment (--spec-file - FTS5 + 567-doc qmd memory brief, disjoint sota-bus lease, OMC_RUNTIME_V2=1 stop-callback ingestion, 3-surface E2EE memory delta sync, and 3-stage Beads bd + Orca --deps / gate-create wave DAG)."
     }
   ]
 }

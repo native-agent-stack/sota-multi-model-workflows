@@ -129,10 +129,10 @@ class TestMultiModelWorkflows(unittest.TestCase):
     def test_workflow_registry_ast_and_merge_gate(self) -> None:
         reg = json.loads((ROOT / "workflows" / "REGISTRY.json").read_text(encoding="utf-8"))
         manifest = json.loads((ROOT / "SOTA_WORKFLOW_MANIFEST.json").read_text(encoding="utf-8"))
-        self.assertEqual(reg["version"], "3.9.7")
-        self.assertEqual(manifest["schemaVersion"], "3.9.7")
-        self.assertEqual(len(reg["workflows"]), 17)
-        self.assertEqual(manifest["workflowCount"], 17)
+        self.assertEqual(reg["version"], "3.9.8")
+        self.assertEqual(manifest["schemaVersion"], "3.9.8")
+        self.assertEqual(len(reg["workflows"]), 18)
+        self.assertEqual(manifest["workflowCount"], 18)
         ids = [w["id"] for w in reg["workflows"]]
         self.assertEqual(ids, manifest["workflows"])
         self.assertIn("multi-model-ao-convergence", ids)
@@ -142,10 +142,11 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertIn("dual-machine-trading-and-harness-lanes", ids)
         self.assertIn("compounding-versioning-and-ranking-adr", ids)
         self.assertIn("sota-skills-adr-and-orca-grand-workflow", ids)
+        self.assertIn("multi-model-omc-memory-assign", ids)
 
         expected_keys = {"id", "script_path", "skill", "agents", "args_schema", "when_to_use"}
         top_level_wf_files = sorted(p for p in (ROOT / "workflows").glob("*.py") if not p.name.startswith("_"))
-        self.assertEqual(len(top_level_wf_files), 17)
+        self.assertEqual(len(top_level_wf_files), 18)
 
         for wf in reg["workflows"]:
             self.assertEqual(set(wf.keys()), expected_keys)
@@ -841,9 +842,9 @@ class TestMultiModelWorkflows(unittest.TestCase):
             resolve_ecosystem_repo_dir,
         )
 
-        # 1. Every single one of the 17 canonical workflows must call kit.verify_workflow_research_convergence
+        # 1. Every single one of the 18 canonical workflows must call kit.verify_workflow_research_convergence
         wf_files = sorted((ROOT / "workflows").glob("*_workflow.py"))
-        self.assertEqual(len(wf_files), 17)
+        self.assertEqual(len(wf_files), 18)
         for wf_path in wf_files:
             txt = wf_path.read_text(encoding="utf-8")
             self.assertIn(
@@ -1172,11 +1173,11 @@ class TestMultiModelWorkflows(unittest.TestCase):
             cv.DEFAULT_PREWALL_LAKE_SHA256,
             "a253421e873441740d5d4b410d993cfa7345fe34b88ec4ab7f4eecd537b3f234",
         )
-        self.assertEqual(cv.DEFAULT_ECOSYSTEM_SEMVER, "3.9.7")
+        self.assertEqual(cv.DEFAULT_ECOSYSTEM_SEMVER, "3.9.8")
         st_v390 = cv.build_compounding_version_status()
         self.assertTrue(st_v390["ok"])
-        self.assertEqual(st_v390["ecosystem_version"], "3.9.7")
-        self.assertEqual(st_v390["latest_verified_transition"]["adr_id"], "ADR-0019")
+        self.assertEqual(st_v390["ecosystem_version"], "3.9.8")
+        self.assertEqual(st_v390["latest_verified_transition"]["adr_id"], "ADR-0020")
 
         # 2. T1..T5 x H0..H7 bijection (13 sub-lanes covering all 18 active repos) & 9-feed DF1..DF9 gate
         self.assertEqual(len(dml.STAGE_AND_LAYER_SUBLANES), 13)
@@ -1284,6 +1285,63 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertIsInstance(fr, dict)
         assert isinstance(fr, dict)
         self.assertTrue(fr["all_gates_passed"])
+
+    def test_v398_m1_m4_multi_model_assign_beads_orca_dag_and_workflow_18(self) -> None:
+        from sota_mmw import cc_lead_hub as cch
+        from sota_mmw import dual_machine_lanes as dml
+        from sota_mmw import native_workflow_enactor as nwe
+
+        env_noesis = cch.build_multi_model_assign_envelope(
+            repo="sota-compounding-lab",
+            goal="Verify H096 15s dry-powder bid-survival protective filter",
+            worker="codex",
+            surface="noesis",
+        )
+        self.assertEqual(env_noesis["schema_version"], "sota-multi-model-assign.v1")
+        self.assertEqual(env_noesis["surface"], "noesis")
+        self.assertTrue(env_noesis["stdin_spec_file_mode"])
+        self.assertEqual(len(env_noesis["assign_sha256"]), 64)
+        self.assertIn("--on", env_noesis["orca_worker_release_template"])
+
+        with self.assertRaises(PermissionError):
+            cch.build_multi_model_assign_envelope(
+                repo="astrolabe",
+                goal="Connect IBKR port=4001",
+                worker="codex",
+            )
+
+        dag = dml.build_multi_repo_beads_orca_dag(goal="Seal v3.9.8 across 3 stages")
+        self.assertEqual(dag["schema_version"], "sota-beads-orca-dag.v1")
+        self.assertEqual(dag["stages_count"], 3)
+        self.assertGreaterEqual(dag["nodes_count"], 10)
+        self.assertEqual(len(dag["dag_sha256"]), 64)
+        stage3_nodes = [n for n in dag["nodes"] if n["stage"] == "stage3_org_umbrella_seal"]
+        self.assertTrue(all(len(n["depends_on"]) > 0 for n in stage3_nodes))
+
+        st18 = nwe.build_grand_native_workflow_status()
+        self.assertEqual(st18["canonical_workflows_count"], 18)
+
+        wf18_src = (ROOT / "workflows" / "multi_model_omc_memory_assign_workflow.py").read_text(encoding="utf-8")
+        ns18: dict[str, object] = {
+            "__name__": "__main__",
+            "args": {"repo": "cc-sota-harness", "worker": "codex", "surface": "local", "fast_deterministic_only": True},
+            "log": lambda *_a: None,
+            "phase": lambda *_a: None,
+        }
+        buf18 = io.StringIO()
+        code18 = compile(wf18_src, "<workflow>", "exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+        with (
+            mock.patch.object(kit, "run_preflight_summary", return_value={"sota_doctor": {"status": "PASS"}}),
+            mock.patch.object(kit, "record_workflow_run") as rec18,
+            redirect_stdout(buf18),
+        ):
+            r18 = eval(code18, ns18)
+            if isinstance(r18, types.CoroutineType):
+                asyncio.run(r18)
+        out18 = json.loads(buf18.getvalue())
+        self.assertTrue(out18["all_gates_passed"])
+        self.assertEqual(out18["schema_version"], "3.9.8")
+        rec18.assert_called_once()
 
 
 if __name__ == "__main__":
