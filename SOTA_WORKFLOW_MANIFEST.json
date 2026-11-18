@@ -2,7 +2,7 @@
   "schemaVersion": "3.10.0",
   "repository": "https://github.com/native-agent-stack/sota-multi-model-workflows",
   "visibility": "PUBLIC",
-  "workflowCount": 19,
+  "workflowCount": 20,
   "workflows": [
     "master-sota-harness",
     "org-compounding-promotion",
@@ -22,7 +22,8 @@
     "compounding-versioning-and-ranking-adr",
     "sota-skills-adr-and-orca-grand-workflow",
     "multi-model-omc-memory-assign",
-    "orca-lead-e2e-research-convergence"
+    "orca-lead-e2e-research-convergence",
+    "grand-merit-harness"
   ],
   "supportedHarnesses": [
     "antigravity",
@@ -40,7 +41,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 26,
+    "adrCount": 27,
     "records": [
       {
         "id": "ADR-0001",
@@ -441,6 +442,24 @@
           "https://github.com/databento/databento-python",
           "https://github.com/native-agent-stack/sota-multi-model-workflows",
           "https://github.com/trailofbits/skills"
+        ]
+      },
+      {
+        "id": "ADR-0027",
+        "layer": "`L0..L13` x `T1..T5` x `H0..H7` (End-to-End Merit-Promotion Execution & Multi-Model Orca Control Plane)",
+        "title": "Grand Merit-Promotion Harness (`S1/S2` Sim -> `3` Alpaca Paper + `1` IBKR Paper -> Stage-5 Lossless Live) & Native Gemini-to-Orca Grand Orchestration",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "`E4` (Unit Suite, `20/20` Canonical Workflows AST & Runtime Verified, `3` Distinct Alpaca Paper Accounts + `1` IBKR `:4002` + `:8798` Stage-5 Lossless Live Lane Live-Probed, `merge_gate.py` & `gitleaks` `0` Leaks)",
+        "file": "docs/adr/ADR-0027-grand-merit-promotion-harness-sim-4paper-and-stage5-lossless-live.md",
+        "githubUrls": [
+          "https://github.com/alpacahq/alpaca-mcp-server",
+          "https://github.com/native-agent-stack/sota-dynamic-trail-c",
+          "https://github.com/native-agent-stack/sota-mover-ranker",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/nautechsystems/nautilus_trader",
+          "https://github.com/nkaz001/hftbacktest",
+          "https://github.com/stablyai/orca"
         ]
       }
     ]

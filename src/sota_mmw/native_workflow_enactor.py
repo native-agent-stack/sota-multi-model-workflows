@@ -365,6 +365,8 @@ def select_workflow_and_skills(
 
     if workflow_id and workflow_id != "auto":
         chosen_wf = workflow_id
+    elif any(k in g_low for k in ("merit", "3 paper", "multi-paper", "lossless live", "stage-5 live", "p3")):
+        chosen_wf = "grand-merit-harness"
     elif any(k in g_low for k in ("orca-lead", "orca lead", "e2e convergence", "df12", "symbol ranking")):
         chosen_wf = "orca-lead-e2e-research-convergence"
     elif any(k in g_low for k in ("grand", "all layers", "all adrs", "enact", "native workflow", "sota skills")):
@@ -408,6 +410,7 @@ def select_workflow_and_skills(
         "sota-skills-adr-and-orca-grand-workflow": "sota_skills_adr_and_orca_grand_workflow.py",
         "multi-model-omc-memory-assign": "multi_model_omc_memory_assign_workflow.py",
         "orca-lead-e2e-research-convergence": "orca_lead_e2e_research_convergence_workflow.py",
+        "grand-merit-harness": "grand_merit_harness_workflow.py",
     }
     script_name = wf_script_map.get(chosen_wf, "sota_skills_adr_and_orca_grand_workflow.py")
 
@@ -535,7 +538,7 @@ def select_workflow_and_skills(
 
 
 def build_grand_native_workflow_status(home: Path | None = None) -> dict[str, Any]:
-    """Build complete status across all 46 skills, 19 workflows, 14 layers, 18 ADR catalogs, & Orca."""
+    """Build complete status across all 46 skills, 20 workflows, 14 layers, 18 ADR catalogs, & Orca."""
     skills_st = probe_installed_sota_skills(home=home)
     adr_idx = discover_ecosystem_adr_index(home=home)
     cv_st = build_compounding_version_status()
@@ -544,7 +547,7 @@ def build_grand_native_workflow_status(home: Path | None = None) -> dict[str, An
         "schema_version": NATIVE_WORKFLOW_ENACTOR_SCHEMA,
         "ecosystem_semver": DEFAULT_ECOSYSTEM_SEMVER,
         "workstation_surface": detect_workstation_surface(home=home),
-        "canonical_workflows_count": 19,
+        "canonical_workflows_count": 20,
         "canonical_skills_total": len(CANONICAL_46_SOTA_SKILLS),
         "skills_status": skills_st,
         "layers_count": len(CANONICAL_14_LAYERS_MATRIX),

@@ -794,8 +794,21 @@ def main(argv: list[str] | None = None) -> int:
     p_dg.add_argument("--goal", default="Land v3.9.8 co-op convergence wave across leaf -> harness -> umbrella seal")
     p_dg.add_argument("--json", action="store_true")
 
+    p_mr = sub.add_parser(
+        "merit",
+        help="Show the 7-lane Grand Merit-Promotion Harness (2 Sim + 3 Alpaca Paper + 1 IBKR Paper + Stage-5 Live)",
+    )
+    p_mr.add_argument("--json", action="store_true")
+
     args = parser.parse_args(argv)
     _trials_n, _next_t, live_mesh = _load_live_bus_and_mesh()
+
+    if args.cmd == "merit":
+        from sota_mmw.merit_promotion_harness import build_grand_merit_harness_manifest
+
+        merit_out = build_grand_merit_harness_manifest()
+        print(json.dumps(merit_out, indent=2, default=list))
+        return 0 if merit_out["ok"] else 1
 
     if args.cmd == "dag":
         dag_out = build_multi_repo_beads_orca_dag(goal=args.goal, surface=live_mesh)

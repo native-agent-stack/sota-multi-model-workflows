@@ -131,8 +131,8 @@ class TestMultiModelWorkflows(unittest.TestCase):
         manifest = json.loads((ROOT / "SOTA_WORKFLOW_MANIFEST.json").read_text(encoding="utf-8"))
         self.assertEqual(reg["version"], "3.10.0")
         self.assertEqual(manifest["schemaVersion"], "3.10.0")
-        self.assertEqual(len(reg["workflows"]), 19)
-        self.assertEqual(manifest["workflowCount"], 19)
+        self.assertEqual(len(reg["workflows"]), 20)
+        self.assertEqual(manifest["workflowCount"], 20)
         ids = [w["id"] for w in reg["workflows"]]
         self.assertEqual(ids, manifest["workflows"])
         self.assertIn("multi-model-ao-convergence", ids)
@@ -144,10 +144,11 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertIn("sota-skills-adr-and-orca-grand-workflow", ids)
         self.assertIn("multi-model-omc-memory-assign", ids)
         self.assertIn("orca-lead-e2e-research-convergence", ids)
+        self.assertIn("grand-merit-harness", ids)
 
         expected_keys = {"id", "script_path", "skill", "agents", "args_schema", "when_to_use"}
         top_level_wf_files = sorted(p for p in (ROOT / "workflows").glob("*.py") if not p.name.startswith("_"))
-        self.assertEqual(len(top_level_wf_files), 19)
+        self.assertEqual(len(top_level_wf_files), 20)
 
         for wf in reg["workflows"]:
             self.assertEqual(set(wf.keys()), expected_keys)
@@ -849,9 +850,9 @@ class TestMultiModelWorkflows(unittest.TestCase):
             resolve_ecosystem_repo_dir,
         )
 
-        # 1. Every single one of the 19 canonical workflows must call kit.verify_workflow_research_convergence
+        # 1. Every single one of the 20 canonical workflows must call kit.verify_workflow_research_convergence
         wf_files = sorted((ROOT / "workflows").glob("*_workflow.py"))
-        self.assertEqual(len(wf_files), 19)
+        self.assertEqual(len(wf_files), 20)
         for wf_path in wf_files:
             txt = wf_path.read_text(encoding="utf-8")
             self.assertIn(
@@ -1336,7 +1337,7 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertTrue(all(len(n["depends_on"]) > 0 for n in stage3_nodes))
 
         st18 = nwe.build_grand_native_workflow_status()
-        self.assertEqual(st18["canonical_workflows_count"], 19)
+        self.assertEqual(st18["canonical_workflows_count"], 20)
 
         wf18_src = (ROOT / "workflows" / "multi_model_omc_memory_assign_workflow.py").read_text(encoding="utf-8")
         ns18: dict[str, object] = {
@@ -1700,6 +1701,128 @@ class TestMultiModelWorkflows(unittest.TestCase):
         assign = cch.build_orca_lead_e2e_convergence_assignment(repo="cc-sota-harness")
         self.assertIn("--backend", assign["sota_workflow_run_argv"])
         self.assertNotIn("--mode", assign["sota_workflow_run_argv"])
+
+    def test_v3103_adr0027_grand_merit_promotion_harness_and_wf20(self) -> None:
+        from sota_mmw import dual_machine_lanes as dml
+        from sota_mmw import merit_promotion_harness as mph
+
+        mf = mph.build_grand_merit_harness_manifest()
+        self.assertTrue(mf["ok"])
+        self.assertEqual(mf["counts"]["total_execution_lanes"], 7)
+        self.assertEqual(mf["counts"]["sim_lanes_never_gated"], 2)
+        self.assertEqual(mf["counts"]["paper_accounts_never_gated"], 4)
+        self.assertEqual(mf["counts"]["alpaca_paper_accounts"], 3)
+        self.assertEqual(mf["counts"]["ibkr_paper_accounts"], 1)
+        self.assertEqual(mf["counts"]["live_stage5_lossless_lanes"], 1)
+        self.assertEqual(len(mf["harness_sha256"]), 64)
+        self.assertEqual(mf["gating_charter"]["sim_lanes"], "NEVER_GATED")
+        self.assertEqual(mf["gating_charter"]["paper_farm_4_accounts"], "NEVER_GATED")
+
+        # 1. Fail-closed on NaN/Inf, >2.00% stop, or post-wall study date
+        bad_nan = mph.evaluate_merit_ladder(
+            mph.MeritStrategyEvidence(
+                strategy_id="BAD_NAN",
+                study_end_date="2026-10-15",
+                max_stop_pct=1.0,
+                sim_engine_verified=True,
+                prewall_net_1x_bps=float("nan"),
+                prewall_net_2x_bps=5.0,
+            )
+        )
+        self.assertEqual(bad_nan["merit_tier"], "HARD_REJECTED_SAFETY_OR_PREWALL")
+        self.assertFalse(bad_nan["live_8798_allowed"])
+
+        # 2. Sim-cleared enters P3 Aggressive Crucible NEVER GATED (not Live yet)
+        p3 = mph.evaluate_merit_ladder(
+            mph.MeritStrategyEvidence(
+                strategy_id="FRONTIER_ALPHA_V1",
+                study_end_date="2026-10-15",
+                max_stop_pct=1.80,
+                sim_engine_verified=True,
+                prewall_net_1x_bps=12.0,
+                prewall_net_2x_bps=4.0,
+            )
+        )
+        self.assertEqual(p3["merit_tier"], "PAPER_P3_AGGRESSIVE_CRUCIBLE")
+        self.assertEqual(p3["assigned_lanes"], ["PAPER_P3_ALPACA_AGGRESSIVE_LAB"])
+        self.assertFalse(p3["live_8798_allowed"])
+
+        # 3. Negative EB stays on probation in P3 and is hard-blocked from Live
+        neg = mph.evaluate_merit_ladder(
+            mph.MeritStrategyEvidence(
+                strategy_id="MEGA_CAP_NEAR_LOSSLESS_ORB",
+                study_end_date="2026-10-15",
+                max_stop_pct=0.85,
+                sim_engine_verified=True,
+                prewall_net_1x_bps=15.0,
+                prewall_net_2x_bps=10.0,
+                closed_roundtrips=50,
+                distinct_paper_accounts=("PAPER_P1_ALPACA_LOSSLESS_FOUNDATION", "PAPER_P2_ALPACA_BALANCED_RANKER"),
+                eb_expectancy_r=-0.05,
+                tuning_regime="PROBATION_NEGATIVE_EB_THROTTLE",
+            )
+        )
+        self.assertFalse(neg["live_8798_allowed"])
+
+        # 4. Lossless Foundation Seed enters Stage-5 Live Canary 10%
+        canary = mph.evaluate_merit_ladder(
+            mph.MeritStrategyEvidence(
+                strategy_id="LARGE_CAP_4X_IPO_PRECURSOR_BASKET",
+                study_end_date="2026-10-15",
+                max_stop_pct=0.85,
+                sim_engine_verified=True,
+                prewall_net_1x_bps=18.0,
+                prewall_net_2x_bps=10.5,
+            )
+        )
+        self.assertEqual(canary["merit_tier"], "STAGE5_LOSSLESS_FOUNDATION_CANARY_10PCT")
+        self.assertTrue(canary["live_8798_allowed"])
+        self.assertEqual(canary["live_notional_scale"], 0.10)
+
+        # 5. Multi-paper certified (n>=30, >=2 accounts incl. P1, EB>=0.20, PF>=1.35, slip<=3bps) -> 1.00x Full Live
+        full = mph.evaluate_merit_ladder(
+            mph.MeritStrategyEvidence(
+                strategy_id="MEGA_CAP_NEAR_LOSSLESS_ORB",
+                study_end_date="2026-10-15",
+                max_stop_pct=0.85,
+                sim_engine_verified=True,
+                prewall_net_1x_bps=22.0,
+                prewall_net_2x_bps=14.0,
+                closed_roundtrips=36,
+                distinct_paper_accounts=("PAPER_P1_ALPACA_LOSSLESS_FOUNDATION", "PAPER_P2_ALPACA_BALANCED_RANKER"),
+                eb_expectancy_r=0.28,
+                profit_factor=1.55,
+                realized_slippage_bps=1.9,
+            )
+        )
+        self.assertEqual(full["merit_tier"], "STAGE5_LOSSLESS_LIVE_FULL_AUTO")
+        self.assertTrue(full["live_8798_allowed"])
+        self.assertEqual(full["live_notional_scale"], 1.00)
+
+        # 6. CLI `sota-lanes merit --json` and WF20 deterministic execution both pass
+        from contextlib import redirect_stdout
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc_m = dml.main(["merit", "--json"])
+        self.assertEqual(rc_m, 0)
+        cli_out = json.loads(buf.getvalue())
+        self.assertEqual(cli_out["adr"], "ADR-0027")
+
+        wf20_src = (ROOT / "workflows" / "grand_merit_harness_workflow.py").read_text(encoding="utf-8")
+        captured: dict[str, object] = {}
+        ns20: dict[str, object] = {
+            "__name__": "__main__",
+            "args": {"repo": "sota-mover-ranker", "fast_deterministic_only": True},
+            "log": lambda *_a: None,
+            "phase": lambda *_a: None,
+            "result": lambda obj: captured.setdefault("out", obj),
+        }
+        exec(compile(wf20_src, "grand_merit_harness_workflow.py", "exec"), ns20)  # noqa: S102
+        out20 = captured["out"]
+        assert isinstance(out20, dict)
+        self.assertTrue(out20["all_gates_passed"])
+        self.assertEqual(out20["workflow_id"], "grand-merit-harness")
 
 
 if __name__ == "__main__":

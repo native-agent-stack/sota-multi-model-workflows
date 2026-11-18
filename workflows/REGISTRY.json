@@ -367,6 +367,24 @@
         }
       },
       "when_to_use": "v3.10.0 E2E SOTA 8-Stage Research Convergence Practice (413 owner stars + 6 beyond-starred SOTA anchors), 12-Feed DF1..DF12 Symbol Ranking System DataFeeds -> 6 autonomous paper strategies, and cross-runtime Orca Lead (cc-lead) E2E assignment & verification."
+    },
+    {
+      "id": "grand-merit-harness",
+      "script_path": "~/.agents/workflows/grand_merit_harness_workflow.py",
+      "skill": "sota-workflow",
+      "agents": [
+        "sota-falsifier",
+        "sota-code-verifier"
+      ],
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "repo": {"type": "string"},
+          "goal": {"type": "string"},
+          "fast_deterministic_only": {"type": "boolean"}
+        }
+      },
+      "when_to_use": "v3.10.3 Grand Merit-Promotion Harness (ADR-0027): 2 NEVER-GATED Sim/Backtest lanes (Noesis 64c/RTX4090 + WSL2 Nautilus/QueueModel) -> 4 NEVER-GATED Paper Farm accounts (3 Alpaca Paper :8799/:8787/:8797 + 1 IBKR Paper :4002) -> Proven-Automation Stage-5 Lossless Live (:8798) starting with Lossless Foundation, bridged from Native Gemini to Dual-Machine Orca."
     }
   ]
 }
