@@ -752,6 +752,25 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertEqual(len(out14["cc_lead_plan"]["plan_sha256"]), 64)
         rec14.assert_called_once()
 
+        # 5. Cross-OS os.pathsep parity for probe_cc_runtime_fleet (Windows ';' vs POSIX ':')
+        from sota_mmw import cc_lead_hub as cch
+
+        captured_paths: list[str] = []
+
+        def _fake_which(_bin: str, path: str | None = None) -> str | None:
+            if path is not None:
+                captured_paths.append(path)
+            return "/mock/bin"
+
+        with (
+            mock.patch.object(cch.os, "pathsep", ";"),
+            mock.patch.dict(cch.os.environ, {"PATH": "C:\\Tools;C:\\Bin"}, clear=False),
+            mock.patch.object(cch.shutil, "which", side_effect=_fake_which),
+        ):
+            fleet_win = cch.probe_cc_runtime_fleet()
+        self.assertEqual(fleet_win["installed_count"], 15)
+        self.assertTrue(captured_paths and ";C:\\Tools;C:\\Bin" in captured_paths[0])
+
 
 if __name__ == "__main__":
     unittest.main()

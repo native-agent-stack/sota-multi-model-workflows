@@ -16,6 +16,7 @@ import argparse
 import datetime as dt
 import hashlib
 import json
+import os
 import re
 import shlex
 import shutil
@@ -243,12 +244,13 @@ def probe_cc_runtime_fleet() -> dict[str, Any]:
         "omniroute",
     )
     extra_dirs = [
+        str(Path.home() / ".agents" / "bin"),
         str(Path.home() / ".local" / "bin"),
         str(Path.home() / ".local" / "share" / "mise" / "shims"),
         "/opt/homebrew/bin",
         "/usr/local/bin",
     ]
-    search_path = ":".join(extra_dirs + [shutil.os.environ.get("PATH", "")])
+    search_path = os.pathsep.join([*extra_dirs, os.environ.get("PATH", "")])
     installed: list[str] = []
     missing: list[str] = []
     for b in binaries:
@@ -268,8 +270,8 @@ def probe_cc_runtime_fleet() -> dict[str, Any]:
 
 
 def resolve_local_orca_repo_id(repo_name: str, *, timeout_sec: float = 5.0) -> str | None:
-    """Query `orca repo list --json` to resolve `id:<uuid>` on local Mac M5 Max."""
-    extra_path = f"{Path.home() / '.local' / 'bin'}:{shutil.os.environ.get('PATH', '')}"
+    """Query `orca repo list --json` to resolve `id:<uuid>` on local Mac M5 Max or Noesis."""
+    extra_path = os.pathsep.join([str(Path.home() / ".local" / "bin"), os.environ.get("PATH", "")])
     orca_bin = shutil.which("orca", path=extra_path)
     if not orca_bin:
         return None
@@ -309,11 +311,7 @@ def validate_cc_lead_safety_and_invariants(
     requires_3vendor: bool,
 ) -> None:
     """Fail-closed trading firewall, pre-wall study lock, Hephaestus non-GPT, and vendor diversity."""
-    if (
-        _LIVE_ALPACA_RE.search(req.goal)
-        or _LIVE_BIN_RE.search(req.goal)
-        or _LIVE_IBKR_PORT_RE.search(req.goal)
-    ):
+    if _LIVE_ALPACA_RE.search(req.goal) or _LIVE_BIN_RE.search(req.goal) or _LIVE_IBKR_PORT_RE.search(req.goal):
         raise PermissionError("Live-capital endpoints, binaries, and ports (4001/7496) are 100% hard-refused")
 
     if hephaestus_model.strip().lower().startswith("gpt-"):
@@ -325,9 +323,7 @@ def validate_cc_lead_safety_and_invariants(
     if eff_date is not None:
         parsed = dt.date.fromisoformat(eff_date)
         if parsed > AO_STUDY_WALL_DATE:
-            raise ValueError(
-                f"PREWALL_VIOLATION: study_end_date {eff_date} > {AO_STUDY_WALL_DATE.isoformat()}"
-            )
+            raise ValueError(f"PREWALL_VIOLATION: study_end_date {eff_date} > {AO_STUDY_WALL_DATE.isoformat()}")
 
     for wk in worker_keys:
         if wk not in RUNTIME_WORKER_ROSTER:
@@ -421,10 +417,7 @@ def build_cc_lead_execution_plan(
         f"--goal {shlex.quote('G002::Isolated Worktree Multi-Runtime Execution')} "
         f"--goal {shlex.quote('G003::Cross-Vendor Falsification & Merge Gate')} --json"
     )
-    omc_team_cmd = (
-        f"{env_exports} omc team {shlex.quote(str(profile['omc_team_spec']))} "
-        f"--no-decompose {quoted_brief}"
-    )
+    omc_team_cmd = f"{env_exports} omc team {shlex.quote(str(profile['omc_team_spec']))} --no-decompose {quoted_brief}"
     advisor_and_omx_cmds = {
         "codex_critic_ask": f"omc ask codex --agent-prompt critic --prompt {quoted_brief}",
         "antigravity_shelf_ask": f"omc ask antigravity --agent-prompt analyst --prompt {quoted_brief}",
@@ -489,9 +482,7 @@ def build_cc_lead_execution_plan(
         "hlz_trials_n": hlz_trials_n,
         "feeds_schema": feeds_schema,
     }
-    plan_sha256 = hashlib.sha256(
-        json.dumps(plan_digest_payload, sort_keys=True).encode("utf-8")
-    ).hexdigest()
+    plan_sha256 = hashlib.sha256(json.dumps(plan_digest_payload, sort_keys=True).encode("utf-8")).hexdigest()
 
     return {
         "schema_version": "sota-cc-lead-hub.v1",
@@ -552,8 +543,14 @@ def _load_live_bus_and_mesh() -> tuple[int, float, str]:
             except (ValueError, json.JSONDecodeError):
                 pass
     if ws_bin.is_file():
+        ws_exe_str = f"{ws_bin}.exe"
+        ws_argv = (
+            [ws_exe_str, "status", "--json"]
+            if os.name == "nt" and os.path.isfile(ws_exe_str)
+            else [sys.executable, str(ws_bin), "status", "--json"]
+        )
         p_ws = subprocess.run(
-            [sys.executable, str(ws_bin), "status", "--json"],
+            ws_argv,
             capture_output=True,
             text=True,
             timeout=10,
@@ -585,7 +582,9 @@ def main(argv: list[str] | None = None) -> int:
     p_pl.add_argument("--session", default="cc-lead")
     p_pl.add_argument("--paths", nargs="*", default=["*"])
 
-    p_dp = sub.add_parser("dispatch-orca", help="Validate lease & dry-run or execute supervised Orca child-worktree workers")
+    p_dp = sub.add_parser(
+        "dispatch-orca", help="Validate lease & dry-run or execute supervised Orca child-worktree workers"
+    )
     p_dp.add_argument("--repo", required=True)
     p_dp.add_argument("--task-class", default="parallel_worktree_implementation", choices=sorted(TASK_CLASS_PROFILES))
     p_dp.add_argument("--goal", required=True)
@@ -678,7 +677,9 @@ def main(argv: list[str] | None = None) -> int:
             }
         )
     ok_all = all(r["returncode"] == 0 for r in results)
-    print(json.dumps({"executed": True, "ok": ok_all, "plan_sha256": plan["plan_sha256"], "results": results}, indent=2))
+    print(
+        json.dumps({"executed": True, "ok": ok_all, "plan_sha256": plan["plan_sha256"], "results": results}, indent=2)
+    )
     return 0 if ok_all else 1
 
 
