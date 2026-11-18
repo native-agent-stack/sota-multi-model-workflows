@@ -1,6 +1,6 @@
 {
-  "version": "3.0.0",
-  "description": "Canonical v3.0.0 registry of 10 self-bootstrapping SOTA `run_workflow` scripts. Every script automatically loads live peer leases, handovers, lessons, HLZ trial multiplicity N, `sota-doctor`, `sota-org-doctor`, and `ECOSYSTEM_CONVERGENCE_LOCK.json` via `_sota_kit.py` and writes completion checkpoints back to `~/.agents/bus/peer_bus.db`.",
+  "version": "3.1.0",
+  "description": "Canonical v3.1.0 registry of 11 self-bootstrapping SOTA `run_workflow` scripts. Every script automatically loads live peer leases, handovers, lessons, HLZ trial multiplicity N, `sota-doctor` (11/11), `sota-org-doctor`, and `ECOSYSTEM_CONVERGENCE_LOCK.json` via `_sota_kit.py` and writes completion checkpoints back to `~/.agents/bus/peer_bus.db`.",
   "workflows": [
     {
       "id": "master-sota-harness",
@@ -138,6 +138,21 @@
         "properties": {}
       },
       "when_to_use": "Zero-copy trajectory() introspection + SkillOpt/GEPA curation turning tool friction into hook/AST/skill upgrades."
+    },
+    {
+      "id": "dual-workstation-orca",
+      "script_path": "~/.agents/workflows/dual_workstation_orca_workflow.py",
+      "skill": "orca-cli",
+      "agents": ["sota-code-verifier"],
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "repo": {"type": "string"},
+          "fast_deterministic_only": {"type": "boolean"},
+          "sync_repos": {"type": "boolean"}
+        }
+      },
+      "when_to_use": "Dual-Machine Portable M5 Max (64 GB) + Stationary Noesis (64c/128 GB/RTX 4090) Orca mesh telemetry, FF repo sync, ADR-0020 broker-isolation audit, and cross-machine placement."
     }
   ]
 }
