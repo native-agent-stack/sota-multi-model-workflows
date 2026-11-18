@@ -1,0 +1,116 @@
+{
+  "schemaVersion": "1.0.0",
+  "repository": "https://github.com/native-agent-stack/sota-multi-model-workflows",
+  "visibility": "PUBLIC",
+  "workflowCount": 9,
+  "workflows": [
+    "master-sota-harness",
+    "council-deliberation",
+    "autoresearch-loop",
+    "security-and-release-gate",
+    "early-mover-compounding",
+    "ecosystem-convergence",
+    "rd-agent-hypothesis-bus",
+    "cross-peer-orca-review",
+    "skillopt-gepa-evolution"
+  ],
+  "supportedHarnesses": [
+    "antigravity",
+    "claude-code",
+    "openai-codex",
+    "deepseek-dsh",
+    "orca"
+  ],
+  "promotionPipeline": "Sim -> PreWall-Backtest -> Paper(Alpaca-200rpm/IBKR-3000mpm) -> Empirical-Bayes-FineTune",
+  "adrGovernance": {
+    "format": "MADR-4.0-GitHub-Evidenced",
+    "catalogPath": "docs/adr/CATALOG.md",
+    "generatorScript": "scripts/architecture_catalog.py",
+    "revisitThresholdDays": 45,
+    "adrCount": 6,
+    "records": [
+      {
+        "id": "ADR-0001",
+        "layer": "Workflow Orchestration (`L5` \u00d7 `P0\u2013P5`)",
+        "title": "Self-Bootstrapping Multi-Model Workflow Registry (`REGISTRY.json` + `_sota_kit.py`)",
+        "status": "Accepted",
+        "date": "2026-11-17",
+        "evidenceGrade": "E4 (9 Workflows Runtime Verified)",
+        "file": "docs/adr/ADR-0001-self-bootstrapping-multi-model-workflow-registry.md",
+        "githubUrls": [
+          "https://github.com/google-antigravity/antigravity-sdk-python",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/stablyai/orca"
+        ]
+      },
+      {
+        "id": "ADR-0002",
+        "layer": "Cross-Peer State (`L1` \u00d7 `L7`)",
+        "title": "Portable SQLite WAL Peer Bus & Atomic Lease Collision Guard",
+        "status": "Accepted",
+        "date": "2026-11-17",
+        "evidenceGrade": "E4 (Concurrent 5-Session Org Convergence Proven)",
+        "file": "docs/adr/ADR-0002-sqlite-wal-peer-bus-and-lease-collision-guard.md",
+        "githubUrls": [
+          "https://github.com/aannoo/hcom",
+          "https://github.com/native-agent-stack/.github",
+          "https://github.com/python/cpython"
+        ]
+      },
+      {
+        "id": "ADR-0003",
+        "layer": "Quant & Execution Governance (`L8` \u00d7 `T3\u2013T6`)",
+        "title": "Deterministic Five-Stage Strategy Promotion Gate (`Sim -> Backtest -> Paper -> Fine-Tune -> Broker`)",
+        "status": "Accepted",
+        "date": "2026-11-17",
+        "evidenceGrade": "E4 (Unit & Property Tested)",
+        "file": "docs/adr/ADR-0003-five-stage-sim-backtest-paper-broker-promotion-gate.md",
+        "githubUrls": [
+          "https://github.com/ml4t/diagnostic",
+          "https://github.com/nautechsystems/nautilus_trader",
+          "https://github.com/skfolio/skfolio"
+        ]
+      },
+      {
+        "id": "ADR-0004",
+        "layer": "Execution Risk (`L9` \u00d7 `T5`)",
+        "title": "Paper-Only `PA...`/`DU...` Broker Firewall & `6\u201314 bps` Near-Lossless Bounds",
+        "status": "Accepted",
+        "date": "2026-11-17",
+        "evidenceGrade": "E4 (Hard Firewall Tested)",
+        "file": "docs/adr/ADR-0004-paper-only-alpaca-ibkr-and-near-lossless-bounds.md",
+        "githubUrls": [
+          "https://github.com/alpacahq/alpaca-py",
+          "https://github.com/ib-api-reloaded/ib_async"
+        ]
+      },
+      {
+        "id": "ADR-0005",
+        "layer": "Epistemic Falsification (`L5` \u00d7 `L12`)",
+        "title": "Three-Seat Deliberation Council & Adversarial Falsifier Workflow Pattern",
+        "status": "Accepted",
+        "date": "2026-11-17",
+        "evidenceGrade": "E3 (Empirical Workflow Audits)",
+        "file": "docs/adr/ADR-0005-adversarial-council-and-falsifier-workflow-pattern.md",
+        "githubUrls": [
+          "https://github.com/native-agent-stack/.github",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows"
+        ]
+      },
+      {
+        "id": "ADR-0006",
+        "layer": "Supply-Chain & Privacy (`L9`)",
+        "title": "Reusable SHA-Pinned Organization CI & Home-Path Sanitization",
+        "status": "Accepted",
+        "date": "2026-11-17",
+        "evidenceGrade": "E4 (GitHub Actions Public Runner Verified)",
+        "file": "docs/adr/ADR-0006-reusable-sha-pinned-org-actions-and-zero-path-sanitization.md",
+        "githubUrls": [
+          "https://github.com/actions/checkout",
+          "https://github.com/native-agent-stack/.github",
+          "https://github.com/step-security/harden-runner"
+        ]
+      }
+    ]
+  }
+}

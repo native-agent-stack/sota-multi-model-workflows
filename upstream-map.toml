@@ -1,0 +1,6 @@
+[areas]
+"src/sota_mmw/__init__.py" = { upstream = "cpython-stdlib", how = "integrate", feature = "package exports" }
+"src/sota_mmw/promotion_gate.py" = { upstream = "ml4t-diagnostic", how = "build-on", feature = "5-stage Sim->Backtest->Paper->FineTune->Alpaca/IBKR promotion validator" }
+"src/sota_mmw/peer_bus_schema.py" = { upstream = "cpython-stdlib", how = "build-on", feature = "SQLite WAL cross-peer leases, messages, and SHA-256 hypothesis ledger" }
+"workflows/*" = { upstream = "antigravity-sdk", how = "build-on", feature = "9 self-bootstrapping multi-model workflow DAGs" }
+"scripts/*" = { upstream = "cpython-stdlib", how = "build-on", feature = "MADR 4.0 catalog verifier and zero-leak merge gate" }

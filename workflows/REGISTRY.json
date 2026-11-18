@@ -1,0 +1,125 @@
+{
+  "version": "1.1.0",
+  "description": "Canonical registry of self-bootstrapping SOTA `run_workflow` scripts. Every script automatically loads live peer leases, handovers, lessons, and HLZ trial multiplicity N via `_sota_kit.py` and writes completion checkpoints back to `~/.agents/bus/peer_bus.db`.",
+  "workflows": [
+    {
+      "id": "master-sota-harness",
+      "script_path": "~/.agents/workflows/master_sota_harness_workflow.py",
+      "skill": "sota-workflow",
+      "agents": ["sota-deep-synthesizer", "self", "sota-falsifier", "sota-code-verifier"],
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "goal": {"type": "string"},
+          "repo": {"type": "string"},
+          "mode": {"type": "string", "enum": ["quant-trading", "research", "engineering"]}
+        },
+        "required": ["goal"]
+      },
+      "when_to_use": "Unified 5-phase end-to-end native workflow harnessing all 4 MCP servers, skills, execution, adversarial falsification, two-pass verification, and peer-bus handover."
+    },
+    {
+      "id": "council-deliberation",
+      "script_path": "~/.agents/workflows/council_deliberation_workflow.py",
+      "skill": "council-of-high-intelligence",
+      "agents": ["sota-deep-synthesizer", "self", "sota-falsifier"],
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "question": {"type": "string"},
+          "repo": {"type": "string"}
+        },
+        "required": ["question"]
+      },
+      "when_to_use": "High-stakes architecture, factor design, or boundary trade-offs requiring 3-perspective premortem adjudication."
+    },
+    {
+      "id": "autoresearch-loop",
+      "script_path": "~/.agents/workflows/autoresearch_loop_workflow.py",
+      "skill": "autoresearch-loop",
+      "agents": ["sota-rd-proposer", "sota-falsifier"],
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "repo": {"type": "string"},
+          "hypothesis_id": {"type": "string"},
+          "hypothesis": {"type": "string"}
+        },
+        "required": ["repo", "hypothesis_id", "hypothesis"]
+      },
+      "when_to_use": "Pre-registered Modify -> Lock SHA-256 & HLZ t* -> Pre-Wall Empirical Run -> Adversarial Falsify -> Keep/Discard loop."
+    },
+    {
+      "id": "security-and-release-gate",
+      "script_path": "~/.agents/workflows/security_and_release_gate_workflow.py",
+      "skill": "sota-verification-and-security-gate",
+      "agents": ["sota-code-verifier"],
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "repo_path": {"type": "string"}
+        }
+      },
+      "when_to_use": "Pre-commit / pre-PR deterministic lint/type/test/merge_gate/gitleaks check + stateful two-pass P0-P3 self-refuting review."
+    },
+    {
+      "id": "early-mover-compounding",
+      "script_path": "~/.agents/workflows/early_mover_compounding_workflow.py",
+      "skill": "early-mover-compounding-goal",
+      "agents": ["sota-deep-synthesizer", "sota-falsifier"],
+      "args_schema": {
+        "type": "object",
+        "properties": {}
+      },
+      "when_to_use": "Parallel audit of Pre-Travel Early Movers, 200 req/min Alpaca Paper fills/slippage, and Adversarial Falsifier checks."
+    },
+    {
+      "id": "ecosystem-convergence",
+      "script_path": "~/.agents/workflows/ecosystem_convergence_workflow.py",
+      "skill": "sota-peer-bus-and-handover",
+      "agents": ["research"],
+      "args_schema": {
+        "type": "object",
+        "properties": {}
+      },
+      "when_to_use": "Parallel convergence audit across agy-sota-harness, dsh-sota-harness, sota-mover-ranker, and live peer-bus/sota-doctor checks."
+    },
+    {
+      "id": "rd-agent-hypothesis-bus",
+      "script_path": "~/.agents/workflows/rd_agent_hypothesis_bus_workflow.py",
+      "skill": "sota-quant-research-protocol",
+      "agents": ["sota-rd-proposer", "sota-falsifier"],
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "repo": {"type": "string"}
+        }
+      },
+      "when_to_use": "RD-Agent(Q) proposal -> stateful adversarial lookahead/cost/dilution red-team -> single-parameter refinement."
+    },
+    {
+      "id": "cross-peer-orca-review",
+      "script_path": "~/.agents/workflows/cross_peer_orca_review_workflow.py",
+      "skill": "sota-verification-and-security-gate",
+      "agents": ["sota-code-verifier"],
+      "args_schema": {
+        "type": "object",
+        "properties": {
+          "repo": {"type": "string"}
+        }
+      },
+      "when_to_use": "Two-pass P0-P3 verification gate combined with cross-peer lease and handover checks."
+    },
+    {
+      "id": "skillopt-gepa-evolution",
+      "script_path": "~/.agents/workflows/skillopt_gepa_evolution_workflow.py",
+      "skill": "sota-skillopt-self-evolution",
+      "agents": ["sota-skillopt-curator"],
+      "args_schema": {
+        "type": "object",
+        "properties": {}
+      },
+      "when_to_use": "Zero-copy trajectory() introspection + SkillOpt/GEPA curation turning tool friction into hook/AST/skill upgrades."
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+name: SOTA Multi-Model Workflows CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: mmw-ci-${{ github.ref }}
+  cancel-in-progress: ${ github.event_name == 'pull_request' }
+
+jobs:
+  org-reusable-gate:
+    permissions:
+      contents: read
+    uses: native-agent-stack/.github/.github/workflows/reusable-sota-gate.yml@4fe823289ed3eae6ecf2c3fa38217002f5ea4f6f
+
+  verify-matrix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Run ADR Catalog, Merge Gate & Promotion Suite
+        run: |
+          python3 scripts/architecture_catalog.py --check
+          python3 scripts/merge_gate.py
+          python3 -m unittest discover -s tests -v
