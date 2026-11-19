@@ -975,10 +975,25 @@ class TestMultiModelWorkflows(unittest.TestCase):
             local_orca_repo_id="00000000-0000-0000-0000-000000000002",
         )
         self.assertEqual(t2_astrolabe["selected_surface"], "stationary_noesis_win32")
+        # ADR-0041: transient Noesis unreachable probe MUST fail closed by default (zero silent split-brain!)
+        with self.assertRaises(PermissionError):
+            resolve_dual_machine_lane_plan(
+                "astrolabe",
+                mesh_state="portable_roaming_battery",
+                local_orca_repo_id="00000000-0000-0000-0000-000000000002",
+            )
+        with self.assertRaises(PermissionError):
+            resolve_dual_machine_lane_plan(
+                "sota-mover-ranker",
+                workload="active_paper_broker",
+                mesh_state="portable_autonomous_ac",
+            )
+        # Explicit owner-authorized failover (`allow_unreachable_failover=True`) routes cleanly to Mac
         t2_astrolabe_fo = resolve_dual_machine_lane_plan(
             "astrolabe",
             mesh_state="portable_roaming_battery",
             local_orca_repo_id="00000000-0000-0000-0000-000000000002",
+            allow_unreachable_failover=True,
         )
         self.assertEqual(t2_astrolabe_fo["selected_surface"], "portable_mac_m5_max")
 

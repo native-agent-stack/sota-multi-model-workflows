@@ -621,6 +621,7 @@ def resolve_dual_machine_lane_plan(
     local_orca_repo_id: str | None = None,
     active_broker_host_shield: bool = False,
     active_broker_host: str = "stationary_noesis_win32",
+    allow_unreachable_failover: bool = False,
 ) -> dict[str, Any]:
     """Deterministically resolve surface, Orca `worker-start` command, and >=3-vendor worker trio for `repo`."""
     lane = REPO_LANE_INDEX.get(repo)
@@ -660,10 +661,19 @@ def resolve_dual_machine_lane_plan(
                 )
             selected_surface = "portable_mac_m5_max"
             use_noesis = False
-        else:
-            # Workstation unreachable -> seamless portable Mac failover
+        elif allow_unreachable_failover:
+            # Explicit owner-authorized failover when primary stationary Noesis is confirmed offline
             selected_surface = "portable_mac_m5_max"
             use_noesis = False
+        else:
+            # ADR-0041 / Claude Opus 5.5 P1: Fail closed on transient Noesis probe timeout — NEVER silently
+            # start a second active broker on portable Mac (prevents split-brain singleActiveBrokerHostOnly breach)!
+            raise PermissionError(
+                f"SINGLE_BROKER_HOST_FIREWALL: primary stationary_noesis_win32 is unreachable "
+                f"(mesh_state={mesh_state!r}) for broker workload on {repo!r} ({lane_id}); "
+                "refusing silent split-brain failover to portable_mac_m5_max without explicit "
+                "active_broker_host='portable_mac_m5_max' or allow_unreachable_failover=True (ADR-0041)"
+            )
     elif requested_placement == "local" or not mesh_online:
         selected_surface = "portable_mac_m5_max"
         use_noesis = False
