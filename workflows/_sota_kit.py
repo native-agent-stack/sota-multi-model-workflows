@@ -149,11 +149,86 @@ except Exception:  # noqa: BLE001
 
 _PIN_SHA_RE = re.compile(r"`([0-9a-f]{40})`")
 DEFAULT_RESEARCH_FEEDS_URL = "http://127.0.0.1:8787/api/research_feeds"
+DEFAULT_GPU_SIDECAR_URL = "http://127.0.0.1:8794"
 _ALLOWED_RANKER_PREFIXES = (
     "http://127.0.0.1:",
     "http://localhost:",
     "http://100.",
 )
+
+
+def apply_sota_compute_env_defaults() -> dict[str, str]:
+    """Apply fail-safe Noesis RTX 4090 GPU & Disk-Z zero-waste defaults without overriding caller env vars."""
+    applied: dict[str, str] = {}
+    defaults: dict[str, str] = {
+        "UV_LINK_MODE": "hardlink",
+        "UV_COMPILE_BYTECODE": "1",
+        "SOTA_GPU_SIDECAR_URL": DEFAULT_GPU_SIDECAR_URL,
+    }
+    if os.name == "nt":
+        if Path("Z:/sota-data").is_dir():
+            defaults["SOTA_DATA_ROOT"] = r"Z:\sota-data"
+        if Path("Z:/sota-cache").is_dir():
+            defaults.update(
+                {
+                    "HF_HOME": r"Z:\sota-cache\huggingface",
+                    "TORCH_HOME": r"Z:\sota-cache\torch",
+                    "PIP_CACHE_DIR": r"Z:\sota-cache\pip",
+                    "POLARS_TEMP_DIR": r"Z:\sota-cache\polars-tmp",
+                    "DUCKDB_TEMP_DIRECTORY": r"Z:\sota-cache\duckdb-tmp",
+                    "OLLAMA_MODELS": r"Z:\sota-cache\ollama",
+                }
+            )
+    else:
+        ext4_data = Path.home() / "sota-data-ext4"
+        if ext4_data.is_dir():
+            defaults["SOTA_DATA_ROOT"] = str(ext4_data)
+            defaults["TRITON_DEFAULT_FP_FUSION"] = "1"
+            defaults["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+    for key, val in defaults.items():
+        os.environ.setdefault(key, val)
+        applied[key] = os.environ[key]
+    return applied
+
+
+def probe_noesis_gpu_sidecar(sidecar_url: str | None = None, timeout: float = 0.4) -> dict[str, Any]:
+    """Probe the Stationary Noesis RTX 4090 GPU scoring sidecar (`:8794`) fail-open."""
+    raw_base = (sidecar_url or os.environ.get("SOTA_GPU_SIDECAR_URL") or DEFAULT_GPU_SIDECAR_URL).strip()
+    base = raw_base.rstrip("/")
+    if not base.startswith(_ALLOWED_RANKER_PREFIXES):
+        return {
+            "reachable": False,
+            "url": base,
+            "ok": False,
+            "cuda_available": False,
+            "error": "DISALLOWED_URL_PREFIX",
+        }
+    try:
+        with urllib.request.urlopen(f"{base}/api/gpu/health", timeout=timeout) as resp:
+            payload = json.loads(resp.read().decode("utf-8", errors="ignore"))
+        if isinstance(payload, dict):
+            return {
+                "reachable": True,
+                "url": base,
+                "ok": bool(payload.get("ok")),
+                "schema_version": payload.get("schema_version"),
+                "device": payload.get("device"),
+                "cuda_available": bool(payload.get("cuda_available")),
+                "gpu_name": payload.get("gpu_name") or payload.get("device_name"),
+                "fast_lake_tier": payload.get("fast_lake_tier"),
+            }
+        return {"reachable": False, "url": base, "ok": False, "cuda_available": False, "error": "INVALID_JSON"}
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "reachable": False,
+            "url": base,
+            "ok": False,
+            "cuda_available": False,
+            "error": type(exc).__name__,
+        }
+
+
+apply_sota_compute_env_defaults()
 
 
 def resolve_repo_dir(repo_name: str) -> Path:
@@ -406,6 +481,8 @@ def run_preflight_summary(live_org: bool = False) -> dict[str, Any]:
         "sota_doctor": "UNAVAILABLE",
         "sota_org_doctor": "UNAVAILABLE",
         "umbrella_lock": "UNAVAILABLE",
+        "compute_env_defaults": apply_sota_compute_env_defaults(),
+        "gpu_sidecar_8794": probe_noesis_gpu_sidecar(),
     }
 
     doc_bin = home / ".agents" / "bin" / "sota-doctor"

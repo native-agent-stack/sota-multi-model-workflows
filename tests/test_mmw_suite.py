@@ -7,6 +7,7 @@ import hashlib
 import http.server
 import io
 import json
+import os
 import statistics
 import subprocess
 import sys
@@ -2254,6 +2255,68 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertTrue(out21["receipt"]["all_gates_passed"])
         self.assertEqual(out21["receipt"]["stale_model_hits"], [])
         self.assertEqual(out21["receipt"]["orca_runtime_defaults_count"], 9)
+
+    def test_sota_kit_compute_env_defaults_and_gpu_sidecar_probe(self) -> None:
+        with mock.patch.dict("os.environ", {"UV_LINK_MODE": "symlink"}, clear=False):
+            os_prev_url = os.environ.pop("SOTA_GPU_SIDECAR_URL", None)
+            try:
+                applied = kit.apply_sota_compute_env_defaults()
+                self.assertEqual(applied["UV_LINK_MODE"], "symlink")
+                self.assertEqual(applied["SOTA_GPU_SIDECAR_URL"], kit.DEFAULT_GPU_SIDECAR_URL)
+            finally:
+                if os_prev_url is not None:
+                    os.environ["SOTA_GPU_SIDECAR_URL"] = os_prev_url
+
+        offline = kit.probe_noesis_gpu_sidecar(sidecar_url="http://127.0.0.1:1", timeout=0.1)
+        self.assertFalse(offline["reachable"])
+        self.assertFalse(offline["cuda_available"])
+
+        blocked = kit.probe_noesis_gpu_sidecar(sidecar_url="https://example.com", timeout=0.1)
+        self.assertFalse(blocked["reachable"])
+        self.assertEqual(blocked["error"], "DISALLOWED_URL_PREFIX")
+
+        class _GpuHandler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self) -> None:
+                if self.path != "/api/gpu/health":
+                    self.send_response(404)
+                    self.end_headers()
+                    return
+                body = json.dumps(
+                    {
+                        "ok": True,
+                        "schema_version": "sota-gpu-scorer.v1",
+                        "device": "cuda:0",
+                        "cuda_available": True,
+                        "gpu_name": "NVIDIA GeForce RTX 4090",
+                        "fast_lake_tier": "native_ext4",
+                    }
+                ).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, format: str, *args: object) -> None:
+                return
+
+        srv = http.server.HTTPServer(("127.0.0.1", 0), _GpuHandler)
+        port = srv.server_address[1]
+        t = threading.Thread(target=srv.handle_request, daemon=True)
+        t.start()
+        try:
+            live = kit.probe_noesis_gpu_sidecar(sidecar_url=f"http://127.0.0.1:{port}", timeout=0.8)
+        finally:
+            srv.server_close()
+            t.join(timeout=1.0)
+
+        self.assertTrue(live["reachable"])
+        self.assertTrue(live["ok"])
+        self.assertEqual(live["schema_version"], "sota-gpu-scorer.v1")
+        self.assertEqual(live["device"], "cuda:0")
+        self.assertTrue(live["cuda_available"])
+        self.assertEqual(live["gpu_name"], "NVIDIA GeForce RTX 4090")
+        self.assertEqual(live["fast_lake_tier"], "native_ext4")
 
 
 if __name__ == "__main__":
