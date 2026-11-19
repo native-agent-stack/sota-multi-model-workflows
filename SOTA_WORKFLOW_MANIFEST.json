@@ -41,7 +41,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 28,
+    "adrCount": 29,
     "records": [
       {
         "id": "ADR-0001",
@@ -472,6 +472,21 @@
         "file": "docs/adr/ADR-0028-v3104-stationary-workstation-primary-host-and-portable-mac-failover.md",
         "githubUrls": [
           "https://github.com/native-agent-stack/sota-dynamic-trail-c",
+          "https://github.com/native-agent-stack/sota-harness-foundation",
+          "https://github.com/native-agent-stack/sota-mover-ranker",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/stablyai/orca"
+        ]
+      },
+      {
+        "id": "ADR-0029",
+        "layer": "`L0..L13` x `T1..T5` x `H0..H7` (Full-Ecosystem Orca Folder-Hub Manifestation & Lead-Agent Topology)",
+        "title": "`v3.10.5` Full-Ecosystem 7-Domain Orca Lane Hub Manifestation (`Sim`, `Paper`, `Live`, `All-Market Research`, `Non-Market Incentives`, `Framework/Harness` & `Beyond/SkillOpt`)",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "`E4` (`29/29` ADRs, `pytest`, `ruff`, `merge_gate.py`, `sota-lanes domains --json`, `sota-lanes sync-hubs --all-domains`, live Orca `--kind folder` registration across Mac + Noesis `100.110.115.22`, `gitleaks` `0` Leaks)",
+        "file": "docs/adr/ADR-0029-v3105-seven-domain-orca-lane-hubs-and-ecosystem-manifestation.md",
+        "githubUrls": [
           "https://github.com/native-agent-stack/sota-harness-foundation",
           "https://github.com/native-agent-stack/sota-mover-ranker",
           "https://github.com/native-agent-stack/sota-multi-model-workflows",

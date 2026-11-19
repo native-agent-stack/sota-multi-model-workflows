@@ -1871,6 +1871,52 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertTrue(out20["all_gates_passed"])
         self.assertEqual(out20["workflow_id"], "grand-merit-harness")
 
+    def test_v3105_adr0029_seven_domain_orca_lane_hubs(self) -> None:
+        from contextlib import redirect_stdout
+
+        from sota_mmw import dual_machine_lanes as dml
+
+        self.assertEqual(len(dml.ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES), 7)
+        expected_slugs = {
+            "01-sim-backtest",
+            "02-paper-4acct-farm",
+            "03-stage5-lossless-live",
+            "04-research-all-market",
+            "05-non-market-incentives",
+            "06-framework-and-harness",
+            "07-beyond-convergence-skillopt",
+        }
+        self.assertEqual(set(dml.ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES.keys()), expected_slugs)
+        self.assertEqual(dml.ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES["01-sim-backtest"]["gating_policy"], "NEVER_GATED")
+        self.assertEqual(dml.ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES["02-paper-4acct-farm"]["gating_policy"], "NEVER_GATED")
+        self.assertEqual(
+            dml.ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES["03-stage5-lossless-live"]["gating_policy"],
+            "PROVEN_AUTOMATION_ONLY_STARTING_WITH_LOSSLESS_FOUNDATION",
+        )
+        self.assertEqual(dml.ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES["04-research-all-market"]["gating_policy"], "NEVER_GATED")
+        self.assertEqual(
+            dml.ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES["05-non-market-incentives"]["gating_policy"], "NEVER_GATED"
+        )
+
+        with tempfile.TemporaryDirectory() as td:
+            res = dml.sync_orca_lane_hubs(Path(td), include_domain_lanes=True)
+            self.assertTrue(res["ok"])
+            self.assertEqual(res["files_written"], 6)
+            self.assertEqual(res["domain_lanes_count"], 7)
+            self.assertEqual(res["domain_files_written"], 21)
+            for slug in expected_slugs:
+                self.assertTrue((Path(td) / slug / "orca.yaml").is_file())
+                self.assertTrue((Path(td) / slug / "LANE_MANIFEST.json").is_file())
+                self.assertTrue((Path(td) / slug / "README.md").is_file())
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = dml.main(["domains", "--json"])
+        self.assertEqual(rc, 0)
+        dom = json.loads(buf.getvalue())
+        self.assertEqual(dom["domain_lanes_count"], 7)
+        self.assertEqual(dom["adr"], "ADR-0029")
+
     def test_workflow_handovers_fail_closed_no_unconditional_none_risks(self) -> None:
         import re
 

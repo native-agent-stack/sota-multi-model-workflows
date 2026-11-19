@@ -628,7 +628,7 @@ def render_orca_lane_hub_artifacts(plane: str) -> dict[str, str]:
         ],
         "singleActiveBrokerHostOnly": True,
         "rthBrokerContentionShield": True,
-        "sovereignPaperBrokerHost": "portable_mac_m5_max (100.93.211.101)",
+        "sovereignPaperBrokerHost": "stationary_noesis_win32 (100.110.115.22; failover portable_mac_m5_max 100.93.211.101)",
         "pairedWorkstationSurfaces": DUAL_MACHINE_SURFACES,
         "orcaHubSelectors": {
             "portable_mac_m5_max": ORCA_LANE_HUBS["portable_mac_m5_max"][plane],
@@ -676,8 +676,226 @@ def render_orca_lane_hub_artifacts(plane: str) -> dict[str, str]:
     }
 
 
-def sync_orca_lane_hubs(hub_root: pathlib.Path | None = None) -> dict[str, Any]:
-    """Write `sota-orca-lane-hub.v2` artifacts into `<hub_root>/{trading-lanes,harness-lanes}`."""
+ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES: dict[str, dict[str, Any]] = {
+    "01-sim-backtest": {
+        "order": 1,
+        "slug": "01-sim-backtest",
+        "title": "Lane 01 — Sim & Pre-Wall Backtest Factory (S1 Win32 64c/RTX4090 + S2 WSL2 Nautilus/Queue)",
+        "domain": "SIM_AND_PREWALL_BACKTEST",
+        "gating_policy": "NEVER_GATED",
+        "primary_surface": "stationary_noesis_win32",
+        "companion_surface": "stationary_noesis_carbon_wsl2",
+        "failover_surface": "portable_mac_m5_max",
+        "lead_agent": "codex-astra-omx",
+        "worker_trio": ("codex-astra-omx", "deepseek-dsh", "claude-opus-falsifier"),
+        "repos": ("sota-compounding-lab", "meridian", "trading-sota", "tsl", "sota-private-vault"),
+        "upstream_platforms": (
+            "polars",
+            "duckdb",
+            "vectorbt",
+            "skfolio",
+            "ml4t-diagnostic",
+            "nautilus_trader",
+            "hftbacktest",
+        ),
+        "invariants": "Strictly <= 2026-10-15 pre-wall; ADIA #19 MinTRL; HLZ t*(N); RiskAdverseQueueModel -n 8; 1x/2x Almgren-Chriss.",
+        "default_command": "sota-lanes status --plane trading --json",
+    },
+    "02-paper-4acct-farm": {
+        "order": 2,
+        "slug": "02-paper-4acct-farm",
+        "title": "Lane 02 — 4-Account Multi-Paper Farm (P1:8799, P2:8787, P3:8797 Alpaca + P4:4002 IBKR)",
+        "domain": "MULTI_PAPER_FARM",
+        "gating_policy": "NEVER_GATED",
+        "primary_surface": "stationary_noesis_win32",
+        "companion_surface": "portable_mac_m5_max",
+        "failover_surface": "portable_mac_m5_max",
+        "lead_agent": "antigravity-carbon",
+        "worker_trio": ("antigravity-carbon", "claude-sonnet-omc", "codex-astra-omx"),
+        "repos": ("sota-mover-ranker", "sota-dynamic-trail-c", "astrolabe"),
+        "upstream_platforms": (
+            "alpaca-mcp-server==2.4.1",
+            "alpaca-py",
+            "ib_async",
+            "perspective",
+            "lightweight-charts",
+        ),
+        "invariants": "3 distinct Alpaca Paper + 1 IBKR Paper NEVER GATED; ADR-0022 <= 2.00% stop; symmetric Single-Broker-Host Firewall.",
+        "default_command": "sota-lanes merit --json",
+    },
+    "03-stage5-lossless-live": {
+        "order": 3,
+        "slug": "03-stage5-lossless-live",
+        "title": "Lane 03 — Stage-5 Lossless Live & Protection (:8798 RTH Atomic + :8796 Dedicated Live Guardian)",
+        "domain": "STAGE5_LOSSLESS_LIVE",
+        "gating_policy": "PROVEN_AUTOMATION_ONLY_STARTING_WITH_LOSSLESS_FOUNDATION",
+        "primary_surface": "stationary_noesis_win32",
+        "companion_surface": "portable_mac_m5_max",
+        "failover_surface": "portable_mac_m5_max",
+        "lead_agent": "claude-opus-falsifier",
+        "worker_trio": ("claude-opus-falsifier", "antigravity-carbon", "codex-astra-omx"),
+        "repos": ("sota-mover-ranker", "sota-dynamic-trail-c", "sota-harness-foundation"),
+        "upstream_platforms": ("alpaca-mcp-server==2.4.1", "ib_async", "exchange_calendars"),
+        "invariants": "5 Stage-5 Lossless Invariants: Paper-merit provenance, zero naked orders (RTH atomic OCO / EXT dedicated :8796 LIVE guardian), 100/min exit reserve, -1.50% breaker, Keychain/Credential-Manager window + 0 PII/USD leaks.",
+        "default_command": "sota-lanes merit --json",
+    },
+    "04-research-all-market": {
+        "order": 4,
+        "slug": "04-research-all-market",
+        "title": "Lane 04 — All-Market Quantitative Research (Equities, ETFs, Options/VIX, FX, Crypto, Futures, IPOs)",
+        "domain": "ALL_MARKET_RESEARCH",
+        "gating_policy": "NEVER_GATED",
+        "primary_surface": "stationary_noesis_win32",
+        "companion_surface": "stationary_noesis_carbon_wsl2",
+        "failover_surface": "portable_mac_m5_max",
+        "lead_agent": "antigravity-carbon",
+        "worker_trio": ("antigravity-carbon", "deepseek-dsh", "codex-sol"),
+        "repos": ("sota-compounding-lab", "canon", "trading-sota", "tsl", "sota-mover-ranker"),
+        "upstream_platforms": (
+            "polars",
+            "duckdb",
+            "pandera",
+            "statsmodels",
+            "quantstats",
+            "alpaca-py",
+            "ib_async",
+        ),
+        "invariants": "Bitemporal DF1..DF12 PIT ordering (ts_event <= ts_recv <= decision); cross-asset volatility/VIX/IPO/4x precursor calibration; SHA-256 pre-registered trials (H099+).",
+        "default_command": "sota-workflow status --json",
+    },
+    "05-non-market-incentives": {
+        "order": 5,
+        "slug": "05-non-market-incentives",
+        "title": "Lane 05 — Non-Market Incentives & Catalysts (SEC EDGAR, FDA/PDUFA, Patents, Gov/DoD, Fed/Macro)",
+        "domain": "NON_MARKET_INCENTIVES_AND_CATALYSTS",
+        "gating_policy": "NEVER_GATED",
+        "primary_surface": "stationary_noesis_win32",
+        "companion_surface": "portable_mac_m5_max",
+        "failover_surface": "portable_mac_m5_max",
+        "lead_agent": "antigravity-carbon",
+        "worker_trio": ("antigravity-carbon", "claude-sonnet-omc", "grok"),
+        "repos": ("sota-mover-ranker", "sota-compounding-lab", "canon", "sota-private-vault"),
+        "upstream_platforms": ("edgartools", "polars", "duckdb", "qmd"),
+        "invariants": "Point-in-time acceptanceDateTime timestamps ONLY (zero filing-date look-ahead); SEC S-1/424B4/424B5/S-3 dilution shields, 8-K catalysts, 13F/Form-4 insider incentives, FDA/PDUFA, Gov/DoD awards & macro prints.",
+        "default_command": "sota-workflow status --json",
+    },
+    "06-framework-and-harness": {
+        "order": 6,
+        "slug": "06-framework-and-harness",
+        "title": "Lane 06 — Main Framework Foundation & Multi-Runtime Harness (Stationary Noesis Primary)",
+        "domain": "MAIN_FRAMEWORK_AND_HARNESS",
+        "gating_policy": "CONTINUOUS_CI_GATED",
+        "primary_surface": "stationary_noesis_win32",
+        "companion_surface": "portable_mac_m5_max",
+        "failover_surface": "portable_mac_m5_max",
+        "lead_agent": "claude-sonnet-omc",
+        "worker_trio": ("claude-sonnet-omc", "codex-astra-omx", "antigravity-carbon"),
+        "repos": (
+            "sota-harness-foundation",
+            "sota-multi-model-workflows",
+            "cc-sota-harness",
+            "agy-sota-harness",
+            "dsh-sota-harness",
+            "native-agent-stack",
+            ".github",
+        ),
+        "upstream_platforms": ("stablyai/orca", "oh-my-claudecode", "oh-my-codex", "hcom", "beads", "qmd"),
+        "invariants": "20/20 self-bootstrapping workflows; 14/14 sota-doctor; 22/22 SHA-pinned org manifest; zero-drift MADR 4.0 ADRs; cross-OS Win32/WSL2/Darwin parity.",
+        "default_command": "sota-lanes status --plane harness --json",
+    },
+    "07-beyond-convergence-skillopt": {
+        "order": 7,
+        "slug": "07-beyond-convergence-skillopt",
+        "title": "Lane 07 — Beyond: 18-Repo Upstream Shelf, SkillOpt/GEPA Self-Evolution & 7-Vendor AO Convergence",
+        "domain": "BEYOND_CONVERGENCE_AND_SKILLOPT",
+        "gating_policy": "NEVER_GATED_RESEARCH_TO_CI_PROMOTION",
+        "primary_surface": "stationary_noesis_carbon_wsl2",
+        "companion_surface": "stationary_noesis_win32",
+        "failover_surface": "portable_mac_m5_max",
+        "lead_agent": "antigravity-carbon",
+        "worker_trio": ("antigravity-carbon", "claude-opus-falsifier", "codex-astra-omx"),
+        "repos": ("sota-upstream-shelf-lock", "dsh-plugin-landscape", "native-agent-stack", "sota-multi-model-workflows"),
+        "upstream_platforms": ("18-pinned-upstream-shelf", "SkillOpt/GEPA", "8-slot-Multi-Model-AO"),
+        "invariants": "Immutable ~/Documents/upstream/ pins (PINS.md); zero reinvention; trajectory friction mining into ~/.agents/wiki/LESSONS.md; 7-vendor cross-family adversarial review.",
+        "default_command": "sota-lanes matrix --json",
+    },
+}
+
+
+def render_domain_lane_hub_artifacts(slug: str) -> dict[str, str]:
+    """Render `LANE_MANIFEST.json`, cross-OS `orca.yaml`, and `README.md` for one of the 7 Ecosystem Domain Lanes."""
+    lane = ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES.get(slug)
+    if lane is None:
+        raise ValueError(f"Unknown domain lane slug {slug!r}; valid={sorted(ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES)}")
+    manifest = {
+        "schemaVersion": "sota-ecosystem-domain-lane.v1",
+        "adrAuthority": ["ADR-0027", "ADR-0028", "ADR-0029"],
+        "ecosystemSemver": "3.10.5",
+        "primarySovereignWorkstation": "stationary_noesis_win32 (100.110.115.22)",
+        "portableCockpitAndFailover": "portable_mac_m5_max (100.93.211.101)",
+        "lane": lane,
+        "orcaRegisterCommands": {
+            "noesis": f"orca repo add --environment 100.110.115.22 --path C:/sota-workstation/.orca-lanes/{slug} --kind folder --json",
+            "mac": f"orca repo add --path ~/.agents/orca-lanes/{slug} --kind folder --json",
+        },
+    }
+    orca_yaml = (
+        f"# SOTA 7-Domain Ecosystem Orca Lane Hub — {slug} (v3.10.5, ADR-0029)\n"
+        "setupAgentStartupPolicy: wait-for-setup\n"
+        "scripts:\n"
+        "  setup: |\n"
+        f"    echo \"[SOTA Orca Lane] {lane['title']} | gating={lane['gating_policy']} | lead={lane['lead_agent']}\"\n"
+        "defaultTabs:\n"
+        "  - title: Lead Agent\n"
+        f"  - title: {slug} Status\n"
+        f"    command: {lane['default_command']}\n"
+    )
+    readme = "\n".join(
+        [
+            f"# {lane['title']}",
+            "",
+            f"- **Domain:** `{lane['domain']}` | **Gating:** `{lane['gating_policy']}`",
+            f"- **Primary Surface:** `{lane['primary_surface']}` | **Failover:** `{lane['failover_surface']}`",
+            f"- **Lead Agent:** `{lane['lead_agent']}` | **Worker Trio:** `{', '.join(lane['worker_trio'])}`",
+            f"- **Owned Repos:** `{', '.join(lane['repos'])}`",
+            f"- **Upstream Platforms:** `{', '.join(lane['upstream_platforms'])}`",
+            f"- **Invariants:** {lane['invariants']}",
+            "",
+        ]
+    )
+    return {
+        "LANE_MANIFEST.json": json.dumps(manifest, indent=2, default=list) + "\n",
+        "orca.yaml": orca_yaml,
+        "README.md": readme,
+    }
+
+
+def sync_seven_domain_orca_lanes(hub_root: pathlib.Path | None = None) -> dict[str, Any]:
+    """Materialize all 7 Full-Ecosystem Domain Lane Hubs (`01-sim-backtest` .. `07-beyond-convergence-skillopt`)."""
+    target_root = hub_root or (pathlib.Path.home() / ".agents" / "orca-lanes")
+    written: list[str] = []
+    created_dirs: dict[str, str] = {}
+    for slug in sorted(ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES):
+        dest_dir = target_root / slug
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        created_dirs[slug] = str(dest_dir)
+        for fname, content in render_domain_lane_hub_artifacts(slug).items():
+            fp = dest_dir / fname
+            fp.write_text(content, encoding="utf-8")
+            written.append(str(fp))
+    return {
+        "ok": True,
+        "schema_version": "sota-ecosystem-domain-lane.v1",
+        "adr": "ADR-0029",
+        "hub_root": str(target_root),
+        "domain_lanes_count": len(ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES),
+        "files_written": len(written),
+        "lane_dirs": created_dirs,
+    }
+
+
+def sync_orca_lane_hubs(hub_root: pathlib.Path | None = None, *, include_domain_lanes: bool = False) -> dict[str, Any]:
+    """Write `sota-orca-lane-hub.v2` artifacts into `<hub_root>/{trading-lanes,harness-lanes}` (+ optional 7 Domain Lanes)."""
     target_root = hub_root or (pathlib.Path.home() / ".agents" / "orca-lanes")
     written: list[str] = []
     for plane, folder_name in (("trading", "trading-lanes"), ("harness", "harness-lanes")):
@@ -687,12 +905,19 @@ def sync_orca_lane_hubs(hub_root: pathlib.Path | None = None) -> dict[str, Any]:
             fp = dest_dir / fname
             fp.write_text(content, encoding="utf-8")
             written.append(str(fp))
-    return {
+    out: dict[str, Any] = {
         "ok": True,
         "hub_schema_version": ORCA_LANE_HUB_SCHEMA_VERSION,
         "hub_root": str(target_root),
         "files_written": len(written),
     }
+    if include_domain_lanes:
+        dom = sync_seven_domain_orca_lanes(target_root)
+        out["domain_lanes_count"] = dom["domain_lanes_count"]
+        out["domain_files_written"] = dom["files_written"]
+        out["domain_lane_dirs"] = dom["lane_dirs"]
+        out["total_files_written"] = len(written) + int(dom["files_written"])
+    return out
 
 
 def build_multi_repo_beads_orca_dag(
@@ -809,7 +1034,11 @@ def main(argv: list[str] | None = None) -> int:
 
     p_sh = sub.add_parser("sync-hubs", help="Materialize sota-orca-lane-hub.v2 manifests & orca.yaml in folder hubs")
     p_sh.add_argument("--root", default="", help="Override hub root directory (default: ~/.agents/orca-lanes)")
+    p_sh.add_argument("--all-domains", action="store_true", help="Also materialize all 7 Ecosystem Domain Lane Hubs")
     p_sh.add_argument("--json", action="store_true")
+
+    p_dm = sub.add_parser("domains", help="List all 7 Full-Ecosystem Orca Domain Lanes (Sim/Paper/Live/All-Market/Incentives/Framework/Beyond)")
+    p_dm.add_argument("--json", action="store_true")
 
     p_rt = sub.add_parser("route", help="Resolve Dual-Machine surface & Orca worker-start command for a repository")
     p_rt.add_argument("--repo", required=True, choices=sorted(REPO_LANE_INDEX))
@@ -867,9 +1096,22 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(out_mx, indent=2, default=list))
         return 0
 
+    if args.cmd == "domains":
+        dom_out = {
+            "ok": True,
+            "schema_version": "sota-ecosystem-domain-lane.v1",
+            "adr": "ADR-0029",
+            "domain_lanes_count": len(ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES),
+            "primary_sovereign_host": "stationary_noesis_win32",
+            "portable_cockpit_and_failover": "portable_mac_m5_max",
+            "lanes": ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES,
+        }
+        print(json.dumps(dom_out, indent=2, default=list))
+        return 0
+
     if args.cmd == "sync-hubs":
         root_p = pathlib.Path(args.root).expanduser() if args.root.strip() else None
-        res_sh = sync_orca_lane_hubs(root_p)
+        res_sh = sync_orca_lane_hubs(root_p, include_domain_lanes=bool(getattr(args, "all_domains", False)))
         print(json.dumps(res_sh, indent=2))
         return 0
 
