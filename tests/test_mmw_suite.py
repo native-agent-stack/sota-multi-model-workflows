@@ -2060,6 +2060,70 @@ class TestMultiModelWorkflows(unittest.TestCase):
         with self.assertRaises(KeyError):
             srd.normalize_ranking_feed_id("DF10_TOTALLY_BOGUS_GARBAGE")
 
+    def test_cli_runner_parity_rd_agent_and_skillopt_workflows(self) -> None:
+        """Guard sota-workflow CLI compatibility: keyword-only schema & optional trajectory()."""
+
+        def _schema_placeholder(schema: dict | None) -> object:
+            if not isinstance(schema, dict):
+                return "ok"
+            if schema.get("enum"):
+                return schema["enum"][0]
+            t = schema.get("type")
+            if t == "object":
+                return {k: _schema_placeholder(v) for k, v in (schema.get("properties") or {}).items()}
+            if t == "array":
+                return ["stub-item"]
+            if t == "boolean":
+                return False
+            if t in ("number", "integer"):
+                return 1.0
+            return "stub"
+
+        class _StrictCliAgentSession:
+            def __init__(self, prompt: str, *, schema: dict | None = None, **_kw: object) -> None:
+                self._schema = schema
+
+            def __await__(self):
+                async def _go():
+                    return _schema_placeholder(self._schema)
+
+                return _go().__await__()
+
+            async def __call__(self, followup_prompt: str, *, schema: dict | None = None, **_kw: object) -> object:
+                return _schema_placeholder(schema if schema is not None else self._schema)
+
+        for wf_name in ("rd_agent_hypothesis_bus_workflow.py", "skillopt_gepa_evolution_workflow.py"):
+            src = (ROOT / "workflows" / wf_name).read_text(encoding="utf-8")
+            tree = ast.parse(src, filename=wf_name)
+            fn_def = ast.AsyncFunctionDef(
+                name="__runner__",
+                args=ast.arguments(posonlyargs=[], args=[], kwonlyargs=[], kw_defaults=[], defaults=[]),
+                body=tree.body,
+                decorator_list=[],
+            )
+            mod = ast.Module(body=[fn_def], type_ignores=[])
+            ast.fix_missing_locations(mod)
+            code = compile(mod, wf_name, "exec")
+
+            logs: list[str] = []
+            phases: list[str] = []
+            ns: dict[str, object] = {
+                "__name__": "__sota_workflow__",
+                "__file__": str(ROOT / "workflows" / wf_name),
+                "args": {"repo": "sota-multi-model-workflows", "fast_deterministic_only": True},
+                "WORKSPACES": [str(ROOT)],
+                "log": lambda m, _logs=logs: _logs.append(str(m)),
+                "phase": lambda p, _phases=phases: _phases.append(str(p)),
+                "agent": lambda p, *, schema=None, **kw: _StrictCliAgentSession(p, schema=schema, **kw),
+            }
+            with mock.patch.object(kit, "record_workflow_run", return_value={"dry_run": True}):
+                buf = io.StringIO()
+                with redirect_stdout(buf):
+                    exec(code, ns)  # noqa: S102
+                    asyncio.run(ns["__runner__"]())  # type: ignore[operator]
+            self.assertGreaterEqual(len(phases), 2, msg=f"{wf_name} should execute >=2 phases")
+            self.assertTrue(buf.getvalue().strip(), msg=f"{wf_name} should print structured output")
+
 
 if __name__ == "__main__":
     unittest.main()

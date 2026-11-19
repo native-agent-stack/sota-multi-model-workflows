@@ -14,7 +14,8 @@ log(peer_brief)
 
 phase("1. Zero-Copy In-Session Trajectory & Historical Friction Scan")
 
-steps = await trajectory(last=40)
+_traj = globals().get("trajectory")
+steps = await _traj(last=40) if callable(_traj) else []
 error_slices = [
     {"index": s.index, "tool": s.tool, "head": (s.output or "")[:240]} for s in steps if s.status == "ERROR"
 ]

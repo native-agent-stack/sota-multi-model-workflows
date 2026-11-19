@@ -72,7 +72,7 @@ falsifier = agent(
     type_name="sota-falsifier",
 )
 
-verdict = await falsifier(f"Red-team this pre-wall hypothesis:\n{json.dumps(proposal)}", FALSIFICATION_SCHEMA)
+verdict = await falsifier(f"Red-team this pre-wall hypothesis:\n{json.dumps(proposal)}", schema=FALSIFICATION_SCHEMA)
 log(f"Falsifier survived={verdict['survived_red_team']} flaws={verdict['fatal_flaws']}")
 
 if not verdict["survived_red_team"] and verdict["fatal_flaws"]:
@@ -84,7 +84,7 @@ if not verdict["survived_red_team"] and verdict["fatal_flaws"]:
         role="RD-Agent Hypothesis Refiner",
         type_name="sota-rd-proposer",
     )
-    verdict = await falsifier(f"Re-audit revised proposal:\n{json.dumps(revised)}", FALSIFICATION_SCHEMA)
+    verdict = await falsifier(f"Re-audit revised proposal:\n{json.dumps(revised)}", schema=FALSIFICATION_SCHEMA)
     proposal = revised
 
 del falsifier
