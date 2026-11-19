@@ -32,7 +32,9 @@ from sota_mmw.compounding_versioning import (
     build_compounding_version_status,
 )
 from sota_mmw.dual_machine_lanes import (
+    CANONICAL_ORCA_LANE_LEADS,
     CANONICAL_SEVEN_MODEL_VENDORS,
+    ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES,
     HARNESS_LANES,
     ORCA_LANE_HUBS,
     ORCHESTRATION_FRAMEWORKS_MATRIX,
@@ -132,6 +134,22 @@ SKILL_FAMILIES: dict[str, tuple[str, ...]] = {
 }
 
 CANONICAL_46_SOTA_SKILLS: tuple[str, ...] = tuple(sorted({sk for grp in SKILL_FAMILIES.values() for sk in grp}))
+
+EXTENDED_11_SOTA_SKILLS: tuple[str, ...] = (
+    "orca-computer-use",
+    "orca-per-workspace-env",
+    "orca-plugin-authoring",
+    "sota-7feed-pit-convergence",
+    "sota-ao-multi-model-convergence",
+    "sota-boats-23x5-cutover",
+    "sota-dual-workstation-orca",
+    "sota-nautilus-queue-parity",
+    "sota-prewall-compounding-gate",
+    "sota-visual-diagram-craft",
+    "sota-zero-leak-merge-gate",
+)
+
+CANONICAL_57_SOTA_SKILLS: tuple[str, ...] = tuple(sorted(set(CANONICAL_46_SOTA_SKILLS) | set(EXTENDED_11_SOTA_SKILLS)))
 
 CANONICAL_14_LAYERS_MATRIX: dict[str, dict[str, Any]] = {
     "L0": {
@@ -279,7 +297,7 @@ _EXCLUDED_ADR_DOCS = frozenset({"README.MD", "CATALOG.MD", "INDEX.MD", "TEMPLATE
 
 
 def probe_installed_sota_skills(home: Path | None = None) -> dict[str, Any]:
-    """Verify presence of all 46 canonical SOTA skills across `~/.agents/skills` and peer mounts."""
+    """Verify presence of all 46 core + 11 extended (57 canonical) SOTA skills across all 8 runtime mounts."""
     h = home or Path.home()
     agents_sk = h / ".agents" / "skills"
     peer_mounts = {
@@ -288,14 +306,32 @@ def probe_installed_sota_skills(home: Path | None = None) -> dict[str, Any]:
         "claude_code": h / ".claude" / "skills",
         "codex": h / ".codex" / "skills",
     }
+    all_8_runtime_mounts = {
+        **peer_mounts,
+        "opencode": h / ".config" / "opencode" / "skills",
+        "dsh": h / ".dsh" / "skills",
+        "pi": h / ".pi" / "agent" / "skills",
+        "omp": h / ".omp" / "agent" / "skills",
+        "muse": h / ".config" / "muse" / "skills",
+    }
     present_canonical = sorted(sk for sk in CANONICAL_46_SOTA_SKILLS if (agents_sk / sk / "SKILL.md").is_file())
     missing_canonical = sorted(set(CANONICAL_46_SOTA_SKILLS) - set(present_canonical))
+    present_57 = sorted(sk for sk in CANONICAL_57_SOTA_SKILLS if (agents_sk / sk / "SKILL.md").is_file())
+    missing_57 = sorted(set(CANONICAL_57_SOTA_SKILLS) - set(present_57))
     mount_counts: dict[str, int] = {}
     for label, pdir in peer_mounts.items():
         if pdir.is_dir():
             mount_counts[label] = sum(1 for sk in CANONICAL_46_SOTA_SKILLS if (pdir / sk / "SKILL.md").is_file())
         else:
             mount_counts[label] = 0
+    all_8_runtime_mounts_57_count: dict[str, int] = {}
+    for label, pdir in all_8_runtime_mounts.items():
+        if pdir.is_dir():
+            all_8_runtime_mounts_57_count[label] = sum(
+                1 for sk in CANONICAL_57_SOTA_SKILLS if (pdir / sk / "SKILL.md").is_file()
+            )
+        else:
+            all_8_runtime_mounts_57_count[label] = 0
 
     return {
         "expected_count": len(CANONICAL_46_SOTA_SKILLS),
@@ -304,6 +340,11 @@ def probe_installed_sota_skills(home: Path | None = None) -> dict[str, Any]:
         "mount_counts": mount_counts,
         "families": {k: list(v) for k, v in SKILL_FAMILIES.items()},
         "all_present_in_canonical": len(missing_canonical) == 0,
+        "extended_57_expected_count": len(CANONICAL_57_SOTA_SKILLS),
+        "extended_57_present_count": len(present_57),
+        "extended_57_missing_skills": missing_57,
+        "all_57_present_in_canonical": len(missing_57) == 0,
+        "all_8_runtime_mounts_57_count": all_8_runtime_mounts_57_count,
     }
 
 
@@ -537,8 +578,21 @@ def select_workflow_and_skills(
     }
 
 
+def _read_ecosystem_lock_semver(home: Path | None = None) -> str:
+    nas_dir = resolve_ecosystem_repo_dir("native-agent-stack", home=home)
+    lock_path = nas_dir / "ECOSYSTEM_CONVERGENCE_LOCK.json"
+    if lock_path.is_file():
+        try:
+            ver = str(json.loads(lock_path.read_text(encoding="utf-8")).get("schemaVersion") or "").strip()
+            if ver:
+                return ver
+        except (OSError, ValueError, TypeError):
+            pass
+    return DEFAULT_ECOSYSTEM_SEMVER
+
+
 def build_grand_native_workflow_status(home: Path | None = None) -> dict[str, Any]:
-    """Build complete status across all 46 skills, 20 workflows, 14 layers, 18 ADR catalogs, & Orca."""
+    """Build complete status across all 57 skills (46 core + 11 extended), 20 workflows, 14 layers, 18 ADR catalogs, & Orca."""
     skills_st = probe_installed_sota_skills(home=home)
     adr_idx = discover_ecosystem_adr_index(home=home)
     cv_st = build_compounding_version_status()
@@ -546,14 +600,18 @@ def build_grand_native_workflow_status(home: Path | None = None) -> dict[str, An
         "ok": bool(cv_st["ok"] and skills_st["present_count"] >= 17 and adr_idx["active_repos_count"] == 18),
         "schema_version": NATIVE_WORKFLOW_ENACTOR_SCHEMA,
         "ecosystem_semver": DEFAULT_ECOSYSTEM_SEMVER,
+        "ecosystem_lock_semver": _read_ecosystem_lock_semver(home=home),
         "workstation_surface": detect_workstation_surface(home=home),
         "canonical_workflows_count": 20,
         "canonical_skills_total": len(CANONICAL_46_SOTA_SKILLS),
+        "canonical_57_skills_total": len(CANONICAL_57_SOTA_SKILLS),
         "skills_status": skills_st,
         "layers_count": len(CANONICAL_14_LAYERS_MATRIX),
         "layers": {k: v["name"] for k, v in CANONICAL_14_LAYERS_MATRIX.items()},
         "trading_lanes_count": len(TRADING_LANES),
         "harness_lanes_count": len(HARNESS_LANES),
+        "domain_lanes_count": len(ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES),
+        "canonical_lane_leads_count": len(CANONICAL_ORCA_LANE_LEADS),
         "ranking_datafeeds_schema": RANKING_DATAFEEDS_SCHEMA_VERSION,
         "ranking_feeds_count": len(CANONICAL_RANKING_DATAFEEDS_V38),
         "symbol_ranking_v310_schema": cv_st["symbol_ranking_v310_schema"],

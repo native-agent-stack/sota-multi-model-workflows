@@ -883,23 +883,26 @@ def render_orca_lane_hub_artifacts(plane: str) -> dict[str, str]:
         "Trading Lanes (`T1–T3` + `T5` Read-Only Stage-5 Audit)" if is_trading else "Harness Lanes (`H1–H3` / `H0–H7`)"
     )
     orca_yaml = (
-        f"# SOTA Dual-Machine Orca Folder Hub Recipe — {hub_title} (v3.10.4)\n"
+        f"# SOTA Dual-Machine Orca Folder Hub Recipe — {hub_title} (v3.10.7, Cross-OS Win32/macOS/Linux)\n"
         "setupAgentStartupPolicy: wait-for-setup\n"
         "scripts:\n"
         "  setup: |\n"
-        "    ~/.agents/bin/sota-lanes status --plane "
-        f"{plane} --json >/dev/null 2>&1 || true\n"
+        f'    echo "[SOTA Orca Hub] {plane}-lanes ready"\n'
+        "defaultTabs:\n"
+        "  - title: Lead Agent\n"
+        f"  - title: {plane}-lanes Status\n"
+        f"    command: sota-lanes status --plane {plane} --json\n"
     )
     readme_lines = [
-        f"# SOTA Dual-Machine Orca Hub — {hub_title} (`v3.10.4`)",
+        f"# SOTA Dual-Machine Orca Hub — {hub_title} (`v3.10.7`)",
         "",
         (
             f"Schema: `{ORCA_LANE_HUB_SCHEMA_VERSION}` · DataFeeds: `DF1..DF12` (`{RANKING_DATAFEEDS_SCHEMA_VERSION}` `DF1..DF9` compat) · "
             f"Pre-Wall Lake SHA-256: `{DEFAULT_PREWALL_LAKE_SHA256}` (`<= {PRE_WALL_MAX_DATE}`)."
         ),
         "",
-        "- **Symmetric Orca Mesh:** `stationary_noesis` (`100.110.115.22:6770` Win32 + `Noesis-Carbon` WSL2 `ext4`, `ADR-0028` target sovereign 24/5 host) <-> `portable_mac_m5_max` (`100.93.211.101:6770`, portable cockpit & hot failover).",
-        "- **Single-Broker-Host Firewall (`singleActiveBrokerHostOnly = true`):** Pre-cutover Alpaca paper sockets (`:8787`/`:8799`/`:8797`) stay on `portable_mac_m5_max` while IBKR `:4002` + `S1`/`S2` sim run on `stationary_noesis`; zero dual-host routing.",
+        "- **Symmetric Orca Mesh:** `stationary_noesis` (`100.110.115.22:6770` Win32 + `Noesis-Carbon` WSL2 `ext4`, `ADR-0028`/`ADR-0041` primary sovereign 24/5 host) <-> `portable_mac_m5_max` (`100.93.211.101:6768`, portable cockpit & hot failover).",
+        "- **Single-Broker-Host Firewall (`singleActiveBrokerHostOnly = true`):** Active 4 Paper accounts (`:8799`, `:8787`, `:8797`, IBKR `:4002`) + Stage-5 (`:8798`, `draft_only=true`) run on `stationary_noesis`; `portable_mac_m5_max` stays parked (`MAC_BROKER_PORTS=0`) for zero dual-host routing.",
         "- **Stage-5 Live Lane Lead (`T5_stage5_live_lane_read_only_audit`):** Strictly `read_only_audit_and_merit_qualification` (`broker_credentials=false`, `order_write_path=false`, `live_window_state=CLOSED_BY_DEFAULT`); owner manual act exclusively governs the live window.",
         f"- **Multi-Model Fleet:** `{len(ORCHESTRATION_FRAMEWORKS_MATRIX)}` SOTA orchestration frameworks, `57` canonical skills, `{len(RUNTIME_WORKER_ROSTER)}` workers across `{len(CANONICAL_SEVEN_MODEL_VENDORS)}` model vendors.",
         "",
@@ -1018,7 +1021,7 @@ ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES: dict[str, dict[str, Any]] = {
         "companion_surface": "portable_mac_m5_max",
         "failover_surface": "portable_mac_m5_max",
         "lead_agent": "antigravity-carbon",
-        "worker_trio": ("antigravity-carbon", "claude-sonnet-omc", "grok"),
+        "worker_trio": ("antigravity-carbon", "claude-sonnet-omc", "deepseek-dsh"),
         "repos": ("sota-mover-ranker", "sota-compounding-lab", "canon", "sota-private-vault"),
         "upstream_platforms": ("edgartools", "polars", "duckdb", "qmd"),
         "invariants": "Point-in-time acceptanceDateTime timestamps ONLY (zero filing-date look-ahead); SEC S-1/424B4/424B5/S-3 dilution shields, 8-K catalysts, 13F/Form-4 insider incentives, FDA/PDUFA, Gov/DoD awards & macro prints.",

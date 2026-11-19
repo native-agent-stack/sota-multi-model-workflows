@@ -2131,6 +2131,77 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertNotIn("pi", CC_LEAD_CENTRAL_CONTRACT["binary_present_user_auth_pending_routes"])
         self.assertNotIn("omp-direct", CC_LEAD_CENTRAL_CONTRACT["binary_present_user_auth_pending_routes"])
 
+    def test_v3107_cross_os_orca_hubs_57_skills_and_zero_retired_lane_workers(self) -> None:
+        from sota_mmw import dual_machine_lanes as dml
+        from sota_mmw import native_workflow_enactor as nwe
+
+        # 1. All 9 generated Orca lane hub recipes (trading-lanes, harness-lanes, 01..07) must be cross-OS clean
+        forbidden_posix_tokens = ("/dev/null", "|| true", "~/", "2>&1")
+        with tempfile.TemporaryDirectory() as td:
+            res = dml.sync_orca_lane_hubs(Path(td), include_domain_lanes=True)
+            self.assertTrue(res["ok"])
+            hub_dirs = sorted(p for p in Path(td).iterdir() if p.is_dir())
+            self.assertEqual(len(hub_dirs), 9)
+            for hdir in hub_dirs:
+                oy = (hdir / "orca.yaml").read_text(encoding="utf-8")
+                self.assertIn("setupAgentStartupPolicy: wait-for-setup", oy, msg=f"{hdir.name}/orca.yaml")
+                self.assertIn("defaultTabs:", oy, msg=f"{hdir.name}/orca.yaml")
+                for tok in forbidden_posix_tokens:
+                    self.assertNotIn(tok, oy, msg=f"{hdir.name}/orca.yaml contains POSIX-only token {tok!r}")
+
+        # 2. Zero retired workers (grok, goose) across all 7 Ecosystem Domain Lanes
+        for slug, lane in dml.ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES.items():
+            trio = tuple(lane.get("worker_trio", ()))
+            self.assertNotIn("grok", trio, msg=f"Retired worker 'grok' in {slug}")
+            self.assertNotIn("goose", trio, msg=f"Retired worker 'goose' in {slug}")
+            self.assertNotIn(lane.get("lead_agent"), ("grok", "goose"), msg=f"Retired lead in {slug}")
+
+        # 3. 57-skill canonical parity & 8-runtime mount visibility while preserving 46-skill backward-compat
+        self.assertEqual(len(nwe.CANONICAL_46_SOTA_SKILLS), 46)
+        self.assertEqual(len(nwe.EXTENDED_11_SOTA_SKILLS), 11)
+        self.assertEqual(len(nwe.CANONICAL_57_SOTA_SKILLS), 57)
+        with tempfile.TemporaryDirectory() as td_home:
+            fake_home = Path(td_home)
+            for root_rel in (
+                ".agents/skills",
+                ".gemini/config/skills",
+                ".claude/skills",
+                ".codex/skills",
+                ".config/opencode/skills",
+                ".dsh/skills",
+                ".pi/agent/skills",
+                ".omp/agent/skills",
+                ".config/muse/skills",
+            ):
+                for sk in nwe.CANONICAL_57_SOTA_SKILLS:
+                    sk_dir = fake_home / root_rel / sk
+                    sk_dir.mkdir(parents=True, exist_ok=True)
+                    (sk_dir / "SKILL.md").write_text(f"# {sk}\n", encoding="utf-8")
+            sk_st = nwe.probe_installed_sota_skills(home=fake_home)
+            self.assertEqual(sk_st["expected_count"], 46)
+            self.assertEqual(sk_st["present_count"], 46)
+            self.assertEqual(sk_st["extended_57_expected_count"], 57)
+            self.assertEqual(sk_st["extended_57_present_count"], 57)
+            self.assertEqual(sk_st["extended_57_missing_skills"], [])
+            self.assertTrue(sk_st["all_57_present_in_canonical"])
+            for rt_key in (
+                "agents_canonical",
+                "antigravity",
+                "claude_code",
+                "codex",
+                "opencode",
+                "dsh",
+                "pi",
+                "omp",
+                "muse",
+            ):
+                self.assertEqual(sk_st["all_8_runtime_mounts_57_count"][rt_key], 57)
+            grand_st = nwe.build_grand_native_workflow_status(home=fake_home)
+            self.assertEqual(grand_st["canonical_skills_total"], 46)
+            self.assertEqual(grand_st["canonical_57_skills_total"], 57)
+            self.assertEqual(grand_st["domain_lanes_count"], 7)
+            self.assertEqual(grand_st["canonical_lane_leads_count"], 10)
+
 
 if __name__ == "__main__":
     unittest.main()
