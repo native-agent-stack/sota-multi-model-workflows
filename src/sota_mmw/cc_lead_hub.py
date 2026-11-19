@@ -183,7 +183,10 @@ CC_LEAD_CENTRAL_CONTRACT: dict[str, Any] = {
     },
     "quality_directive_powerhouse_fleet": QUALITY_DIRECTIVE_POWERHOUSE_FLEET,
     "live_authenticated_worker_routes": ("cc-lead", "codex", "antigravity", "opencode", "dsh"),
-    "binary_present_user_auth_pending_routes": ("gemini-cli", "muse", "grok", "goose", "pi", "omp-direct", "ccr"),
+    "live_authenticated_optional_routes": ("pi", "omp"),
+    "superseded_legacy_routes": ("gemini-cli", "grok", "goose"),
+    "optional_opt_in_routes": ("muse",),
+    "binary_present_user_auth_pending_routes": ("gemini-cli", "muse", "grok", "goose", "ccr"),
 }
 
 RUNTIME_WORKER_ROSTER: dict[str, dict[str, str]] = {
@@ -224,13 +227,13 @@ RUNTIME_WORKER_ROSTER: dict[str, dict[str, str]] = {
         "slot": "High-throughput OMX mission & parallel test generation",
     },
     "antigravity-carbon": {
-        "binary": "gemini",
+        "binary": "agy",
         "orca_agent": "antigravity",
         "omc_spec": "1:antigravity:analyst",
         "vendor": "google",
         "model": "gemini-4-carbon-high",
         "effort": "high",
-        "slot": "1M-context 18-clone upstream shelf, SEC EDGAR & run_workflow synthesis",
+        "slot": "1M-context 18-clone upstream shelf, SEC EDGAR & run_workflow synthesis (agy supersedes legacy gemini OAuth)",
     },
     "opencode-sonnet-omo": {
         "binary": "opencode",

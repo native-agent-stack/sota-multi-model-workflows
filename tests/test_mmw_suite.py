@@ -2124,6 +2124,13 @@ class TestMultiModelWorkflows(unittest.TestCase):
             self.assertGreaterEqual(len(phases), 2, msg=f"{wf_name} should execute >=2 phases")
             self.assertTrue(buf.getvalue().strip(), msg=f"{wf_name} should print structured output")
 
+    def test_agy_supersedes_legacy_gemini_cli_and_pi_omp_authenticated(self) -> None:
+        self.assertEqual(RUNTIME_WORKER_ROSTER["antigravity-carbon"]["binary"], "agy")
+        self.assertIn("gemini-cli", CC_LEAD_CENTRAL_CONTRACT["superseded_legacy_routes"])
+        self.assertIn("muse", CC_LEAD_CENTRAL_CONTRACT["optional_opt_in_routes"])
+        self.assertNotIn("pi", CC_LEAD_CENTRAL_CONTRACT["binary_present_user_auth_pending_routes"])
+        self.assertNotIn("omp-direct", CC_LEAD_CENTRAL_CONTRACT["binary_present_user_auth_pending_routes"])
+
 
 if __name__ == "__main__":
     unittest.main()
