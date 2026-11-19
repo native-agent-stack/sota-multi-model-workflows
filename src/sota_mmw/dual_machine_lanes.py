@@ -358,6 +358,159 @@ STAGE_AND_LAYER_SUBLANES: dict[str, dict[str, Any]] = {
 }
 
 
+# Canonical named Orca Lane Leads across trading-lanes & harness-lanes (Mac <-> Noesis Co-Op Consensus v3.10.4).
+# T5_stage5_live_lane_read_only_audit is explicitly declared read-only with zero broker credentials or order write path.
+CANONICAL_ORCA_LANE_LEADS: dict[str, dict[str, Any]] = {
+    "T1_paper_guardian_lead": {
+        "lead_id": "T1_paper_guardian_lead",
+        "worktree_name": "t1-paper-guardian-lead",
+        "plane": "trading",
+        "macro_hub_lane": "T1_live_24x5_alpaca_paper_and_guardian",
+        "primary_repo": "sota-dynamic-trail-c",
+        "repos": ("sota-dynamic-trail-c", "sota-mover-ranker"),
+        "active_host_policy": "FOLLOW_ACTIVE_ALPACA_BROKER_HOST",
+        "active_host_pre_cutover": "portable_mac_m5_max",
+        "target_host_post_cutover": "stationary_noesis_win32",
+        "default_agent": "claude",
+        "default_model": "claude-opus-5-5",
+        "mode": "paper_audit_and_guardian_ops",
+        "ports_observed": (8799, 8787, 8797),
+        "charter": (
+            "Own P1 (:8799) Lossless Foundation guardian, P2 (:8787) Balanced Ranker, P3 (:8797) Aggressive Lab, "
+            "Dec-6 23/5 SIP readiness, and P0 ADR-0017/ADR-0019 shield wiring fixes (single-broker-host firewall)."
+        ),
+    },
+    "T2_ibkr_and_sim_lead": {
+        "lead_id": "T2_ibkr_and_sim_lead",
+        "worktree_name": "t2-ibkr-sim-lead",
+        "plane": "trading",
+        "macro_hub_lane": "T2_ibkr_paper_4002_and_event_sim_parity",
+        "primary_repo": "meridian",
+        "repos": ("meridian", "astrolabe"),
+        "active_host_policy": "STATIONARY_NOESIS_PRIMARY",
+        "active_host_pre_cutover": "stationary_noesis_carbon_wsl2",
+        "target_host_post_cutover": "stationary_noesis_carbon_wsl2",
+        "default_agent": "codex",
+        "default_model": "gpt-6.2-astra",
+        "mode": "event_sim_and_ibkr_paper_4002",
+        "ports_observed": (4002,),
+        "charter": (
+            "Own S2 NautilusTrader v2rc9 / hftbacktest RiskAdverseQueueModel (-n 8) queue-fill simulation on "
+            "Noesis-Carbon WSL2 ext4 and IBKR Paper :4002 parity (4001/7496 hard-gated)."
+        ),
+    },
+    "T3_prewall_factory_lead": {
+        "lead_id": "T3_prewall_factory_lead",
+        "worktree_name": "t3-prewall-factory-lead",
+        "plane": "trading",
+        "macro_hub_lane": "T3_prewall_cpcv_gpu_and_strategy_factory",
+        "primary_repo": "sota-compounding-lab",
+        "repos": ("sota-compounding-lab", "trading-sota", "tsl", "sota-private-vault"),
+        "active_host_policy": "STATIONARY_NOESIS_PRIMARY",
+        "active_host_pre_cutover": "stationary_noesis_win32",
+        "target_host_post_cutover": "stationary_noesis_win32",
+        "default_agent": "codex",
+        "default_model": "gpt-6.2-sol",
+        "mode": "prewall_cpcv_dsr_hlz_factory",
+        "ports_observed": (),
+        "charter": (
+            "Own S1 64c/RTX4090 pre-wall (<=2026-10-15) alpha factory on Z:/sota-data/prewall-lake enforcing "
+            "ADIA #19 MinTRL, HLZ t*(N), C(6,2)=15 CPCV, DSR >= 0.95, and 1x/2x Almgren-Chriss stress."
+        ),
+    },
+    "T5_stage5_live_lane_read_only_audit": {
+        "lead_id": "T5_stage5_live_lane_read_only_audit",
+        "worktree_name": "t5-stage5-live-lane-lead",
+        "plane": "trading",
+        "macro_hub_lane": "T1_live_24x5_alpaca_paper_and_guardian",
+        "merit_lane_id": "LIVE_L5_STAGE5_LOSSLESS",
+        "primary_repo": "sota-mover-ranker",
+        "repos": ("sota-mover-ranker", "sota-dynamic-trail-c"),
+        "active_host_policy": "READ_ONLY_DUAL_HOST_AUDIT",
+        "active_host_pre_cutover": "stationary_noesis_win32",
+        "target_host_post_cutover": "stationary_noesis_win32",
+        "default_agent": "claude",
+        "default_model": "claude-fable-5-2",
+        "mode": "read_only_audit_and_merit_qualification",
+        "broker_credentials": False,
+        "order_write_path": False,
+        "live_window_state": "CLOSED_BY_DEFAULT",
+        "owner_manual_open_only": True,
+        "ports_observed": (8798, 8796),
+        "p0_blockers_required_before_arming": (
+            "P0-1_ADR0017_COOLDOWN_STREAK_AND_ELAPSED_UNCAP",
+            "P0-2_ADR0017_PROBATION_INPUTS_WIRED",
+            "P0-3_ADR0017_EXTENDED_HOURS_AND_SAR_GATE",
+            "P0-4_UNIFIED_SHIELD_ON_VIX_8797_8798_AND_OPEN5M",
+            "P0-5_DRAWDOWN_BREAKER_AND_CLEAN_PAPER_COHORT",
+            "P0-6_SUPERVISOR_KEEPALIVE_AND_8796_LIVE_GUARDIAN",
+        ),
+        "charter": (
+            "Strictly READ-ONLY Stage-5 (:8798) Live Lane Lead: holds ZERO broker credentials and ZERO order write path; "
+            "tracks P0-1..6 closure, 5 Lossless Foundation invariants, clean paper merit qualification, and "
+            "draft-only readiness. Owner manual act exclusively controls the live window."
+        ),
+    },
+    "H1_cc_lead_orchestrator": {
+        "lead_id": "H1_cc_lead_orchestrator",
+        "worktree_name": "h1-cc-lead-orchestrator",
+        "plane": "harness",
+        "macro_hub_lane": "H1_sovereign_cc_lead_and_multi_runtime_hub",
+        "primary_repo": "cc-sota-harness",
+        "repos": ("cc-sota-harness", "sota-harness-foundation", "sota-multi-model-workflows"),
+        "active_host_policy": "PAIRED_DUAL_HOST_COCKPIT",
+        "active_host_pre_cutover": "stationary_noesis_win32",
+        "target_host_post_cutover": "stationary_noesis_win32",
+        "default_agent": "claude",
+        "default_model": "claude-fable-5-2",
+        "mode": "sovereign_orchestration_and_wf20",
+        "ports_observed": (8792, 6770),
+        "charter": (
+            "Sovereign Claude Code (cc-lead) orchestrator commanding 57 skills, 20 canonical workflows, "
+            "4 MCP servers (50 tools), SQLite WAL peer-bus, and symmetric Mac <-> Noesis Orca mesh."
+        ),
+    },
+    "H2_cross_vendor_verifier_lead": {
+        "lead_id": "H2_cross_vendor_verifier_lead",
+        "worktree_name": "h2-cross-vendor-verifier-lead",
+        "plane": "harness",
+        "macro_hub_lane": "H2_cross_vendor_verifiers_and_shelf_lock",
+        "primary_repo": "agy-sota-harness",
+        "repos": ("agy-sota-harness", "dsh-sota-harness", "dsh-plugin-landscape", "sota-upstream-shelf-lock"),
+        "active_host_policy": "STATIONARY_NOESIS_PRIMARY",
+        "active_host_pre_cutover": "stationary_noesis_carbon_wsl2",
+        "target_host_post_cutover": "stationary_noesis_carbon_wsl2",
+        "default_agent": "codex",
+        "default_model": "gpt-6.2-astra",
+        "mode": "cross_vendor_probes_and_shelf_lock",
+        "ports_observed": (),
+        "charter": (
+            "Own 13/13 AGY probes, 10/10 DSH probes, 18-repo 40-hex upstream SHA shelf lock, and "
+            "cross-vendor Codex/Gemini/DeepSeek verification gates."
+        ),
+    },
+    "H3_org_control_and_provenance_lead": {
+        "lead_id": "H3_org_control_and_provenance_lead",
+        "worktree_name": "h3-org-control-lead",
+        "plane": "harness",
+        "macro_hub_lane": "H3_org_control_plane_and_provenance",
+        "primary_repo": ".github",
+        "repos": ("native-agent-stack", ".github", "canon"),
+        "active_host_policy": "STATIONARY_NOESIS_PRIMARY",
+        "active_host_pre_cutover": "stationary_noesis_win32",
+        "target_host_post_cutover": "stationary_noesis_win32",
+        "default_agent": "claude",
+        "default_model": "claude-sonnet-5-5",
+        "mode": "org_manifest_ci_and_canon_provenance",
+        "ports_observed": (),
+        "charter": (
+            "Own .github/ECOSYSTEM_ORG_MANIFEST.json 22/22 SHA seals, 9-PUBLIC SHA-pinned Actions vs "
+            "9-PRIVATE zero-burn firewall, and Canon MADR 4.0 provenance."
+        ),
+    },
+}
+
+
 def _build_repo_lane_index() -> dict[str, dict[str, Any]]:
     idx: dict[str, dict[str, Any]] = {}
     for lane_map in (TRADING_LANES, HARNESS_LANES):
@@ -614,21 +767,35 @@ def render_orca_lane_hub_artifacts(plane: str) -> dict[str, str]:
     sublanes = {
         k: v for k, v in STAGE_AND_LAYER_SUBLANES.items() if (k.startswith("T") if is_trading else k.startswith("H"))
     }
+    lane_leads = {k: v for k, v in CANONICAL_ORCA_LANE_LEADS.items() if v["plane"] == plane}
     manifest_obj: dict[str, Any] = {
         "schemaVersion": ORCA_LANE_HUB_SCHEMA_VERSION,
-        "ecosystemVersion": "3.9.0",
+        "ecosystemVersion": "3.10.5",
         "plane": "TRADING_LANES" if is_trading else "HARNESS_LANES",
         "adrAuthority": [
             "ADR-0004 (Research-Convergence & 4-Hash Provenance)",
             "ADR-0014 (Dual-Machine Orca Trading & Harness Lanes + 8-Framework Matrix)",
-            "ADR-0015 (9-Feed DF1..DF9 Ranking DataFeeds & Two-Track Compounding Versioning)",
-            "ADR-0016 (v3.9.0 Full-Landscape SOTA Layer, 17/17 UPSTREAM.md & Orca Lane Hub v2 Seal)",
+            "ADR-0015 (9-Feed DF1..DF9 Compat / 12-Feed DF1..DF12 Bitemporal Ranking DataFeeds)",
+            "ADR-0016 (Full-Landscape SOTA Layer, 18/18 UPSTREAM.md & Orca Lane Hub v2 Seal)",
             "ADR-0020 (Symmetric :6770 Dual-Workstation Orca & Single-Broker-Host Firewall)",
             "ADR-0022 (<= 2.00% Reg NMS Rule 612 Protective Stop-Limit)",
+            "ADR-0027 (7-Lane Grand Merit-Promotion Harness & Stage-5 Read-Only Gate)",
+            "ADR-0028 (v3.10.4 Stationary Noesis Primary 24/5 Host & Portable Mac Hot Failover)",
+            "ADR-0029 (v3.10.5 Full-Ecosystem 7-Domain Orca Lane Hubs & Lead Topology)",
         ],
         "singleActiveBrokerHostOnly": True,
         "rthBrokerContentionShield": True,
         "sovereignPaperBrokerHost": "stationary_noesis_win32 (100.110.115.22; failover portable_mac_m5_max 100.93.211.101)",
+        "activePreCutoverBrokerSplit": {
+            "alpaca_paper_ports_8787_8799_8797": "portable_mac_m5_max",
+            "ibkr_paper_port_4002": "stationary_noesis_win32",
+            "stage5_live_port_8798": "STANDBY_OWNER_LIVE_WINDOW_CLOSED",
+            "cutover_prerequisites": [
+                "P0-1..6 sota-mover-ranker ADR-0017/ADR-0019 shield & supervisor fixes",
+                "Owner Windows Credential Manager seeding on stationary_noesis_win32",
+                "Owner-called zero-overlap v3.10.4 single-host cutover",
+            ],
+        },
         "pairedWorkstationSurfaces": DUAL_MACHINE_SURFACES,
         "orcaHubSelectors": {
             "portable_mac_m5_max": ORCA_LANE_HUBS["portable_mac_m5_max"][plane],
@@ -636,16 +803,22 @@ def render_orca_lane_hub_artifacts(plane: str) -> dict[str, str]:
         },
         "rankingDatafeedsSchema": RANKING_DATAFEEDS_SCHEMA_VERSION,
         "rankingDatafeedsCount": len(CANONICAL_RANKING_DATAFEEDS_V38),
+        "bitemporalRankingFeedsCount": 12,
         "prewallLakeSha256": DEFAULT_PREWALL_LAKE_SHA256,
         "orchestrationFrameworksCount": len(ORCHESTRATION_FRAMEWORKS_MATRIX),
         "runtimeWorkersCount": len(RUNTIME_WORKER_ROSTER),
         "modelVendors": list(CANONICAL_SEVEN_MODEL_VENDORS),
         "macroLanes": lane_map,
         "stageAndLayerSubLanes": sublanes,
+        "laneLeads": lane_leads,
     }
-    hub_title = "Trading Lanes (`T1–T3` / `T1–T5`)" if is_trading else "Harness Lanes (`H1–H3` / `H0–H7`)"
+    hub_title = (
+        "Trading Lanes (`T1–T3` + `T5` Read-Only Stage-5 Audit)"
+        if is_trading
+        else "Harness Lanes (`H1–H3` / `H0–H7`)"
+    )
     orca_yaml = (
-        f"# SOTA Dual-Machine Orca Folder Hub Recipe — {hub_title} (v3.9.0)\n"
+        f"# SOTA Dual-Machine Orca Folder Hub Recipe — {hub_title} (v3.10.4)\n"
         "setupAgentStartupPolicy: wait-for-setup\n"
         "scripts:\n"
         "  setup: |\n"
@@ -653,21 +826,28 @@ def render_orca_lane_hub_artifacts(plane: str) -> dict[str, str]:
         f"{plane} --json >/dev/null 2>&1 || true\n"
     )
     readme_lines = [
-        f"# SOTA Dual-Machine Orca Hub — {hub_title} (`v3.9.0`)",
+        f"# SOTA Dual-Machine Orca Hub — {hub_title} (`v3.10.4`)",
         "",
         (
-            f"Schema: `{ORCA_LANE_HUB_SCHEMA_VERSION}` · DataFeeds: `{RANKING_DATAFEEDS_SCHEMA_VERSION}` (`DF1..DF9`) · "
+            f"Schema: `{ORCA_LANE_HUB_SCHEMA_VERSION}` · DataFeeds: `DF1..DF12` (`{RANKING_DATAFEEDS_SCHEMA_VERSION}` `DF1..DF9` compat) · "
             f"Pre-Wall Lake SHA-256: `{DEFAULT_PREWALL_LAKE_SHA256}` (`<= {PRE_WALL_MAX_DATE}`)."
         ),
         "",
-        "- **Symmetric Orca Mesh:** `portable_mac_m5_max` (`100.93.211.101:6770`) <-> `stationary_noesis` (`100.110.115.22:6770` Win32 + `Noesis-Carbon` WSL2 `ext4`).",
-        "- **Single-Broker-Host & RTH Shield:** Live `:8787` / `:8799` / `:4002` paper sockets run exclusively on `portable_mac_m5_max`; `56`-thread / `RTX 4090` sweeps offload to `Noesis`.",
-        f"- **Multi-Model Fleet:** `{len(ORCHESTRATION_FRAMEWORKS_MATRIX)}` SOTA orchestration frameworks, `17` runtime binaries, `{len(RUNTIME_WORKER_ROSTER)}` workers across `{len(CANONICAL_SEVEN_MODEL_VENDORS)}` model vendors.",
+        "- **Symmetric Orca Mesh:** `stationary_noesis` (`100.110.115.22:6770` Win32 + `Noesis-Carbon` WSL2 `ext4`, `ADR-0028` target sovereign 24/5 host) <-> `portable_mac_m5_max` (`100.93.211.101:6770`, portable cockpit & hot failover).",
+        "- **Single-Broker-Host Firewall (`singleActiveBrokerHostOnly = true`):** Pre-cutover Alpaca paper sockets (`:8787`/`:8799`/`:8797`) stay on `portable_mac_m5_max` while IBKR `:4002` + `S1`/`S2` sim run on `stationary_noesis`; zero dual-host routing.",
+        "- **Stage-5 Live Lane Lead (`T5_stage5_live_lane_read_only_audit`):** Strictly `read_only_audit_and_merit_qualification` (`broker_credentials=false`, `order_write_path=false`, `live_window_state=CLOSED_BY_DEFAULT`); owner manual act exclusively governs the live window.",
+        f"- **Multi-Model Fleet:** `{len(ORCHESTRATION_FRAMEWORKS_MATRIX)}` SOTA orchestration frameworks, `57` canonical skills, `{len(RUNTIME_WORKER_ROSTER)}` workers across `{len(CANONICAL_SEVEN_MODEL_VENDORS)}` model vendors.",
         "",
         "## Macro Hub Groups",
     ]
     for lid, lmeta in lane_map.items():
         readme_lines.append(f"- **`{lid}`:** `{', '.join(lmeta['repos'])}` — {lmeta['invariants']}")
+    readme_lines.append("")
+    readme_lines.append("## Canonical Named Lane Leads")
+    for lead_id, lead_meta in lane_leads.items():
+        readme_lines.append(
+            f"- **`{lead_id}`** (`{lead_meta['worktree_name']}`, `{lead_meta['mode']}`, `{lead_meta['default_agent']}/{lead_meta['default_model']}`): {lead_meta['charter']}"
+        )
     readme_lines.append("")
     return {
         "LANE_MANIFEST.json": json.dumps(manifest_obj, indent=2, default=list) + "\n",
@@ -1010,6 +1190,10 @@ def build_lanes_overview(*, plane: str = "all", mesh_state: str = "dual_mesh_doc
         "workers_count": len(RUNTIME_WORKER_ROSTER),
         "model_vendors_count": len(CANONICAL_SEVEN_MODEL_VENDORS),
         "stage_and_layer_sublanes_count": len(STAGE_AND_LAYER_SUBLANES),
+        "lane_leads_count": len(CANONICAL_ORCA_LANE_LEADS),
+        "lane_leads": {
+            k: v for k, v in CANONICAL_ORCA_LANE_LEADS.items() if plane == "all" or v["plane"] == plane
+        },
         "trading_repos_count": len(trading_repos),
         "harness_repos_count": len(harness_repos),
         "total_provisioned_repos": len(REPO_LANE_INDEX),

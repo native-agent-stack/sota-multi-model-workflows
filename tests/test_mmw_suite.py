@@ -1251,8 +1251,20 @@ class TestMultiModelWorkflows(unittest.TestCase):
             hr_mf = json.loads((Path(td_hubs) / "harness-lanes" / "LANE_MANIFEST.json").read_text(encoding="utf-8"))
             self.assertEqual(tr_mf["schemaVersion"], "sota-orca-lane-hub.v2")
             self.assertEqual(hr_mf["schemaVersion"], "sota-orca-lane-hub.v2")
+            self.assertEqual(tr_mf["ecosystemVersion"], "3.10.5")
+            self.assertEqual(hr_mf["ecosystemVersion"], "3.10.5")
             self.assertEqual(tr_mf["rankingDatafeedsCount"], 9)
+            self.assertEqual(tr_mf["bitemporalRankingFeedsCount"], 12)
             self.assertEqual(hr_mf["orchestrationFrameworksCount"], 8)
+            self.assertIn("T5_stage5_live_lane_read_only_audit", tr_mf["laneLeads"])
+            t5 = tr_mf["laneLeads"]["T5_stage5_live_lane_read_only_audit"]
+            self.assertEqual(t5["mode"], "read_only_audit_and_merit_qualification")
+            self.assertFalse(t5["broker_credentials"])
+            self.assertFalse(t5["order_write_path"])
+            self.assertEqual(t5["live_window_state"], "CLOSED_BY_DEFAULT")
+            self.assertTrue(t5["owner_manual_open_only"])
+            self.assertEqual(len(t5["p0_blockers_required_before_arming"]), 6)
+            self.assertIn("H1_cc_lead_orchestrator", hr_mf["laneLeads"])
 
     def test_v3100_native_workflow_enactor_46skills_14layers_18repo_adrs(self) -> None:
         from sota_mmw import native_workflow_enactor as nwe
