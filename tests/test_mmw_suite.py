@@ -2368,6 +2368,45 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertIn("ultra", cx["supported_efforts"])
         self.assertIn("model_reasoning_effort=ultra", cx["escalation_extra_agent_args"])
 
+    def test_antigravity_neon_xhigh_default_and_neon_orchestrator_contract(self) -> None:
+        from sota_mmw.cc_lead_hub import ORCA_RUNTIME_WORKER_DEFAULTS, RUNTIME_WORKER_ROSTER
+
+        agy = ORCA_RUNTIME_WORKER_DEFAULTS["antigravity"]
+        self.assertEqual(agy["default_model"], "gemini-4-neon-xhigh")
+        self.assertEqual(agy["default_effort"], "xhigh")
+        self.assertEqual(agy["extra_agent_args"], "--model gemini-4-neon-xhigh --effort xhigh")
+        self.assertEqual(agy["orchestrator_model"], "gemini-pro-orchestrator-neon")
+        self.assertEqual(agy["orchestrator_extra_agent_args"], "--model gemini-pro-orchestrator-neon")
+        self.assertEqual(RUNTIME_WORKER_ROSTER["antigravity-neon"]["effort"], "xhigh")
+
+        with tempfile.TemporaryDirectory() as td:
+            db_file = Path(td) / "peer_bus.db"
+            PortablePeerBus(db_file)
+            with mock.patch("sota_mmw.cc_lead_hub.is_running_on_noesis_host", return_value=False):
+                plan = build_cc_lead_execution_plan(
+                    CCLeadPlanRequest(
+                        repo="cc-sota-harness",
+                        goal="Verify antigravity-neon worker default flags",
+                        task_class="parallel_worktree_implementation",
+                        placement="local",
+                        worker_keys_override=(
+                            "codex-sol-omx",
+                            "antigravity-neon",
+                            "claude-sonnet-omc",
+                        ),
+                        session_id="cc-lead-agy-test",
+                    ),
+                    mesh_state="dual_mesh_docked",
+                    bus_db_path=db_file,
+                )
+        dispatches = {d["worker_key"]: d["argv"] for d in plan["channels"]["4_orca_supervised_worker_dispatches"]}
+        self.assertIn("antigravity-neon", dispatches)
+        argv = dispatches["antigravity-neon"]
+        self.assertIn("--model", argv)
+        self.assertEqual(argv[argv.index("--model") + 1], "gemini-4-neon-xhigh")
+        self.assertIn("--effort", argv)
+        self.assertEqual(argv[argv.index("--effort") + 1], "xhigh")
+
 
 if __name__ == "__main__":
     unittest.main()

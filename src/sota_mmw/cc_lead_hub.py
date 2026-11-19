@@ -89,15 +89,16 @@ QUALITY_DIRECTIVE_POWERHOUSE_FLEET: dict[str, dict[str, Any]] = {
         "vendor": "Google DeepMind",
         "benchmark_authority": "https://artificialanalysis.ai/models (Intelligence v5.0.1 #3 & #1 1M+ Context)",
         "model": "gemini-4-neon-xhigh",
+        "orchestrator_model": "gemini-pro-orchestrator-neon",
         "companion_models": (
-            "gemini-4-neon-high",
             "gemini-pro-orchestrator-neon",
+            "gemini-4-neon-high",
             "gemini-4-carbon-high",
             "gemini-4-hydrogen-xhigh",
             "gemini-4-argon-high",
         ),
         "runtimes": ("antigravity",),
-        "default_effort": "high",
+        "default_effort": "xhigh",
     },
     "deepseek_dsh_prewall": {
         "vendor": "DeepSeek",
@@ -127,9 +128,10 @@ ENHANCED_8_RUNTIME_SOTA_PROFILES: dict[str, dict[str, Any]] = {
     },
     "antigravity": {
         "lead_model": "gemini-4-neon-xhigh",
+        "orchestrator_model": "gemini-pro-orchestrator-neon",
         "companion_model": "gemini-4-carbon-high",
         "context_window": "1M+",
-        "effort": "high",
+        "effort": "xhigh",
         "mcps_verified": 4,
         "sota_enhancements": ("native_run_workflow_21", "protobuf_safe_mcp", "8stage_convergence"),
     },
@@ -187,10 +189,19 @@ ORCA_RUNTIME_WORKER_DEFAULTS: dict[str, dict[str, Any]] = {
     },
     "antigravity": {
         "default_model": "gemini-4-neon-xhigh",
-        "worker_models": ("gemini-4-neon-xhigh", "gemini-4-neon-high", "gemini-4-carbon-high"),
-        "default_effort": "high",
+        "worker_models": (
+            "gemini-4-neon-xhigh",
+            "gemini-pro-orchestrator-neon",
+            "gemini-4-neon-high",
+            "gemini-4-carbon-high",
+        ),
+        "default_effort": "xhigh",
+        "supported_efforts": ("low", "medium", "high", "xhigh"),
+        "orchestrator_model": "gemini-pro-orchestrator-neon",
+        "orchestrator_effort": "",
         "supports_cli_model_flag": True,
-        "extra_agent_args": "--model gemini-4-neon-xhigh --effort high",
+        "extra_agent_args": "--model gemini-4-neon-xhigh --effort xhigh",
+        "orchestrator_extra_agent_args": "--model gemini-pro-orchestrator-neon",
     },
     "gemini": {
         "default_model": "gemini-4-neon-high",
@@ -321,8 +332,9 @@ RUNTIME_WORKER_ROSTER: dict[str, dict[str, str]] = {
         "omc_spec": "1:antigravity:analyst",
         "vendor": "google",
         "model": "gemini-4-neon-xhigh",
-        "effort": "high",
-        "slot": "Flagship Google DeepMind orchestrator & multi-workflow verifier",
+        "orchestrator_model": "gemini-pro-orchestrator-neon",
+        "effort": "xhigh",
+        "slot": "Flagship Google DeepMind Neon highest-quality worker (xhigh) with Neon Orchestrator escalation",
     },
     "antigravity-carbon": {
         "binary": "agy",
@@ -747,7 +759,9 @@ def build_cc_lead_execution_plan(
             meta["orca_agent"],
         ]
         if meta["orca_agent"] in ("claude", "codex", "antigravity", "muse", "omp", "pi"):
-            argv.extend(["--model", meta["model"], "--effort", meta["effort"]])
+            argv.extend(["--model", meta["model"]])
+            if meta.get("effort"):
+                argv.extend(["--effort", meta["effort"]])
         argv.extend(
             [
                 "--setup",

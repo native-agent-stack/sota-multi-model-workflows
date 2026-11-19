@@ -131,7 +131,7 @@ ORCHESTRATION_FRAMEWORKS_MATRIX: dict[str, dict[str, Any]] = {
     "agy_typed_workflows_and_swarm": {
         "upstream": "google-antigravity/antigravity-sdk-python",
         "versions": {"agy": "1.5.12"},
-        "lead_model": "gemini-4-neon-xhigh (flagship) + gemini-4-carbon-high (1M context)",
+        "lead_model": "gemini-4-neon-xhigh (default worker, xhigh) + gemini-pro-orchestrator-neon (orchestrator)",
         "capabilities": (
             "21 schema-typed run_workflow Python DAGs (v3.10.9)",
             "Native Swarm workspace:share 1:3 verifiers",
@@ -237,7 +237,7 @@ TRADING_LANES: dict[str, dict[str, Any]] = {
         "failover_surface": "portable_mac_m5_max",
         "single_active_broker_host_only": True,
         "allows_noesis_broker_socket": True,
-        "default_worker_trio": ("claude-opus-falsifier", "codex-astra-omx", "antigravity-carbon"),
+        "default_worker_trio": ("claude-opus-falsifier", "codex-astra-omx", "antigravity-neon"),
         "invariants": (
             "Primary always-on stationary_noesis_win32 (:8787/:8799/:8797/:8798) with explicit single-host failover "
             "portable_mac_m5_max; PA... 1,000 req/min; ADR-0022 <=2.00% hard stop; DF1..DF12 PIT"
@@ -283,7 +283,7 @@ HARNESS_LANES: dict[str, dict[str, Any]] = {
         "primary_surface": "stationary_noesis_win32",
         "paired_surface": "portable_mac_m5_max",
         "failover_surface": "portable_mac_m5_max",
-        "default_worker_trio": ("claude-sonnet-omc", "codex-astra-omx", "antigravity-carbon"),
+        "default_worker_trio": ("claude-sonnet-omc", "codex-astra-omx", "antigravity-neon"),
         "invariants": "Stationary Noesis Main Framework Foundation + 20-workflow v3.10.4 AGY/Orca hub + Portable Mac cockpit parity",
     },
     "H2_cross_vendor_verifiers_and_shelf_lock": {
@@ -293,7 +293,7 @@ HARNESS_LANES: dict[str, dict[str, Any]] = {
         "primary_surface": "stationary_noesis_carbon_wsl2",
         "paired_surface": "portable_mac_m5_max",
         "failover_surface": "portable_mac_m5_max",
-        "default_worker_trio": ("antigravity-carbon", "codex-astra-omx", "deepseek-dsh"),
+        "default_worker_trio": ("antigravity-neon", "codex-astra-omx", "deepseek-dsh"),
         "invariants": "18-repo 40-hex upstream SHA lock, 13/13 AGY probes, 10/10 DSH probes & MinTRL/QueueModel gates",
     },
     "H3_org_control_plane_and_provenance": {
@@ -303,7 +303,7 @@ HARNESS_LANES: dict[str, dict[str, Any]] = {
         "primary_surface": "stationary_noesis_win32",
         "paired_surface": "portable_mac_m5_max",
         "failover_surface": "portable_mac_m5_max",
-        "default_worker_trio": ("claude-sonnet-omc", "codex-astra-omx", "antigravity-carbon"),
+        "default_worker_trio": ("claude-sonnet-omc", "codex-astra-omx", "antigravity-neon"),
         "invariants": "Umbrella v3.x lock, reusable SHA-pinned Org CI, 4-invariant sota-org-doctor & Canon provenance",
     },
 }
@@ -991,8 +991,8 @@ ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES: dict[str, dict[str, Any]] = {
         "primary_surface": "stationary_noesis_win32",
         "companion_surface": "stationary_noesis_carbon_wsl2",
         "failover_surface": "portable_mac_m5_max",
-        "lead_agent": "antigravity-carbon",
-        "worker_trio": ("antigravity-carbon", "claude-sonnet-omc", "codex-astra-omx"),
+        "lead_agent": "antigravity-neon",
+        "worker_trio": ("antigravity-neon", "claude-sonnet-omc", "codex-astra-omx"),
         "repos": ("sota-mover-ranker", "sota-dynamic-trail-c", "astrolabe"),
         "upstream_platforms": (
             "alpaca-mcp-server==2.4.1",
@@ -1014,7 +1014,7 @@ ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES: dict[str, dict[str, Any]] = {
         "companion_surface": "stationary_noesis_carbon_wsl2",
         "failover_surface": "portable_mac_m5_max",
         "lead_agent": "claude-opus-falsifier",
-        "worker_trio": ("claude-opus-falsifier", "antigravity-carbon", "codex-astra-omx"),
+        "worker_trio": ("claude-opus-falsifier", "antigravity-neon", "codex-astra-omx"),
         "repos": ("sota-mover-ranker", "sota-dynamic-trail-c", "sota-harness-foundation"),
         "upstream_platforms": ("alpaca-mcp-server==2.4.1", "ib_async", "exchange_calendars"),
         "invariants": (
@@ -1034,8 +1034,8 @@ ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES: dict[str, dict[str, Any]] = {
         "primary_surface": "stationary_noesis_win32",
         "companion_surface": "stationary_noesis_carbon_wsl2",
         "failover_surface": "portable_mac_m5_max",
-        "lead_agent": "antigravity-carbon",
-        "worker_trio": ("antigravity-carbon", "deepseek-dsh", "codex-sol"),
+        "lead_agent": "antigravity-neon",
+        "worker_trio": ("antigravity-neon", "deepseek-dsh", "codex-sol"),
         "repos": ("sota-compounding-lab", "canon", "trading-sota", "tsl", "sota-mover-ranker"),
         "upstream_platforms": (
             "polars",
