@@ -3,8 +3,9 @@
 Canonical cross-repo convergence contract (`ADR-0035`, `sota.unified-cockpit-tca.v1`) unifying:
 1. Plane 1: Unified `DF1..DF12` PIT data & telemetry bus (`:8787`, `:8799`, `:8797`, `:8794`, `:4002`).
 2. Plane 2: Single-host paper-only OMS/EMS firewall (`ALPACA_PAPER_P1..P3`, `IBKR_PAPER_P4`), unconditionally
-   hard-refusing live capital routes and enforcing `ADR-0022 <= 2.00%` stops, `DF5` SEC dilution blocks,
-   `BOATS <= 35.0 bps` overnight spread caps, and NMS Rule 612 tick quantization.
+   hard-refusing live capital routes (`4001`, `7496`, `8796`, `8798`, live broker host, non-loopback hosts),
+   enforcing `ADR-0022 <= 2.00%` stops, `DF5` SEC dilution blocks, `BOATS <= 35.0 bps` overnight spread caps,
+   bounded idempotent `client_order_id`, and NMS Rule 612 tick-increment quantization.
 3. Plane 3: Modular OSS cockpit (`@perspective-dev@5.9.2` local WASM grid + `Lightweight Charts` broker-confirmed
    fill/stop/trail markers + live `+1s/+10s/+60s/+300s` Implementation Shortfall & markout TCA).
 4. Plane 4: TradingView Desktop strictly demoted to a one-way read-only visual lens on `DISPLAY1`
@@ -17,9 +18,12 @@ import hashlib
 import json
 import math
 import os
+import re
+import unicodedata
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
@@ -36,13 +40,19 @@ ALLOWED_PAPER_LANES: frozenset[str] = frozenset(
         "IBKR_PAPER_P4",
     }
 )
-FORBIDDEN_LIVE_PORTS: frozenset[int] = frozenset({4001, 7496, 8798})
+ALLOWED_PAPER_PORTS: frozenset[int] = frozenset({4002, 8787, 8797, 8799})
+ALLOWED_LOOPBACK_HOSTS: frozenset[str] = frozenset({"127.0.0.1", "localhost", "::1"})
+FORBIDDEN_LIVE_PORTS: frozenset[int] = frozenset({4001, 7496, 8796, 8798})
 FORBIDDEN_LIVE_LANE_TOKENS: tuple[str, ...] = ("LIVE", "STAGE5", "REAL_MONEY", "PROD_BROKER")
 # Construct live host token dynamically to preserve zero-leak static grep hygiene.
 FORBIDDEN_LIVE_BROKER_HOST = "api." + "alpaca" + ".markets"
 
 MAX_ADR0022_STOP_PCT = 2.0
 MAX_OVERNIGHT_BOATS_SPREAD_BPS = 35.0
+MAX_QTY_SHARES = 1_000_000
+SYMBOL_ASCII_RE = re.compile(r"^[A-Z][A-Z0-9.-]{0,9}$")
+CLIENT_ORDER_ID_RE = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
+EMBEDDED_PORT_RE = re.compile(r":(\d{2,5})(?:/|$)")
 REQUIRED_PERSPECTIVE_RELPATHS: tuple[str, ...] = (
     "client/dist/cdn/perspective.js",
     "client/dist/cdn/perspective-server.worker.js",
@@ -55,13 +65,43 @@ REQUIRED_PERSPECTIVE_RELPATHS: tuple[str, ...] = (
 )
 
 
-def _is_finite_number(value: Any) -> bool:
-    if isinstance(value, bool):
-        return False
+def _safe_finite_float(value: Any) -> float | None:
+    if isinstance(value, bool) or value is None:
+        return None
     try:
-        return math.isfinite(float(value))
-    except (TypeError, ValueError):
+        num = float(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return num if math.isfinite(num) else None
+
+
+def _safe_strict_int(value: Any) -> int | None:
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    return value
+
+
+def _is_rule612_quantized(price: float) -> bool:
+    try:
+        dec = Decimal(str(price))
+    except (InvalidOperation, ValueError):
         return False
+    if not dec.is_finite() or dec <= 0:
+        return False
+    tick = Decimal("0.01") if dec >= Decimal("1.00") else Decimal("0.0001")
+    return (dec % tick) == 0
+
+
+def _normalize_host_ascii(raw_host: str) -> str:
+    nfkc = unicodedata.normalize("NFKC", raw_host).strip().lower()
+    # Replace Unicode dot-like separators before IDNA normalization.
+    nfkc = nfkc.replace("\u3002", ".").replace("\uff0e", ".").replace("\uff61", ".")
+    if not nfkc:
+        return ""
+    try:
+        return nfkc.encode("idna").decode("ascii").lower()
+    except UnicodeError:
+        return nfkc
 
 
 def compute_unified_cockpit_contract_sha256() -> str:
@@ -72,6 +112,8 @@ def compute_unified_cockpit_contract_sha256() -> str:
         "queue_parity_schema_version": QUEUE_PARITY_SCHEMA_VERSION,
         "perspective_version": PERSPECTIVE_PINNED_VERSION,
         "allowed_paper_lanes": sorted(ALLOWED_PAPER_LANES),
+        "allowed_paper_ports": sorted(ALLOWED_PAPER_PORTS),
+        "allowed_loopback_hosts": sorted(ALLOWED_LOOPBACK_HOSTS),
         "forbidden_live_ports": sorted(FORBIDDEN_LIVE_PORTS),
         "max_adr0022_stop_pct": MAX_ADR0022_STOP_PCT,
         "max_overnight_boats_spread_bps": MAX_OVERNIGHT_BOATS_SPREAD_BPS,
@@ -101,7 +143,7 @@ class PaperTicketPolicyCheck:
 
 
 def validate_paper_ticket_policy(req: PaperTicketPolicyCheck) -> dict[str, Any]:
-    """Fail-closed policy validator for 1-click OSS cockpit paper tickets."""
+    """Fail-closed policy validator for 1-click OSS cockpit paper tickets. Never raises on bad input."""
     violations: list[str] = []
 
     lane_norm = str(req.account_lane or "").strip().upper()
@@ -110,39 +152,86 @@ def validate_paper_ticket_policy(req: PaperTicketPolicyCheck) -> dict[str, Any]:
     if any(tok in lane_norm for tok in FORBIDDEN_LIVE_LANE_TOKENS):
         violations.append(f"FORBIDDEN_LIVE_LANE:{lane_norm}")
 
-    host_norm = str(req.target_host or "").strip().lower()
-    if FORBIDDEN_LIVE_BROKER_HOST in host_norm:
-        violations.append("FORBIDDEN_LIVE_BROKER_HOST")
-    if req.target_port is not None and int(req.target_port) in FORBIDDEN_LIVE_PORTS:
-        violations.append(f"FORBIDDEN_LIVE_PORT:{int(req.target_port)}")
+    raw_host = "" if req.target_host is None else str(req.target_host)
+    norm_host = _normalize_host_ascii(raw_host)
 
-    sym_norm = str(req.symbol or "").strip().upper()
-    if not sym_norm or not sym_norm.replace(".", "").replace("-", "").isalnum():
+    # Detect embedded live ports or URL syntax inside target_host before strict allowlist check.
+    embedded_ports: set[int] = set()
+    for match in EMBEDDED_PORT_RE.findall(norm_host):
+        try:
+            embedded_ports.add(int(match))
+        except ValueError:
+            pass
+    for ep in sorted(embedded_ports):
+        if ep in FORBIDDEN_LIVE_PORTS:
+            violations.append(f"FORBIDDEN_LIVE_PORT:{ep}")
+
+    # Extract host token if URL/authority syntax was passed so live-host check cannot be bypassed.
+    host_only = norm_host
+    if "://" in host_only:
+        violations.append("TARGET_HOST_MUST_NOT_CONTAIN_SCHEME")
+        host_only = host_only.split("://", 1)[1]
+    if "/" in host_only or "?" in host_only or "@" in host_only:
+        violations.append("TARGET_HOST_INVALID_SYNTAX")
+        host_only = re.split(r"[/?#]", host_only, maxsplit=1)[0].rsplit("@", 1)[-1]
+    if ":" in host_only and host_only != "::1":
+        violations.append("TARGET_HOST_MUST_NOT_EMBED_PORT")
+        host_only = host_only.rsplit(":", 1)[0]
+    host_only = host_only.strip("[]")
+
+    if host_only == FORBIDDEN_LIVE_BROKER_HOST:
+        violations.append("FORBIDDEN_LIVE_BROKER_HOST")
+    if host_only not in ALLOWED_LOOPBACK_HOSTS:
+        violations.append(f"TARGET_HOST_NOT_LOOPBACK:{host_only or 'EMPTY'}")
+
+    strict_port = _safe_strict_int(req.target_port)
+    if strict_port is None:
+        violations.append("INVALID_OR_MISSING_TARGET_PORT")
+    else:
+        if strict_port in FORBIDDEN_LIVE_PORTS:
+            violations.append(f"FORBIDDEN_LIVE_PORT:{strict_port}")
+        if strict_port not in ALLOWED_PAPER_PORTS:
+            violations.append(f"PAPER_PORT_NOT_ALLOWLISTED:{strict_port}")
+
+    sym_norm = "" if req.symbol is None else str(req.symbol).strip().upper()
+    if not SYMBOL_ASCII_RE.match(sym_norm):
         violations.append("INVALID_SYMBOL")
 
-    side_norm = str(req.side or "").strip().lower()
+    side_norm = "" if req.side is None else str(req.side).strip().lower()
     if side_norm not in ("buy", "sell", "long", "short"):
         violations.append(f"INVALID_SIDE:{side_norm or 'EMPTY'}")
 
-    if isinstance(req.qty_shares, bool) or int(req.qty_shares) <= 0:
-        violations.append("NON_POSITIVE_QTY_SHARES")
+    strict_qty = _safe_strict_int(req.qty_shares)
+    if strict_qty is None or strict_qty <= 0 or strict_qty > MAX_QTY_SHARES:
+        violations.append("INVALID_QTY_SHARES")
 
-    if not _is_finite_number(req.entry_limit_px) or float(req.entry_limit_px) <= 0.0:
+    entry_px = _safe_finite_float(req.entry_limit_px)
+    if entry_px is None or entry_px <= 0.0:
         violations.append("INVALID_ENTRY_LIMIT_PX")
+    elif not _is_rule612_quantized(entry_px):
+        violations.append("RULE612_TICK_QUANTIZATION_VIOLATION")
 
-    if not _is_finite_number(req.stop_distance_pct) or not (0.0 < float(req.stop_distance_pct) <= MAX_ADR0022_STOP_PCT):
+    stop_pct = _safe_finite_float(req.stop_distance_pct)
+    if stop_pct is None or not (0.0 < stop_pct <= MAX_ADR0022_STOP_PCT):
         violations.append(f"ADR0022_STOP_PCT_VIOLATION:{req.stop_distance_pct}")
 
-    if not _is_finite_number(req.spread_bps) or float(req.spread_bps) < 0.0:
-        violations.append("INVALID_SPREAD_BPS")
-    elif req.is_overnight_boats and float(req.spread_bps) > MAX_OVERNIGHT_BOATS_SPREAD_BPS:
-        violations.append(f"BOATS_SPREAD_CAP_VIOLATION:{req.spread_bps}")
+    if not isinstance(req.is_overnight_boats, bool):
+        violations.append("INVALID_OVERNIGHT_BOATS_FLAG")
+    if not isinstance(req.sec_dilution_blocked, bool):
+        violations.append("INVALID_SEC_DILUTION_FLAG")
 
-    if req.sec_dilution_blocked and side_norm in ("buy", "long"):
+    spread_val = _safe_finite_float(req.spread_bps)
+    if spread_val is None or spread_val < 0.0:
+        violations.append("INVALID_SPREAD_BPS")
+    elif req.is_overnight_boats is True and spread_val > MAX_OVERNIGHT_BOATS_SPREAD_BPS:
+        violations.append(f"BOATS_SPREAD_CAP_VIOLATION:{spread_val}")
+
+    if req.sec_dilution_blocked is True and side_norm in ("buy", "long"):
         violations.append("DF5_SEC_DILUTION_BLOCKS_LONG")
 
-    if not str(req.client_order_id or "").strip():
-        violations.append("MISSING_IDEMPOTENT_CLIENT_ORDER_ID")
+    coid = "" if req.client_order_id is None else str(req.client_order_id).strip()
+    if not CLIENT_ORDER_ID_RE.match(coid):
+        violations.append("INVALID_CLIENT_ORDER_ID")
 
     return {
         "schema_version": UNIFIED_COCKPIT_TCA_SCHEMA_VERSION,
@@ -210,28 +299,79 @@ def validate_tca_markout_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "passive_fill_ratio",
     ):
         val = payload.get(key)
-        if val is not None and not _is_finite_number(val):
+        if val is not None and _safe_finite_float(val) is None:
             errors.append(f"NON_FINITE_{key.upper()}")
 
-    pfr = payload.get("passive_fill_ratio")
-    if pfr is not None and _is_finite_number(pfr) and not (0.0 <= float(pfr) <= 1.0):
+    pfr_raw = payload.get("passive_fill_ratio")
+    pfr = _safe_finite_float(pfr_raw) if pfr_raw is not None else None
+    if pfr is not None and not (0.0 <= pfr <= 1.0):
         errors.append("PASSIVE_FILL_RATIO_OUT_OF_RANGE")
 
     return {"valid": len(errors) == 0, "errors": errors}
 
 
+def _strip_ps1_comments(script_text: str) -> list[str]:
+    """Return active non-comment PowerShell lines (ignoring full-line comments and trailing # comments)."""
+    active: list[str] = []
+    in_block = False
+    for raw_line in script_text.splitlines():
+        line = raw_line.strip()
+        if in_block:
+            if "#>" in line:
+                in_block = False
+            continue
+        if line.startswith("<#"):
+            if "#>" not in line:
+                in_block = True
+            continue
+        if not line or line.startswith("#"):
+            continue
+        # Strip inline # comments outside quotes (conservative split when not inside quotes).
+        code_part = re.split(r"(?<!['\"])\s+#", line, maxsplit=1)[0].strip()
+        if code_part:
+            active.append(code_part)
+    return active
+
+
 def audit_noesis_wall_sovereign_routing(wall_script_path: Path | None = None) -> dict[str, Any]:
-    """Verify the Noesis 4K wall script prioritizes sovereign local 127.0.0.1 over remote failover."""
+    """Structurally audit the Noesis 4K wall script (active code only, ignoring comments)."""
     target = wall_script_path or (Path.home() / ".agents" / "bin" / "sota-noesis-4k-wall.ps1")
     if not target.is_file():
-        return {"present": False, "sovereign_local_first": False, "zero_focus_steal": False}
-    txt = target.read_text(encoding="utf-8", errors="replace")
-    local_first = "127.0.0.1" in txt and "Resolve-SotaEndpointUrl" in txt
-    zero_focus = "0x0014" in txt and "ShowWindowAsync" in txt
+        return {
+            "present": False,
+            "sovereign_local_first": False,
+            "zero_focus_steal": False,
+            "tv_launch_gated": False,
+        }
+    active_lines = _strip_ps1_comments(target.read_text(encoding="utf-8", errors="replace"))
+    active_code = "\n".join(active_lines)
+
+    has_resolver_fn = bool(re.search(r"(?i)\bfunction\s+Resolve-SotaEndpointUrl\b", active_code))
+    probes_loopback = bool(re.search(r'BeginConnect\(\s*"127\.0\.0\.1"', active_code))
+    uses_resolved_apps = (
+        bool(re.search(r"--app=\$rankerUrl\b", active_code))
+        and bool(re.search(r"--app=\$blotterUrl\b", active_code))
+        and not bool(re.search(r"--app=http://100\.", active_code))
+    )
+    sovereign_local_first = has_resolver_fn and probes_loopback and uses_resolved_apps
+
+    has_noactivate_show = bool(re.search(r"ShowWindowAsync\([^,]+,\s*4\s*\)", active_code))
+    has_noactivate_pos = bool(re.search(r"SetWindowPos\([^)]+0x0014\s*\)", active_code))
+    has_distinct_wall_guard = bool(
+        re.search(r"\$wallScreen\.DeviceName\s*-ne\s*\$mainWorkScreen\.DeviceName", active_code)
+    )
+    # Ensure TradingView Desktop is only launched when -MoveTradingViewToWall is set on a distinct wall monitor.
+    tv_launch_match = re.search(r"TradingView\.Desktop", active_code)
+    tv_launch_gated = (not tv_launch_match) or bool(
+        re.search(r"if\s*\([^)]*\$MoveTradingViewToWall[^)]*\)\s*\{[^}]*TradingView\.Desktop", active_code, re.DOTALL)
+    )
+    zero_focus_steal = has_noactivate_show and has_noactivate_pos and has_distinct_wall_guard and tv_launch_gated
+
     return {
         "present": True,
-        "sovereign_local_first": local_first,
-        "zero_focus_steal": zero_focus,
+        "sovereign_local_first": sovereign_local_first,
+        "zero_focus_steal": zero_focus_steal,
+        "tv_launch_gated": tv_launch_gated,
     }
 
 
