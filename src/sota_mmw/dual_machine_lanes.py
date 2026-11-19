@@ -176,7 +176,13 @@ DUAL_MACHINE_SURFACES: dict[str, dict[str, Any]] = {
         "orca_port": 6770,
         "sovereign_paper_broker_host": False,
         "portable_command_cockpit_and_failover": True,
-        "failover_paper_lanes": ("127.0.0.1:8787", "127.0.0.1:8799", "127.0.0.1:8797", "127.0.0.1:4002", "127.0.0.1:8798"),
+        "failover_paper_lanes": (
+            "127.0.0.1:8787",
+            "127.0.0.1:8799",
+            "127.0.0.1:8797",
+            "127.0.0.1:4002",
+            "127.0.0.1:8798",
+        ),
         "workspace_roots": ("~/Documents/*", "~/sota-dynamic-trail-c", "~/canon"),
         "role": "Portable command cockpit, interactive CC-Lead/AGY lead, read-only mirror of Noesis (100.110.115.22) & explicit single-host hot failover",
     },
@@ -474,8 +480,8 @@ def resolve_dual_machine_lane_plan(
         remote_uuid = NOESIS_PROVISIONED_ORCA_REPOS[repo]
         orca_repo_selector = f"id:{remote_uuid}"
         lane_hub = ORCA_LANE_HUBS["stationary_noesis"][plane]
-        remote_wt_args = orca_remote_on_args(use_noesis=use_noesis, flag="--environment")
-        remote_start_args = orca_remote_on_args(use_noesis=use_noesis, flag="--on")
+        remote_wt_args = orca_remote_on_args(use_noesis=use_noesis, flag="--environment", on_noesis_self=on_noesis_self)
+        remote_start_args = orca_remote_on_args(use_noesis=use_noesis, flag="--on", on_noesis_self=on_noesis_self)
     else:
         resolved_local = local_orca_repo_id or resolve_local_orca_repo_id(repo)
         orca_repo_selector = f"id:{resolved_local}" if resolved_local else f"name:{repo}"

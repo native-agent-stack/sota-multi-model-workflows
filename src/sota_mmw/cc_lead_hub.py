@@ -45,9 +45,9 @@ def is_running_on_noesis_host() -> bool:
     return "noesis" in os.environ.get("WSL_DISTRO_NAME", "").lower()
 
 
-def orca_remote_on_args(*, use_noesis: bool, flag: str = "--on") -> list[str]:
+def orca_remote_on_args(*, use_noesis: bool, flag: str = "--on", on_noesis_self: bool | None = None) -> list[str]:
     """Emit Orca remote target flags without ever passing 100.110.115.22 to Noesis itself (#188)."""
-    if is_running_on_noesis_host():
+    if on_noesis_self if on_noesis_self is not None else is_running_on_noesis_host():
         return []
     return [flag, "100.110.115.22"] if use_noesis else []
 
