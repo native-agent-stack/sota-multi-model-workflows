@@ -41,7 +41,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 31,
+    "adrCount": 32,
     "records": [
       {
         "id": "ADR-0001",
@@ -520,6 +520,30 @@
           "https://github.com/native-agent-stack/meridian",
           "https://github.com/native-agent-stack/sota-compounding-lab",
           "https://github.com/native-agent-stack/sota-multi-model-workflows"
+        ]
+      },
+      {
+        "id": "ADR-0032",
+        "layer": "Multi-Model Orca Runtime Rollout, Hybrid 5-Layer Computer-Use Stack (`L1\u2013L4`) & Tiered Zero-Friction Gated-Action Landing (`L5` \u00d7 `L7` \u00d7 `L8` \u00d7 `H1\u2013H3`)",
+        "title": "`v3.10.7` Dual-Machine Advanced Computer-Use Runtime Rollout & Seamless Workstation Change Landing",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "`E4` (`sota-harness-foundation@52ce4c73` `ADR-0042` `computer_use_contract.py`, `cc-sota-harness@4590c995` `ADR-0040`, `agy-sota-harness@2f56eadf` `ADR-0033`, `32/32` MADR 4.0 ADRs, `unittest`, `ruff`, `merge_gate.py`, `gitleaks` `0` leaks)",
+        "file": "docs/adr/ADR-0032-v3107-advanced-computer-use-runtime-rollout-and-seamless-workstation-landing.md",
+        "githubUrls": [
+          "https://github.com/HKUDS/CLI-Anything",
+          "https://github.com/mediar-ai/terminator",
+          "https://github.com/microsoft/UFO",
+          "https://github.com/microsoft/playwright-mcp",
+          "https://github.com/native-agent-stack/agy-sota-harness",
+          "https://github.com/native-agent-stack/cc-sota-harness",
+          "https://github.com/native-agent-stack/sota-harness-foundation",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/simular-ai/Agent-S",
+          "https://github.com/stablyai/orca",
+          "https://github.com/steipete/peekaboo",
+          "https://github.com/trycua/cua",
+          "https://github.com/vercel-labs/agent-browser"
         ]
       }
     ]
