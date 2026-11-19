@@ -567,7 +567,8 @@ CANONICAL_ORCA_LANE_LEADS: dict[str, dict[str, Any]] = {
         "ports_observed": (),
         "charter": (
             "Own Lane 05 Non-Market Incentives & Catalysts: SEC EDGAR acceptanceDateTime PIT filings "
-            "(S-1/424B4/424B5/S-3 dilution shields, 8-K, 13F/Form-4), NASDAQ:ANT $83 IPO terms, FDA/Gov/Macro."
+            "(S-1/424B4/424B5/S-3 dilution shields, 8-K, 13F/Form-4), NASDAQ:ANT post-IPO secondary-market & "
+            "30-day Reg-T/Sec 11(d)(1) seasoning (2026-11-19..2026-12-19), FDA/Gov/Macro."
         ),
     },
     "D7_beyond_skillopt_lead": {
