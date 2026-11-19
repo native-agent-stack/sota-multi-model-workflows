@@ -134,15 +134,15 @@ ORCHESTRATION_FRAMEWORKS_MATRIX: dict[str, dict[str, Any]] = {
         "role": "Explicit thinking-effort role-selected worker runtime",
     },
     "goose_and_dsh_open_harnesses": {
-        "upstream": "block/goose + native-agent-stack/dsh-sota-harness",
-        "versions": {"goose": "1.59.2", "dsh": "0.2.2-rc.2"},
-        "models": ("goose-1.59", "deepseek-flash"),
+        "upstream": "native-agent-stack/dsh-sota-harness (goose retired v3.10.5)",
+        "versions": {"dsh": "0.2.2-rc.2"},
+        "models": ("deepseek-flash",),
         "capabilities": (
-            "AAIF MCP autonomous recipes",
             "10-layer offline DSH probes",
             "pre-wall <=2026-10-15 batch factor evaluation",
+            "DeepSeek-V4.1-Flash 1M-context synthesis",
         ),
-        "role": "Open-weights pre-wall batch evaluator & AAIF autonomous MCP worker",
+        "role": "Open-weights pre-wall batch evaluator & DeepSeek-V4.1-Flash DSH harness (goose retired)",
     },
     "peer_bus_hcom_beads_omniroute_spine": {
         "upstream": (
@@ -956,7 +956,7 @@ ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES: dict[str, dict[str, Any]] = {
         "domain": "MULTI_PAPER_FARM",
         "gating_policy": "NEVER_GATED",
         "primary_surface": "stationary_noesis_win32",
-        "companion_surface": "portable_mac_m5_max",
+        "companion_surface": "stationary_noesis_carbon_wsl2",
         "failover_surface": "portable_mac_m5_max",
         "lead_agent": "antigravity-carbon",
         "worker_trio": ("antigravity-carbon", "claude-sonnet-omc", "codex-astra-omx"),
@@ -968,7 +968,7 @@ ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES: dict[str, dict[str, Any]] = {
             "perspective",
             "lightweight-charts",
         ),
-        "invariants": "3 distinct Alpaca Paper + 1 IBKR Paper NEVER GATED; ADR-0022 <= 2.00% stop; symmetric Single-Broker-Host Firewall.",
+        "invariants": "3 distinct Alpaca Paper + 1 IBKR Paper NEVER GATED; ADR-0022 <= 2.00% stop; symmetric Single-Broker-Host Firewall (singleActiveBrokerHostOnly=true).",
         "default_command": "sota-lanes merit --json",
     },
     "03-stage5-lossless-live": {
@@ -978,13 +978,18 @@ ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES: dict[str, dict[str, Any]] = {
         "domain": "STAGE5_LOSSLESS_LIVE",
         "gating_policy": "PROVEN_AUTOMATION_ONLY_STARTING_WITH_LOSSLESS_FOUNDATION",
         "primary_surface": "stationary_noesis_win32",
-        "companion_surface": "portable_mac_m5_max",
+        "companion_surface": "stationary_noesis_carbon_wsl2",
         "failover_surface": "portable_mac_m5_max",
         "lead_agent": "claude-opus-falsifier",
         "worker_trio": ("claude-opus-falsifier", "antigravity-carbon", "codex-astra-omx"),
         "repos": ("sota-mover-ranker", "sota-dynamic-trail-c", "sota-harness-foundation"),
         "upstream_platforms": ("alpaca-mcp-server==2.4.1", "ib_async", "exchange_calendars"),
-        "invariants": "5 Stage-5 Lossless Invariants: Paper-merit provenance, zero naked orders (RTH atomic OCO / EXT dedicated :8796 LIVE guardian), 100/min exit reserve, -1.50% breaker, Keychain/Credential-Manager window + 0 PII/USD leaks.",
+        "invariants": (
+            "5 Stage-5 Lossless Invariants (ADR-0045): Paper-merit provenance, zero naked orders "
+            "(RTH atomic OCO / EXT dedicated :8796 LIVE guardian), ADR-0022 <= 2.00% hard stop, "
+            "LULD +/-10% pre-halt & Reg M Rule 104 floors, 1,000 req/min with 100/min exit reserve, "
+            "-1.50% breaker, singleActiveBrokerHostOnly=true, Credential-Manager window + 0 PII/USD leaks."
+        ),
         "default_command": "sota-lanes merit --json",
     },
     "04-research-all-market": {
@@ -1083,7 +1088,9 @@ def render_domain_lane_hub_artifacts(slug: str) -> dict[str, str]:
     manifest = {
         "schemaVersion": "sota-ecosystem-domain-lane.v1",
         "adrAuthority": ["ADR-0027", "ADR-0028", "ADR-0029"],
-        "ecosystemSemver": "3.10.5",
+        "ecosystemSemver": "3.10.7",
+        "singleActiveBrokerHostOnly": True,
+        "rthBrokerContentionShield": True,
         "primarySovereignWorkstation": "stationary_noesis_win32 (100.110.115.22)",
         "portableCockpitAndFailover": "portable_mac_m5_max (100.93.211.101)",
         "lane": lane,

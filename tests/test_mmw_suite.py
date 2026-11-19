@@ -2148,13 +2148,30 @@ class TestMultiModelWorkflows(unittest.TestCase):
                 self.assertIn("defaultTabs:", oy, msg=f"{hdir.name}/orca.yaml")
                 for tok in forbidden_posix_tokens:
                     self.assertNotIn(tok, oy, msg=f"{hdir.name}/orca.yaml contains POSIX-only token {tok!r}")
+                lm = json.loads((hdir / "LANE_MANIFEST.json").read_text(encoding="utf-8"))
+                self.assertTrue(
+                    lm.get("singleActiveBrokerHostOnly"), msg=f"{hdir.name} missing singleActiveBrokerHostOnly"
+                )
 
-        # 2. Zero retired workers (grok, goose) across all 7 Ecosystem Domain Lanes
+        # 2. Zero retired workers (grok, goose) across all 7 Ecosystem Domain Lanes & strict broker-lane surface invariants
         for slug, lane in dml.ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES.items():
             trio = tuple(lane.get("worker_trio", ()))
             self.assertNotIn("grok", trio, msg=f"Retired worker 'grok' in {slug}")
             self.assertNotIn("goose", trio, msg=f"Retired worker 'goose' in {slug}")
             self.assertNotIn(lane.get("lead_agent"), ("grok", "goose"), msg=f"Retired lead in {slug}")
+        self.assertEqual(
+            dml.ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES["02-paper-4acct-farm"]["companion_surface"],
+            "stationary_noesis_carbon_wsl2",
+        )
+        self.assertEqual(
+            dml.ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES["03-stage5-lossless-live"]["companion_surface"],
+            "stationary_noesis_carbon_wsl2",
+        )
+        l3_inv = dml.ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES["03-stage5-lossless-live"]["invariants"]
+        self.assertIn("ADR-0022 <= 2.00%", l3_inv)
+        self.assertIn("LULD +/-10%", l3_inv)
+        self.assertIn("Reg M Rule 104", l3_inv)
+        self.assertNotIn("goose-1.59", dml.ORCHESTRATION_FRAMEWORKS_MATRIX["goose_and_dsh_open_harnesses"]["models"])
 
         # 3. 57-skill canonical parity & 8-runtime mount visibility while preserving 46-skill backward-compat
         self.assertEqual(len(nwe.CANONICAL_46_SOTA_SKILLS), 46)
