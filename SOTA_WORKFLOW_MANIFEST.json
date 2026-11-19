@@ -41,7 +41,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 30,
+    "adrCount": 31,
     "records": [
       {
         "id": "ADR-0001",
@@ -506,6 +506,20 @@
           "https://github.com/native-agent-stack/native-agent-stack",
           "https://github.com/native-agent-stack/sota-multi-model-workflows",
           "https://github.com/stablyai/orca"
+        ]
+      },
+      {
+        "id": "ADR-0031",
+        "layer": "`L2` \u00d7 `L5` \u00d7 `L8` (`DF1..DF12` Bitemporal PIT Contract & Single-Broker-Lane Firewall)",
+        "title": "`v3.10.6` `America/New_York` Overnight `BOATS` `decision_ns` Session-Date Parity, Strict Route-to-Port Binding & `5 bps` Minimum Stop Floor",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "`E4` (`src/sota_mmw/symbol_ranking_datafeeds.py`, `tests/test_mmw_suite.py`, `31/31` MADR 4.0 ADRs, `ruff`, `merge_gate.py`, `gitleaks` `0` leaks)",
+        "file": "docs/adr/ADR-0031-v3106-et-overnight-boats-decision-ns-route-port-binding-and-5bps-stop-floor.md",
+        "githubUrls": [
+          "https://github.com/native-agent-stack/meridian",
+          "https://github.com/native-agent-stack/sota-compounding-lab",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows"
         ]
       }
     ]

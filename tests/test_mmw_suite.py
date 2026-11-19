@@ -1978,6 +1978,88 @@ class TestMultiModelWorkflows(unittest.TestCase):
                 f"{wf_name} must guard open_risks='none' with a conditional expression",
             )
 
+    def test_v3106_adr0031_et_overnight_decision_ns_port_binding_and_5bps_stop_floor(self) -> None:
+        import datetime as dt
+
+        from sota_mmw import symbol_ranking_datafeeds as srd
+
+        ny_edt = dt.timezone(dt.timedelta(hours=-4))  # 2026-10-15 is EDT (UTC-4)
+        # 1. Valid BOATS overnight decision at 2026-10-15 21:30:00 EDT (2026-10-16T01:30:00Z UTC!) on IBKR :4002
+        boats_ok_ns = int(dt.datetime(2026, 10, 15, 21, 30, 0, tzinfo=ny_edt).timestamp()) * 1_000_000_000
+        base_boats = {
+            "symbol": "NVDA",
+            "strategy_route": "BOATS_23X5_OVERNIGHT_CONTINUATION",
+            "study_date": "2026-10-15",
+            "ts_event_ns": boats_ok_ns - 20_000_000,
+            "ts_recv_ns": boats_ok_ns - 10_000_000,
+            "decision_ns": boats_ok_ns,
+            "rvol_tod": 2.45,
+            "vol_z_tod": 2.80,
+            "ofi": 0.35,
+            "dry_powder_sec": 18.5,
+            "spread_collar_bps": 7.5,
+            "hard_stop_pct": 1.25,
+            "broker_port": 4002,
+        }
+        res_boats_ok = srd.evaluate_symbol_ranking_to_strategy_handoff(**base_boats)
+        self.assertTrue(res_boats_ok["approved"], f"Valid 21:30 EDT BOATS must approve: {res_boats_ok['violations']}")
+
+        # 2. Cross-broker port mismatch: IBKR BOATS route on Alpaca :8787 MUST fail closed!
+        res_port_bad = srd.evaluate_symbol_ranking_to_strategy_handoff(**{**base_boats, "broker_port": 8787})
+        self.assertFalse(res_port_bad["approved"])
+        self.assertTrue(any("ROUTE_BROKER_PORT_MISMATCH" in v for v in res_port_bad["violations"]))
+
+        # 3. Cross-broker port mismatch: Alpaca route on IBKR :4002 MUST fail closed!
+        res_alpaca_bad = srd.evaluate_symbol_ranking_to_strategy_handoff(
+            **{**base_boats, "strategy_route": "PRE_TRAVEL_EARLY_IGNITION", "broker_port": 4002}
+        )
+        self.assertFalse(res_alpaca_bad["approved"])
+        self.assertTrue(any("ROUTE_BROKER_PORT_MISMATCH" in v for v in res_alpaca_bad["violations"]))
+
+        # 4. Post-wall ET rollover (2026-10-16 00:00:01 EDT) MUST fail closed even with study_date='2026-10-15'!
+        post_et_ns = int(dt.datetime(2026, 10, 16, 0, 0, 1, tzinfo=ny_edt).timestamp()) * 1_000_000_000
+        res_post_et = srd.evaluate_symbol_ranking_to_strategy_handoff(
+            **{**base_boats, "ts_event_ns": post_et_ns - 20, "ts_recv_ns": post_et_ns - 10, "decision_ns": post_et_ns}
+        )
+        self.assertFalse(res_post_et["approved"])
+        self.assertTrue(any("PREWALL_DECISION_NS_VIOLATION" in v for v in res_post_et["violations"]))
+
+        # 5. Overflowing gigantic int (10**400) in decision_ns & numeric fields MUST fail closed cleanly (no OverflowError)
+        huge = 10**400
+        res_huge_ts = srd.evaluate_symbol_ranking_to_strategy_handoff(
+            **{**base_boats, "ts_event_ns": huge - 2, "ts_recv_ns": huge - 1, "decision_ns": huge}
+        )
+        self.assertFalse(res_huge_ts["approved"])
+        self.assertTrue(any("INVALID_EPOCH_NS_RANGE" in v for v in res_huge_ts["violations"]))
+        res_huge_num = srd.evaluate_symbol_ranking_to_strategy_handoff(**{**base_boats, "rvol_tod": huge})
+        self.assertFalse(res_huge_num["approved"])
+
+        # 6. Sub-5bps stop-loss floor (1e-12, 0.049) MUST fail closed while 0.05 passes!
+        for tiny_stop in (1e-12, 0.049):
+            res_tiny = srd.evaluate_symbol_ranking_to_strategy_handoff(**{**base_boats, "hard_stop_pct": tiny_stop})
+            self.assertFalse(res_tiny["approved"])
+            self.assertTrue(any("ADR0022_STOP" in v for v in res_tiny["violations"]))
+        self.assertTrue(
+            srd.evaluate_symbol_ranking_to_strategy_handoff(**{**base_boats, "hard_stop_pct": 0.05})["approved"]
+        )
+
+        # 7. Cross-repo DF10..DF12 casing normalization parity with sota-compounding-lab & meridian
+        self.assertEqual(
+            srd.normalize_ranking_feed_id("DF10_OWN_HISTORY_TOD_ABNORMAL_RATE_AND_UCURVE"),
+            "DF10_own_history_tod_abnormal_rate_and_ucurve",
+        )
+        self.assertEqual(
+            srd.normalize_ranking_feed_id("DF11_BITEMPORAL_DATABENTO_PIT_AND_H096_COLLAR"),
+            "DF11_bitemporal_databento_pit_and_h096_collar",
+        )
+        self.assertEqual(
+            srd.normalize_ranking_feed_id("DF12_QLIB_RANK_IC_AND_KAPPA40_POSTWALL_EB_FEEDBACK"),
+            "DF12_qlib_rank_ic_and_kappa40_postwall_eb_feedback",
+        )
+        # Arbitrary bogus suffixes MUST raise KeyError (fail closed!)
+        with self.assertRaises(KeyError):
+            srd.normalize_ranking_feed_id("DF10_TOTALLY_BOGUS_GARBAGE")
+
 
 if __name__ == "__main__":
     unittest.main()

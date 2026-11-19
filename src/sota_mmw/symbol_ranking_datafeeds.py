@@ -17,6 +17,7 @@ import hashlib
 import json
 import math
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from sota_mmw.compounding_versioning import (
     CANONICAL_RANKING_DATAFEEDS_V38,
@@ -32,9 +33,13 @@ MIN_VOL_Z_TOD_THRESHOLD = 2.30
 MIN_OFI_THRESHOLD = 0.25
 MIN_DRY_POWDER_SEC = 15.0
 MAX_SPREAD_COLLAR_BPS = 10.0
+MIN_HARD_STOP_PCT = 0.05  # 5.0 bps realistic tick/spread floor (ADR-0031)
 WAVE2_DEAD_FLOW_COOLDOWN_SEC = 900.0
 POSTWALL_EB_KAPPA = 40
 MIN_EPOCH_2000_NS = 946_684_800_000_000_000  # 2000-01-01T00:00:00Z in nanoseconds
+ALPACA_PAPER_PORTS: tuple[int, ...] = (8787, 8799, 8797)
+IBKR_PAPER_PORTS: tuple[int, ...] = (4002,)
+ALL_SANCTIONED_PAPER_PORTS: tuple[int, ...] = (*ALPACA_PAPER_PORTS, *IBKR_PAPER_PORTS)
 
 DF10_TO_DF12_EXTENSION: dict[str, dict[str, Any]] = {
     "DF10_own_history_tod_abnormal_rate_and_ucurve": {
@@ -207,8 +212,70 @@ def resolve_route_required_feeds(strategy_route: str) -> list[dict[str, Any]]:
     return resolved
 
 
+def _to_ny_datetime(dt_utc: dt.datetime) -> dt.datetime:
+    """Convert aware UTC datetime to America/New_York (cross-OS fallback when Windows lacks tzdata)."""
+    try:
+        return dt_utc.astimezone(ZoneInfo("America/New_York"))
+    except (ZoneInfoNotFoundError, KeyError, ValueError):
+        y = dt_utc.year
+        if y < 2007:
+            # Uniform Time Act (1987-2006): 1st Sunday of April 07:00 UTC -> last Sunday of October 06:00 UTC
+            apr1_wd = dt.date(y, 4, 1).weekday()
+            dst_start = dt.datetime(y, 4, 1 + ((6 - apr1_wd) % 7), 7, 0, tzinfo=dt.UTC)
+            oct31_wd = dt.date(y, 10, 31).weekday()
+            dst_end = dt.datetime(y, 10, 31 - ((oct31_wd + 1) % 7), 6, 0, tzinfo=dt.UTC)
+        else:
+            # Energy Policy Act of 2005 (2007+): 2nd Sunday of March 07:00 UTC -> 1st Sunday of November 06:00 UTC
+            mar1_wd = dt.date(y, 3, 1).weekday()
+            dst_start = dt.datetime(y, 3, 1 + ((6 - mar1_wd) % 7) + 7, 7, 0, tzinfo=dt.UTC)
+            nov1_wd = dt.date(y, 11, 1).weekday()
+            dst_end = dt.datetime(y, 11, 1 + ((6 - nov1_wd) % 7), 6, 0, tzinfo=dt.UTC)
+        is_edt = dst_start <= dt_utc < dst_end
+        return dt_utc.astimezone(dt.timezone(dt.timedelta(hours=-4 if is_edt else -5), name="EDT" if is_edt else "EST"))
+
+
+_FEED_ID_LOWER_MAP: dict[str, str] = {k.lower(): k for k in FINALIZED_12FEED_SYMBOL_RANKING_DATAFEEDS}
+_KNOWN_CROSS_REPO_FEED_ALIASES: dict[str, str] = {
+    "df10_own_history_tod_normal_rate_and_nyse_ucurve_x1_x2": "DF10_own_history_tod_abnormal_rate_and_ucurve",
+    "df11_databento_bitemporal_pit_and_h096_15s_collar": "DF11_bitemporal_databento_pit_and_h096_collar",
+    "df12_qlib_rank_ic_and_kappa40_postwall_eb_feedback": "DF12_qlib_rank_ic_and_kappa40_postwall_eb_feedback",
+}
+
+
+def normalize_ranking_feed_id(feed_id: str) -> str:
+    """Normalize canonical DF1..DF12 feed IDs & explicit cross-repo aliases (fail-closed on arbitrary suffixes)."""
+    if not isinstance(feed_id, str) or not feed_id.strip():
+        raise ValueError(f"feed_id must be a non-empty string, got {feed_id!r}")
+    key = feed_id.strip()
+    if key in FINALIZED_12FEED_SYMBOL_RANKING_DATAFEEDS:
+        return key
+    low = key.lower()
+    if low in _FEED_ID_LOWER_MAP:
+        return _FEED_ID_LOWER_MAP[low]
+    if low in _KNOWN_CROSS_REPO_FEED_ALIASES:
+        return _KNOWN_CROSS_REPO_FEED_ALIASES[low]
+    upper = key.upper()
+    if upper in FEEDS_BY_SHORT_ID:
+        return str(FEEDS_BY_SHORT_ID[upper]["feed_id"])
+    raise KeyError(f"Unrecognized ranking feed_id: {feed_id!r}")
+
+
 def _is_finite_real(val: Any) -> bool:
-    return isinstance(val, (int, float)) and not isinstance(val, bool) and math.isfinite(float(val))
+    if isinstance(val, bool) or not isinstance(val, (int, float)):
+        return False
+    try:
+        return math.isfinite(float(val))
+    except OverflowError:
+        return False
+
+
+def _allowed_ports_for_route(route: dict[str, Any]) -> tuple[int, ...]:
+    lane = str(route.get("paper_broker_lane") or "").upper()
+    if lane.startswith("IBKR_PAPER"):
+        return IBKR_PAPER_PORTS
+    if lane.startswith("ALPACA_PAPER"):
+        return ALPACA_PAPER_PORTS
+    return ()
 
 
 def compute_symbol_ranking_v310_sha256() -> str:
@@ -267,14 +334,17 @@ def evaluate_symbol_ranking_to_strategy_handoff(
             violations.append("BITEMPORAL_PIT_VIOLATION: require ts_event_ns <= ts_recv_ns <= decision_ns")
         if decision_ns >= MIN_EPOCH_2000_NS:
             try:
-                decision_date = dt.datetime.fromtimestamp(decision_ns / 1_000_000_000, tz=dt.UTC).date()
+                # Exact integer nanosecond division + America/New_York session date (ADR-0031: BOATS 20:00-23:59 ET)
+                decision_sec = decision_ns // 1_000_000_000
+                decision_dt_ny = _to_ny_datetime(dt.datetime.fromtimestamp(decision_sec, tz=dt.UTC))
+                decision_date = decision_dt_ny.date()
                 if decision_date > STUDY_WALL_DATE:
                     violations.append(
-                        f"PREWALL_DECISION_NS_VIOLATION: decision_ns date {decision_date.isoformat()} > {STUDY_WALL_DATE.isoformat()}"
+                        f"PREWALL_DECISION_NS_VIOLATION: decision_ns ET date {decision_date.isoformat()} > {STUDY_WALL_DATE.isoformat()}"
                     )
                 if parsed_study_date is not None and decision_date != parsed_study_date:
                     violations.append(
-                        f"DECISION_NS_STUDY_DATE_MISMATCH: decision_ns date {decision_date.isoformat()} != study_date {study_date}"
+                        f"DECISION_NS_STUDY_DATE_MISMATCH: decision_ns ET date {decision_date.isoformat()} != study_date {study_date}"
                     )
             except (OverflowError, OSError, ValueError):
                 violations.append(f"INVALID_EPOCH_NS_RANGE: decision_ns={decision_ns!r}")
@@ -304,8 +374,10 @@ def evaluate_symbol_ranking_to_strategy_handoff(
         violations.append(
             f"SPREAD_COLLAR_EXCEEDED: {spread_collar_bps:.2f} outside [0.0, {MAX_SPREAD_COLLAR_BPS:.1f}] bps"
         )
-    if _is_finite_real(hard_stop_pct) and not (0.0 < float(hard_stop_pct) <= MAX_STOP_ADR0022_PCT):
-        violations.append(f"ADR0022_STOP_EXCEEDED: {hard_stop_pct:.2f}% outside (0, {MAX_STOP_ADR0022_PCT:.2f}%]")
+    if _is_finite_real(hard_stop_pct) and not (MIN_HARD_STOP_PCT <= float(hard_stop_pct) <= MAX_STOP_ADR0022_PCT):
+        violations.append(
+            f"ADR0022_STOP_OUT_OF_BOUNDS: {float(hard_stop_pct):.4f}% outside [{MIN_HARD_STOP_PCT:.2f}%, {MAX_STOP_ADR0022_PCT:.2f}%]"
+        )
     if (
         route is not None
         and _is_finite_real(hard_stop_pct)
@@ -313,10 +385,20 @@ def evaluate_symbol_ranking_to_strategy_handoff(
     ):
         violations.append(f"ROUTE_STOP_EXCEEDED: {hard_stop_pct:.2f}% > {float(route['max_initial_stop_pct']):.2f}%")
 
-    if not isinstance(broker_port, int) or isinstance(broker_port, bool) or broker_port not in (8787, 8799, 4002):
+    if (
+        not isinstance(broker_port, int)
+        or isinstance(broker_port, bool)
+        or broker_port not in ALL_SANCTIONED_PAPER_PORTS
+    ):
         violations.append(
-            f"LIVE_BROKER_FIREWALL_BLOCK: unsupported port {broker_port}; only 8787/8799/4002 paper allowed"
+            f"LIVE_BROKER_FIREWALL_BLOCK: unsupported port {broker_port}; only 8787/8799/8797/4002 paper allowed"
         )
+    elif route is not None:
+        allowed_ports = _allowed_ports_for_route(route)
+        if broker_port not in allowed_ports:
+            violations.append(
+                f"ROUTE_BROKER_PORT_MISMATCH: port {broker_port} invalid for {route['paper_broker_lane']} (allowed={allowed_ports})"
+            )
     if is_wave2_reentry or (route is not None and route["requires_wave2_cooldown"]):
         if not _is_finite_real(cooldown_elapsed_sec) or not (
             float(cooldown_elapsed_sec) >= WAVE2_DEAD_FLOW_COOLDOWN_SEC
