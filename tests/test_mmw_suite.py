@@ -2407,6 +2407,28 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertIn("--effort", argv)
         self.assertEqual(argv[argv.index("--effort") + 1], "xhigh")
 
+    def test_dec6_2026_23x5_sip_cutover_drill_and_fail_closed_guards(self) -> None:
+        from sota_mmw import boats_23x5_cutover_drill as bcd
+
+        drill = bcd.run_dec6_23x5_cutover_drill()
+        self.assertTrue(drill["all_passed"])
+        self.assertEqual(drill["scenarios_total"], 10)
+        self.assertEqual(drill["scenarios_passed"], 10)
+        self.assertEqual(len(drill["receipt_sha256"]), 64)
+
+        nan_spread = bcd.evaluate_session_boundary_policy(
+            "2026-12-06T21:00:00-05:00",
+            dec6_235_sip_enabled=True,
+            spread_bps=float("nan"),
+            order_type="LMT",
+            stop_pct=1.50,
+            active_guardian=True,
+            broker_port=4002,
+            symbol_count=2,
+        )
+        self.assertFalse(nan_spread["approved"])
+        self.assertIn("NON_FINITE_OR_NEGATIVE_SPREAD_BPS", nan_spread["violations"])
+
 
 if __name__ == "__main__":
     unittest.main()
