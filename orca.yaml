@@ -1,4 +1,4 @@
-# Orca (https://github.com/stablyai/orca) cross-OS workspace recipe for sota-multi-model-workflows (v3.10.7)
+# Orca (https://github.com/stablyai/orca) cross-OS workspace recipe for sota-multi-model-workflows (v3.10.9)
 # Supports Apple M5 Max (macOS), Stationary Noesis (Win32), and Noesis-Carbon (WSL2 ext4).
 # Cross-OS invariant: commands run identically in Win32 PowerShell, macOS zsh, and Linux bash.
 scripts:
@@ -7,9 +7,9 @@ scripts:
 setupAgentStartupPolicy: wait-for-setup
 defaultTabs:
   - title: Agent
-  - title: Native SOTA Workflow & 57-Skill Enactor
+  - title: Native SOTA Workflow & 60-Skill Enactor
     command: uv run python -m sota_mmw.native_workflow_enactor status --json
   - title: CC-Lead & Lanes Hub
     command: uv run python -m sota_mmw.dual_machine_lanes status --json
-  - title: 20-Workflow Suite & Pytest
+  - title: 21-Workflow Suite & Pytest
     command: uv run pytest -q

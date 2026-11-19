@@ -77,12 +77,27 @@ ORCA_LANE_HUBS: dict[str, dict[str, dict[str, str]]] = {
             "parent_selector": "folder:060eb055-834e-4ef2-8198-e3e224a35fbe",
         },
     },
+    "stationary_noesis_wsl_carbon": {
+        "host_selector": "--environment Noesis-Carbon (WSL)",
+        "trading": {
+            "hub_name": "trading-lanes",
+            "path": "~/sota-workstation/.orca-lanes/trading-lanes",
+            "folder_id": "wsl-trading-lanes",
+            "parent_selector": "path:~/sota-workstation/.orca-lanes/trading-lanes",
+        },
+        "harness": {
+            "hub_name": "harness-lanes",
+            "path": "~/sota-workstation/.orca-lanes/harness-lanes",
+            "folder_id": "wsl-harness-lanes",
+            "parent_selector": "path:~/sota-workstation/.orca-lanes/harness-lanes",
+        },
+    },
 }
 
 ORCHESTRATION_FRAMEWORKS_MATRIX: dict[str, dict[str, Any]] = {
     "orca_cross_machine_supervisor": {
         "upstream": "stablyai/orca",
-        "versions": {"mac_m5_max": "1.4.263", "noesis_win32_wsl2": "1.4.263"},
+        "versions": {"mac_m5_max": "1.4.263", "noesis_win32_wsl2": "1.4.263", "latest_evaluated": "1.4.264"},
         "mesh_transport": "symmetric Tailscale :6770 (100.93.211.101 <-> 100.110.115.22)",
         "capabilities": (
             "worker-start --on 100.110.115.22 --worktree new-child --setup run",
@@ -95,24 +110,30 @@ ORCHESTRATION_FRAMEWORKS_MATRIX: dict[str, dict[str, Any]] = {
     },
     "cc_lead_omc_v2": {
         "upstream": "anthropics/claude-code + Yeachan-Heo/oh-my-claudecode",
-        "versions": {"claude": "2.1.327", "oh_my_claudecode": "5.8.6"},
+        "versions": {"claude": "2.1.328", "oh_my_claudecode": "5.8.6"},
         "lead_model": "claude-fable-5-2 (xhigh, 600K cache, oneModelPerConversation=True, OMC_RUNTIME_V2=1)",
         "capabilities": ("omc ultragoal", "omc team", "omc interop", "omc ask"),
         "role": "Sovereign central architectural & multi-session goal orchestrator",
     },
     "codex_omx_missions": {
         "upstream": "openai/codex + Yeachan-Heo/oh-my-codex + max-sixty/worktrunk",
-        "versions": {"codex": "0.169.0", "oh_my_codex": "0.22.10", "wt": "0.81.0"},
+        "versions": {
+            "codex": "0.169.0",
+            "codex_latest_evaluated": "0.170.0",
+            "oh_my_codex": "0.22.10",
+            "omx_latest_evaluated": "0.22.11",
+            "wt": "0.81.0",
+        },
         "models": ("gpt-6.2-astra", "gpt-6.2-sol"),
         "capabilities": ("omx exec", "omx mission", "wt worktrunk isolated git branches"),
         "role": "Cross-family adversarial math/code critic & high-throughput parallel test sweeps",
     },
     "agy_typed_workflows_and_swarm": {
         "upstream": "google-antigravity/antigravity-sdk-python",
-        "versions": {"agy": "1.5.10"},
+        "versions": {"agy": "1.5.12"},
         "lead_model": "gemini-4-neon-xhigh (flagship) + gemini-4-carbon-high (1M context)",
         "capabilities": (
-            "21 schema-typed run_workflow Python DAGs (v3.10.8)",
+            "21 schema-typed run_workflow Python DAGs (v3.10.9)",
             "Native Swarm workspace:share 1:3 verifiers",
             "18-clone upstream shelf & SEC EDGAR synthesis",
         ),
@@ -120,14 +141,14 @@ ORCHESTRATION_FRAMEWORKS_MATRIX: dict[str, dict[str, Any]] = {
     },
     "opencode_omo_hephaestus": {
         "upstream": "sst/opencode + code-yeongyu/oh-my-openagent",
-        "versions": {"opencode": "2.3.0", "oh_my_openagent": "5.1.75"},
+        "versions": {"opencode": "2.3.0", "oh_my_openagent": "5.1.75", "omo_latest_evaluated": "5.1.79"},
         "models": ("claude-sonnet-5-5", "deepseek-v4.1-flash"),
         "capabilities": ("non-GPT Hephaestus structured multi-file graph runtime", "polyglot AST refactoring"),
         "role": "Non-GPT structured multi-file graph transformation runtime",
     },
     "pi_omp_role_thinking": {
         "upstream": "badlogic/pi-mono + can1357/oh-my-pi",
-        "versions": {"pi": "1.5.2", "omp": "18.22.0"},
+        "versions": {"pi": "1.5.2", "omp": "18.22.0", "omp_latest_evaluated": "19.0.0"},
         "models": ("@worker", "openai-codex/gpt-6.2-sol"),
         "capabilities": ("OMP @worker role selector", "explicit thinking-effort (--effort) role workers in Orca & CLI"),
         "role": "Explicit thinking-effort role-selected worker runtime",
@@ -848,24 +869,27 @@ def render_orca_lane_hub_artifacts(plane: str) -> dict[str, str]:
             "ADR-0027 (7-Lane Grand Merit-Promotion Harness & Stage-5 Read-Only Gate)",
             "ADR-0028 (v3.10.4 Stationary Noesis Primary 24/5 Host & Portable Mac Hot Failover)",
             "ADR-0029 (v3.10.5 Full-Ecosystem 7-Domain Orca Lane Hubs & Lead Topology)",
+            "ADR-0033 (v3.10.8 Orca Worker Defaults, 60 Skills & Workflow #21)",
+            "ADR-0034 (v3.10.9 Post-Cutover Sovereign Dual-Machine Orca Manifests & 3-Surface Hub Parity)",
         ],
         "singleActiveBrokerHostOnly": True,
         "rthBrokerContentionShield": True,
         "sovereignPaperBrokerHost": "stationary_noesis_win32 (100.110.115.22; failover portable_mac_m5_max 100.93.211.101)",
-        "activePreCutoverBrokerSplit": {
-            "alpaca_paper_ports_8787_8799_8797": "portable_mac_m5_max",
+        "activeSovereignBrokerTopology": {
+            "cutoverCompleted": True,
+            "adr": "ADR-0041",
+            "alpaca_paper_ports_8787_8799_8797": "stationary_noesis_win32",
             "ibkr_paper_port_4002": "stationary_noesis_win32",
-            "stage5_live_port_8798": "STANDBY_OWNER_LIVE_WINDOW_CLOSED",
-            "cutover_prerequisites": [
-                "P0-1..6 sota-mover-ranker ADR-0017/ADR-0019 shield & supervisor fixes",
-                "Owner Windows Credential Manager seeding on stationary_noesis_win32",
-                "Owner-called zero-overlap v3.10.4 single-host cutover",
-            ],
+            "gpu_cuda_sidecar_port_8794": "stationary_noesis_wsl_carbon",
+            "coop_rpc_port_8792": "stationary_noesis_win32",
+            "stage5_live_ports_8798_8796": "stationary_noesis_win32 (owner_live_window_governed)",
+            "portable_mac_m5_max": "PARKED_HOT_FAILOVER (MAC_BROKER_PORTS=0)",
         },
         "pairedWorkstationSurfaces": DUAL_MACHINE_SURFACES,
         "orcaHubSelectors": {
             "portable_mac_m5_max": ORCA_LANE_HUBS["portable_mac_m5_max"][plane],
             "stationary_noesis": ORCA_LANE_HUBS["stationary_noesis"][plane],
+            "stationary_noesis_wsl_carbon": ORCA_LANE_HUBS["stationary_noesis_wsl_carbon"][plane],
         },
         "rankingDatafeedsSchema": RANKING_DATAFEEDS_SCHEMA_VERSION,
         "rankingDatafeedsCount": len(CANONICAL_RANKING_DATAFEEDS_V38),
@@ -882,7 +906,7 @@ def render_orca_lane_hub_artifacts(plane: str) -> dict[str, str]:
         "Trading Lanes (`T1–T3` + `T5` Read-Only Stage-5 Audit)" if is_trading else "Harness Lanes (`H1–H3` / `H0–H7`)"
     )
     orca_yaml = (
-        f"# SOTA Dual-Machine Orca Folder Hub Recipe — {hub_title} (v3.10.7, Cross-OS Win32/macOS/Linux)\n"
+        f"# SOTA Dual-Machine Orca Folder Hub Recipe — {hub_title} (v3.10.9, Cross-OS Win32/macOS/Linux)\n"
         "setupAgentStartupPolicy: wait-for-setup\n"
         "scripts:\n"
         "  setup: |\n"
@@ -893,11 +917,11 @@ def render_orca_lane_hub_artifacts(plane: str) -> dict[str, str]:
         f"    command: sota-lanes status --plane {plane} --json\n"
     )
     readme_lines = [
-        f"# SOTA Dual-Machine Orca Hub — {hub_title} (`v3.10.8`)",
+        f"# SOTA Dual-Machine Orca Hub — {hub_title} (`v3.10.9`)",
         "",
         (
             f"Schema: `{ORCA_LANE_HUB_SCHEMA_VERSION}` · DataFeeds: `DF1..DF12` (`{RANKING_DATAFEEDS_SCHEMA_VERSION}` `DF1..DF9` compat) · "
-            f"Pre-Wall Lake SHA-256: `{DEFAULT_PREWALL_LAKE_SHA256}` (`<= {PRE_WALL_MAX_DATE}`)."
+            f"Pre-Wall Lake SHA-256: `{DEFAULT_PREWALL_LAKE_SHA256}` (`<= {PRE_WALL_MAX_DATE}`) · Doctor: `18/18` (`RTX 4090 :8794` CUDA sidecar)."
         ),
         "",
         "- **Symmetric Orca Mesh:** `stationary_noesis` (`100.110.115.22:6770` Win32 + `Noesis-Carbon` WSL2 `ext4`, `ADR-0028`/`ADR-0041` primary sovereign 24/5 host) <-> `portable_mac_m5_max` (`100.93.211.101:6768`, portable cockpit & hot failover).",
@@ -1024,8 +1048,8 @@ ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES: dict[str, dict[str, Any]] = {
         "primary_surface": "stationary_noesis_win32",
         "companion_surface": "portable_mac_m5_max",
         "failover_surface": "portable_mac_m5_max",
-        "lead_agent": "antigravity-carbon",
-        "worker_trio": ("antigravity-carbon", "claude-sonnet-omc", "deepseek-dsh"),
+        "lead_agent": "antigravity-neon",
+        "worker_trio": ("antigravity-neon", "claude-sonnet-omc", "deepseek-dsh"),
         "repos": ("sota-mover-ranker", "sota-compounding-lab", "canon", "sota-private-vault"),
         "upstream_platforms": ("edgartools", "polars", "duckdb", "qmd"),
         "invariants": "Point-in-time acceptanceDateTime timestamps ONLY (zero filing-date look-ahead); SEC S-1/424B4/424B5/S-3 dilution shields, 8-K catalysts, 13F/Form-4 insider incentives, FDA/PDUFA, Gov/DoD awards & macro prints.",
@@ -1041,7 +1065,7 @@ ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES: dict[str, dict[str, Any]] = {
         "companion_surface": "portable_mac_m5_max",
         "failover_surface": "portable_mac_m5_max",
         "lead_agent": "claude-sonnet-omc",
-        "worker_trio": ("claude-sonnet-omc", "codex-astra-omx", "antigravity-carbon"),
+        "worker_trio": ("claude-sonnet-omc", "codex-astra-omx", "antigravity-neon"),
         "repos": (
             "sota-harness-foundation",
             "sota-multi-model-workflows",
@@ -1052,7 +1076,7 @@ ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES: dict[str, dict[str, Any]] = {
             ".github",
         ),
         "upstream_platforms": ("stablyai/orca", "oh-my-claudecode", "oh-my-codex", "hcom", "beads", "qmd"),
-        "invariants": "21/21 self-bootstrapping workflows; 60/60 SkillEvaluator PASS; 17/17 sota-doctor; 22/22 SHA-pinned org manifest; zero-drift MADR 4.0 ADRs; cross-OS Win32/WSL2/Darwin parity.",
+        "invariants": "21/21 self-bootstrapping workflows; 60/60 SkillEvaluator PASS; 18/18 sota-doctor (RTX 4090 :8794 CUDA + Z: native_ext4); 22/22 SHA-pinned org manifest; zero-drift MADR 4.0 ADRs; cross-OS Win32/WSL2/Darwin parity.",
         "default_command": "sota-lanes status --plane harness --json",
     },
     "07-beyond-convergence-skillopt": {
@@ -1091,8 +1115,8 @@ def render_domain_lane_hub_artifacts(slug: str) -> dict[str, str]:
         raise ValueError(f"Unknown domain lane slug {slug!r}; valid={sorted(ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES)}")
     manifest = {
         "schemaVersion": "sota-ecosystem-domain-lane.v1",
-        "adrAuthority": ["ADR-0027", "ADR-0028", "ADR-0029", "ADR-0033"],
-        "ecosystemSemver": "3.10.8",
+        "adrAuthority": ["ADR-0027", "ADR-0028", "ADR-0029", "ADR-0033", "ADR-0034"],
+        "ecosystemSemver": "3.10.9",
         "singleActiveBrokerHostOnly": True,
         "rthBrokerContentionShield": True,
         "primarySovereignWorkstation": "stationary_noesis_win32 (100.110.115.22)",
@@ -1100,11 +1124,12 @@ def render_domain_lane_hub_artifacts(slug: str) -> dict[str, str]:
         "lane": lane,
         "orcaRegisterCommands": {
             "noesis": f"orca repo add --environment 100.110.115.22 --path C:/sota-workstation/.orca-lanes/{slug} --kind folder --json",
+            "wsl_carbon": f"orca repo add --environment 'Noesis-Carbon (WSL)' --path ~/sota-workstation/.orca-lanes/{slug} --kind folder --json",
             "mac": f"orca repo add --path ~/.agents/orca-lanes/{slug} --kind folder --json",
         },
     }
     orca_yaml = (
-        f"# SOTA 7-Domain Ecosystem Orca Lane Hub — {slug} (v3.10.5, ADR-0029)\n"
+        f"# SOTA 7-Domain Ecosystem Orca Lane Hub — {slug} (v3.10.9, ADR-0029/ADR-0033/ADR-0034)\n"
         "setupAgentStartupPolicy: wait-for-setup\n"
         "scripts:\n"
         "  setup: |\n"

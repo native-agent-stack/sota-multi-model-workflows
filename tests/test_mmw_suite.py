@@ -130,8 +130,8 @@ class TestMultiModelWorkflows(unittest.TestCase):
     def test_workflow_registry_ast_and_merge_gate(self) -> None:
         reg = json.loads((ROOT / "workflows" / "REGISTRY.json").read_text(encoding="utf-8"))
         manifest = json.loads((ROOT / "SOTA_WORKFLOW_MANIFEST.json").read_text(encoding="utf-8"))
-        self.assertEqual(reg["version"], "3.10.8")
-        self.assertEqual(manifest["schemaVersion"], "3.10.8")
+        self.assertEqual(reg["version"], "3.10.9")
+        self.assertEqual(manifest["schemaVersion"], "3.10.9")
         self.assertEqual(len(reg["workflows"]), 21)
         self.assertEqual(manifest["workflowCount"], 21)
         ids = [w["id"] for w in reg["workflows"]]
@@ -2317,6 +2317,30 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertTrue(live["cuda_available"])
         self.assertEqual(live["gpu_name"], "NVIDIA GeForce RTX 4090")
         self.assertEqual(live["fast_lake_tier"], "native_ext4")
+
+    def test_v3109_adr0034_post_cutover_dual_machine_orca_manifests_and_3surface_hubs(self) -> None:
+        from sota_mmw import dual_machine_lanes as dml
+
+        self.assertIn("stationary_noesis_wsl_carbon", dml.ORCA_LANE_HUBS)
+        trading_arts = dml.render_orca_lane_hub_artifacts("trading")
+        trading_mf = json.loads(trading_arts["LANE_MANIFEST.json"])
+        topo = trading_mf["activeSovereignBrokerTopology"]
+        self.assertTrue(topo["cutoverCompleted"])
+        self.assertEqual(topo["alpaca_paper_ports_8787_8799_8797"], "stationary_noesis_win32")
+        self.assertEqual(topo["gpu_cuda_sidecar_port_8794"], "stationary_noesis_wsl_carbon")
+        self.assertIn("stationary_noesis_wsl_carbon", trading_mf["orcaHubSelectors"])
+        self.assertIn("v3.10.9", trading_arts["orca.yaml"])
+
+        dom6 = dml.render_domain_lane_hub_artifacts("06-framework-and-harness")
+        dom6_mf = json.loads(dom6["LANE_MANIFEST.json"])
+        self.assertEqual(dom6_mf["ecosystemSemver"], "3.10.9")
+        self.assertIn("wsl_carbon", dom6_mf["orcaRegisterCommands"])
+        self.assertIn("18/18 sota-doctor", dom6_mf["lane"]["invariants"])
+
+        root_orca = (ROOT / "orca.yaml").read_text(encoding="utf-8")
+        self.assertIn("60-Skill", root_orca)
+        self.assertIn("21-Workflow", root_orca)
+        self.assertNotIn("python3 ", root_orca)
 
 
 if __name__ == "__main__":
