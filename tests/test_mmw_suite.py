@@ -1905,7 +1905,9 @@ class TestMultiModelWorkflows(unittest.TestCase):
             dml.ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES["03-stage5-lossless-live"]["gating_policy"],
             "PROVEN_AUTOMATION_ONLY_STARTING_WITH_LOSSLESS_FOUNDATION",
         )
-        self.assertEqual(dml.ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES["04-research-all-market"]["gating_policy"], "NEVER_GATED")
+        self.assertEqual(
+            dml.ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES["04-research-all-market"]["gating_policy"], "NEVER_GATED"
+        )
         self.assertEqual(
             dml.ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES["05-non-market-incentives"]["gating_policy"], "NEVER_GATED"
         )
@@ -1928,6 +1930,32 @@ class TestMultiModelWorkflows(unittest.TestCase):
         dom = json.loads(buf.getvalue())
         self.assertEqual(dom["domain_lanes_count"], 7)
         self.assertEqual(dom["adr"], "ADR-0029")
+
+    def test_v3106_ten_canonical_orca_lane_leads_cover_all_seven_domains(self) -> None:
+        from sota_mmw import dual_machine_lanes as dml
+
+        leads = dml.CANONICAL_ORCA_LANE_LEADS
+        self.assertEqual(len(leads), 10)
+        for req_id in (
+            "T1_paper_guardian_lead",
+            "T2_ibkr_and_sim_lead",
+            "T3_prewall_factory_lead",
+            "T5_stage5_live_lane_read_only_audit",
+            "H1_cc_lead_orchestrator",
+            "H2_cross_vendor_verifier_lead",
+            "H3_org_control_and_provenance_lead",
+            "D4_all_market_research_lead",
+            "D5_non_market_incentives_lead",
+            "D7_beyond_skillopt_lead",
+        ):
+            self.assertIn(req_id, leads)
+        self.assertIs(leads["T5_stage5_live_lane_read_only_audit"]["broker_credentials"], False)
+        self.assertIs(leads["T5_stage5_live_lane_read_only_audit"]["order_write_path"], False)
+        self.assertIs(leads["D5_non_market_incentives_lead"]["broker_credentials"], False)
+        self.assertIs(leads["D5_non_market_incentives_lead"]["order_write_path"], False)
+        self.assertEqual(leads["D4_all_market_research_lead"]["domain_hub_slug"], "04-research-all-market")
+        self.assertEqual(leads["D5_non_market_incentives_lead"]["domain_hub_slug"], "05-non-market-incentives")
+        self.assertEqual(leads["D7_beyond_skillopt_lead"]["domain_hub_slug"], "07-beyond-convergence-skillopt")
 
     def test_workflow_handovers_fail_closed_no_unconditional_none_risks(self) -> None:
         import re

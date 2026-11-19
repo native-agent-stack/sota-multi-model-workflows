@@ -41,7 +41,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 29,
+    "adrCount": 30,
     "records": [
       {
         "id": "ADR-0001",
@@ -489,6 +489,21 @@
         "githubUrls": [
           "https://github.com/native-agent-stack/sota-harness-foundation",
           "https://github.com/native-agent-stack/sota-mover-ranker",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/stablyai/orca"
+        ]
+      },
+      {
+        "id": "ADR-0030",
+        "layer": "Multi-Model Orca Runtime Workers, Full-Ecosystem `7/7` Domain Lead Roster & Pre-IPO Orchestration (`L7` \u00d7 `P0\u2013P5` \u00d7 `T0\u2013T8`)",
+        "title": "`v3.10.6` Complete `10`-Lead Multi-Model Orca Coverage Across All `7/7` Ecosystem Domain Hubs & Pre-IPO `2026-11-19` Grand Run",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "E4 (`10/10` Canonical Orca Lane Leads across `7/7` Domain Hubs, `8` Live Nested Worktrees on Stationary `Noesis`, Live Multi-Model Orca Run `run_5c51382bc888`, `28/28 pytest`, `0` Leaks)",
+        "file": "docs/adr/ADR-0030-v3106-ten-canonical-orca-lane-leads-across-seven-domain-hubs.md",
+        "githubUrls": [
+          "https://github.com/native-agent-stack/.github",
+          "https://github.com/native-agent-stack/native-agent-stack",
           "https://github.com/native-agent-stack/sota-multi-model-workflows",
           "https://github.com/stablyai/orca"
         ]

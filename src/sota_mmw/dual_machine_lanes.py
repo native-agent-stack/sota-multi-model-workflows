@@ -508,6 +508,73 @@ CANONICAL_ORCA_LANE_LEADS: dict[str, dict[str, Any]] = {
             "9-PRIVATE zero-burn firewall, and Canon MADR 4.0 provenance."
         ),
     },
+    "D4_all_market_research_lead": {
+        "lead_id": "D4_all_market_research_lead",
+        "worktree_name": "d4-all-market-research-lead",
+        "plane": "trading",
+        "macro_hub_lane": "T3_prewall_cpcv_gpu_and_strategy_factory",
+        "domain_hub_slug": "04-research-all-market",
+        "primary_repo": "canon",
+        "repos": ("canon", "sota-compounding-lab", "sota-mover-ranker", "trading-sota", "tsl"),
+        "active_host_policy": "STATIONARY_NOESIS_PRIMARY",
+        "active_host_pre_cutover": "stationary_noesis_win32",
+        "target_host_post_cutover": "stationary_noesis_win32",
+        "default_agent": "claude",
+        "default_model": "claude-fable-5-2",
+        "mode": "all_market_bitemporal_research",
+        "ports_observed": (),
+        "charter": (
+            "Own Lane 04 All-Market Quantitative Research across DF1..DF12 bitemporal PIT feeds, "
+            "equities/VIX/FX/crypto/futures/IPO cross-asset regimes, and SHA-256 pre-registered trials (H099+)."
+        ),
+    },
+    "D5_non_market_incentives_lead": {
+        "lead_id": "D5_non_market_incentives_lead",
+        "worktree_name": "d5-non-market-incentives-lead",
+        "plane": "trading",
+        "macro_hub_lane": "T1_live_24x5_alpaca_paper_and_guardian",
+        "domain_hub_slug": "05-non-market-incentives",
+        "primary_repo": "sota-mover-ranker",
+        "repos": ("sota-mover-ranker", "canon", "sota-compounding-lab", "sota-private-vault"),
+        "active_host_policy": "STATIONARY_NOESIS_PRIMARY",
+        "active_host_pre_cutover": "stationary_noesis_win32",
+        "target_host_post_cutover": "stationary_noesis_win32",
+        "default_agent": "claude",
+        "default_model": "claude-sonnet-5-5",
+        "mode": "read_only_sec_edgar_and_ipo_catalysts",
+        "broker_credentials": False,
+        "order_write_path": False,
+        "ports_observed": (),
+        "charter": (
+            "Own Lane 05 Non-Market Incentives & Catalysts: SEC EDGAR acceptanceDateTime PIT filings "
+            "(S-1/424B4/424B5/S-3 dilution shields, 8-K, 13F/Form-4), NASDAQ:ANT $83 IPO terms, FDA/Gov/Macro."
+        ),
+    },
+    "D7_beyond_skillopt_lead": {
+        "lead_id": "D7_beyond_skillopt_lead",
+        "worktree_name": "d7-beyond-skillopt-lead",
+        "plane": "harness",
+        "macro_hub_lane": "H2_cross_vendor_verifiers_and_shelf_lock",
+        "domain_hub_slug": "07-beyond-convergence-skillopt",
+        "primary_repo": "sota-upstream-shelf-lock",
+        "repos": (
+            "sota-upstream-shelf-lock",
+            "dsh-plugin-landscape",
+            "native-agent-stack",
+            "sota-multi-model-workflows",
+        ),
+        "active_host_policy": "STATIONARY_NOESIS_PRIMARY",
+        "active_host_pre_cutover": "stationary_noesis_win32",
+        "target_host_post_cutover": "stationary_noesis_win32",
+        "default_agent": "codex",
+        "default_model": "gpt-6.2-astra",
+        "mode": "upstream_shelf_and_skillopt_gepa_evolution",
+        "ports_observed": (),
+        "charter": (
+            "Own Lane 07 Beyond Convergence: 18 immutable 40-char upstream shelf pins, 413+6 frontier stars, "
+            "SkillOpt/GEPA trajectory mining into LESSONS.md, and 7-vendor cross-family adversarial convergence."
+        ),
+    },
 }
 
 
@@ -813,9 +880,7 @@ def render_orca_lane_hub_artifacts(plane: str) -> dict[str, str]:
         "laneLeads": lane_leads,
     }
     hub_title = (
-        "Trading Lanes (`T1–T3` + `T5` Read-Only Stage-5 Audit)"
-        if is_trading
-        else "Harness Lanes (`H1–H3` / `H0–H7`)"
+        "Trading Lanes (`T1–T3` + `T5` Read-Only Stage-5 Audit)" if is_trading else "Harness Lanes (`H1–H3` / `H0–H7`)"
     )
     orca_yaml = (
         f"# SOTA Dual-Machine Orca Folder Hub Recipe — {hub_title} (v3.10.4)\n"
@@ -994,7 +1059,12 @@ ECOSYSTEM_SEVEN_ORCA_DOMAIN_LANES: dict[str, dict[str, Any]] = {
         "failover_surface": "portable_mac_m5_max",
         "lead_agent": "antigravity-carbon",
         "worker_trio": ("antigravity-carbon", "claude-opus-falsifier", "codex-astra-omx"),
-        "repos": ("sota-upstream-shelf-lock", "dsh-plugin-landscape", "native-agent-stack", "sota-multi-model-workflows"),
+        "repos": (
+            "sota-upstream-shelf-lock",
+            "dsh-plugin-landscape",
+            "native-agent-stack",
+            "sota-multi-model-workflows",
+        ),
         "upstream_platforms": ("18-pinned-upstream-shelf", "SkillOpt/GEPA", "8-slot-Multi-Model-AO"),
         "invariants": "Immutable ~/Documents/upstream/ pins (PINS.md); zero reinvention; trajectory friction mining into ~/.agents/wiki/LESSONS.md; 7-vendor cross-family adversarial review.",
         "default_command": "sota-lanes matrix --json",
@@ -1024,7 +1094,7 @@ def render_domain_lane_hub_artifacts(slug: str) -> dict[str, str]:
         "setupAgentStartupPolicy: wait-for-setup\n"
         "scripts:\n"
         "  setup: |\n"
-        f"    echo \"[SOTA Orca Lane] {lane['title']} | gating={lane['gating_policy']} | lead={lane['lead_agent']}\"\n"
+        f'    echo "[SOTA Orca Lane] {lane["title"]} | gating={lane["gating_policy"]} | lead={lane["lead_agent"]}"\n'
         "defaultTabs:\n"
         "  - title: Lead Agent\n"
         f"  - title: {slug} Status\n"
@@ -1191,9 +1261,7 @@ def build_lanes_overview(*, plane: str = "all", mesh_state: str = "dual_mesh_doc
         "model_vendors_count": len(CANONICAL_SEVEN_MODEL_VENDORS),
         "stage_and_layer_sublanes_count": len(STAGE_AND_LAYER_SUBLANES),
         "lane_leads_count": len(CANONICAL_ORCA_LANE_LEADS),
-        "lane_leads": {
-            k: v for k, v in CANONICAL_ORCA_LANE_LEADS.items() if plane == "all" or v["plane"] == plane
-        },
+        "lane_leads": {k: v for k, v in CANONICAL_ORCA_LANE_LEADS.items() if plane == "all" or v["plane"] == plane},
         "trading_repos_count": len(trading_repos),
         "harness_repos_count": len(harness_repos),
         "total_provisioned_repos": len(REPO_LANE_INDEX),
@@ -1221,7 +1289,10 @@ def main(argv: list[str] | None = None) -> int:
     p_sh.add_argument("--all-domains", action="store_true", help="Also materialize all 7 Ecosystem Domain Lane Hubs")
     p_sh.add_argument("--json", action="store_true")
 
-    p_dm = sub.add_parser("domains", help="List all 7 Full-Ecosystem Orca Domain Lanes (Sim/Paper/Live/All-Market/Incentives/Framework/Beyond)")
+    p_dm = sub.add_parser(
+        "domains",
+        help="List all 7 Full-Ecosystem Orca Domain Lanes (Sim/Paper/Live/All-Market/Incentives/Framework/Beyond)",
+    )
     p_dm.add_argument("--json", action="store_true")
 
     p_rt = sub.add_parser("route", help="Resolve Dual-Machine surface & Orca worker-start command for a repository")
