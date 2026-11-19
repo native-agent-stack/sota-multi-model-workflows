@@ -1,18 +1,11 @@
-"""Grand Merit-Promotion Harness (`ADR-0027`, `sota-grand-merit-harness.v1`).
+"""Grand Merit-Promotion Harness (`ADR-0027`/`ADR-0028`, `sota-grand-merit-harness.v2`).
 
 Unifies:
-- **2 NEVER-GATED Sim/Backtest Lanes (`S1` Noesis Win32 64c/RTX4090 + `S2` Noesis-Carbon WSL2 Nautilus/QueueModel)**
-- **4 NEVER-GATED Multi-Paper Farm Accounts on Sovereign Mac M5 Max (`3` Distinct Alpaca Paper + `1` IBKR Paper `:4002`):**
-  - `PAPER_P1_ALPACA_LOSSLESS_FOUNDATION` (`Account C`, `canon-alpaca-paper-protect`, `:8799`, Conservative Lossless Live Mirror)
-  - `PAPER_P2_ALPACA_BALANCED_RANKER` (`Account B`, `canon-alpaca-paper-windows`, `:8787`, Balanced Whole-Market & IPO Core)
-  - `PAPER_P3_ALPACA_AGGRESSIVE_LAB` (`Account A`, `trading-sota-alpaca`, `:8797`, Aggressive Frontier Crucible)
-  - `PAPER_P4_IBKR_INSTITUTIONAL_4002` (`Account D`, `127.0.0.1:4002`, `DU...`, `3,000 req/min` Cross-Broker Parity)
-- **1 Proven-Automation-Only Stage-5 Lossless Live Lane (`LIVE_L5_STAGE5_LOSSLESS`, `:8798`, `ADR-0030`):**
-  - Never gated once merit-proven and lossless-protected; starts immediately with the **Lossless Foundation**
-    seeded by `P1` (`ADR-0022 <= 2.00%` stop / `:8799` guardian, `1,000 req/min` with `100/min` strict exit reserve,
-    `ADR-0024` lossless floor/runner ratchet, `-1.50%` daily drawdown breaker, zero PII/USD telemetry).
-- **Native Gemini-to-Orca Grand Orchestration:** Connects Antigravity native Gemini models (`run_workflow` WF20)
-  with `cc-lead` (`OMC v2`), `Codex OMX`, `DSH` (`deepseek-flash`), and Dual-Machine Orca Automations.
+- **Primary Always-On 24/5 Sovereign Workstation Host (`Noesis`, `stationary_noesis_win32`, `100.110.115.22`, 64c/128GB/RTX4090 + `Noesis-Carbon` WSL2):**
+  Hosts the Main Framework Foundation, `S1/S2` NEVER-GATED Sim lanes, all `4` NEVER-GATED Paper Farm accounts (`:8799`, `:8787`, `:8797`, `:4002`), Proven-Only Stage-5 Lossless Live (`:8798`), 4K TradingView, and scheduled Orca Automations.
+- **Portable Command Cockpit & Hot Failover Host (`MacBook Pro M5 Max`, `portable_mac_m5_max`, `100.93.211.101`):**
+  Interactive control plane (read-only mirror when Noesis is primary) and explicit single-host failover when workstation is offline or during cutover.
+- **Strict `single_active_broker_host_only = True`:** Never dual-active on both machines simultaneously.
 """
 
 from __future__ import annotations
@@ -91,7 +84,7 @@ GRAND_MERIT_EXECUTION_LANES: dict[str, dict[str, Any]] = {
         "keychain_service": "canon-alpaca-paper-protect",
         "port": 8799,
         "rate_limit_rpm": 1000,
-        "primary_surface": "portable_mac_m5_max",
+        "primary_surface": "stationary_noesis_win32",
         "failover_surface": "portable_mac_m5_max",
         "single_active_broker_host_only": True,
         "macro_hub_lane": "T1_live_24x5_alpaca_paper_and_guardian",
@@ -120,7 +113,7 @@ GRAND_MERIT_EXECUTION_LANES: dict[str, dict[str, Any]] = {
         "keychain_service": "canon-alpaca-paper-windows",
         "port": 8787,
         "rate_limit_rpm": 1000,
-        "primary_surface": "portable_mac_m5_max",
+        "primary_surface": "stationary_noesis_win32",
         "failover_surface": "portable_mac_m5_max",
         "single_active_broker_host_only": True,
         "macro_hub_lane": "T1_live_24x5_alpaca_paper_and_guardian",
@@ -149,7 +142,7 @@ GRAND_MERIT_EXECUTION_LANES: dict[str, dict[str, Any]] = {
         "keychain_service": "trading-sota-alpaca",
         "port": 8797,
         "rate_limit_rpm": 1000,
-        "primary_surface": "portable_mac_m5_max",
+        "primary_surface": "stationary_noesis_win32",
         "failover_surface": "portable_mac_m5_max",
         "single_active_broker_host_only": True,
         "macro_hub_lane": "T1_live_24x5_alpaca_paper_and_guardian",
@@ -179,7 +172,7 @@ GRAND_MERIT_EXECUTION_LANES: dict[str, dict[str, Any]] = {
         "keychain_service": "ibkr-gateway-paper-4002",
         "port": 4002,
         "rate_limit_rpm": 3000,
-        "primary_surface": "portable_mac_m5_max",
+        "primary_surface": "stationary_noesis_win32",
         "failover_surface": "portable_mac_m5_max",
         "single_active_broker_host_only": True,
         "macro_hub_lane": "T2_ibkr_paper_4002_and_event_sim_parity",
@@ -209,7 +202,7 @@ GRAND_MERIT_EXECUTION_LANES: dict[str, dict[str, Any]] = {
         "rate_limit_rpm": 1000,
         "protective_exit_reserve_rpm": 100,
         "daily_drawdown_breaker_pct": -1.50,
-        "primary_surface": "portable_mac_m5_max",
+        "primary_surface": "stationary_noesis_win32",
         "failover_surface": "portable_mac_m5_max",
         "single_active_broker_host_only": True,
         "macro_hub_lane": "T1_live_24x5_alpaca_paper_and_guardian",
@@ -243,9 +236,14 @@ GEMINI_TO_ORCA_ORCHESTRATION_MAP: dict[str, dict[str, Any]] = {
         "owns": "Lane S2: NEVER-GATED POSIX queue, spread, halt, collar & Lossless Foundation parity simulation",
         "orca_target": "--on 100.110.115.22",
     },
-    "sovereign_mac_broker_farm": {
-        "runtime": "Mac M5 Max Sovereign Broker Host (100.93.211.101)",
-        "owns": "4 NEVER-GATED Paper Accounts (:8799 P1, :8787 P2, :8797 P3, :4002 P4) + Proven-Only Stage-5 Lossless Live (:8798)",
+    "sovereign_workstation_trading_engine": {
+        "runtime": "Stationary Noesis Workstation (100.110.115.22, 64c/128GB/RTX4090 + Noesis-Carbon WSL2)",
+        "owns": "Primary 24/5 Main Framework Foundation + 4 NEVER-GATED Paper Accounts (:8799 P1, :8787 P2, :8797 P3, :4002 P4) + Proven-Only Stage-5 Live (:8798) + 4K TradingView",
+        "orca_target": "--on 100.110.115.22",
+    },
+    "portable_mac_command_cockpit_and_failover": {
+        "runtime": "Portable MacBook Pro M5 Max (100.93.211.101, 64GB)",
+        "owns": "Portable Command Cockpit (read-only mirror of 100.110.115.22 while Noesis is active) + Explicit Single-Host Hot Failover when Workstation offline",
         "orca_target": "local (portable_mac_m5_max)",
     },
 }
@@ -431,7 +429,10 @@ def build_grand_merit_harness_manifest() -> dict[str, Any]:
     payload: dict[str, Any] = {
         "ok": True,
         "schema_version": MERIT_HARNESS_SCHEMA_VERSION,
-        "adr": "ADR-0027",
+        "adr": "ADR-0028",
+        "primary_sovereign_host": "stationary_noesis_win32",
+        "portable_cockpit_and_failover_host": "portable_mac_m5_max",
+        "single_active_broker_host_only": True,
         "counts": {
             "total_execution_lanes": len(GRAND_MERIT_EXECUTION_LANES),
             "sim_lanes_never_gated": len(sim_lanes),

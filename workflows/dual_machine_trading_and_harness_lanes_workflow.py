@@ -70,17 +70,33 @@ target_route = resolve_dual_machine_lane_plan(
     requested_placement=placement,
 )
 
-# Deterministically verify single-broker-host firewall refusal on Noesis
-broker_firewall_verified = False
+# Deterministically verify symmetric single-broker-host firewall (ADR-0028):
+# (a) Primary Noesis blocks simultaneous local Mac broker; (b) Failover Mac blocks simultaneous Noesis broker.
+firewall_primary_ok = False
+try:
+    resolve_dual_machine_lane_plan(
+        "sota-mover-ranker",
+        workload="active_paper_broker",
+        mesh_state="dual_mesh_docked",
+        requested_placement="local",
+        active_broker_host="stationary_noesis_win32",
+    )
+except PermissionError:
+    firewall_primary_ok = True
+
+firewall_failover_ok = False
 try:
     resolve_dual_machine_lane_plan(
         "sota-mover-ranker",
         workload="active_paper_broker",
         mesh_state="dual_mesh_docked",
         requested_placement="noesis",
+        active_broker_host="portable_mac_m5_max",
     )
 except PermissionError:
-    broker_firewall_verified = True
+    firewall_failover_ok = True
+
+broker_firewall_verified = firewall_primary_ok and firewall_failover_ok
 
 orca_yaml_present: dict[str, bool] = {}
 for repo_name in sorted(REPO_LANE_INDEX):

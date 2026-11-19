@@ -954,7 +954,7 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertFalse(t3_roaming["use_noesis"])
         self.assertNotIn("--on", t3_roaming["orca_worker_start_argv"])
 
-        # 3. T2 meridian event-sim routes to stationary_noesis_carbon_wsl2; astrolabe default stays on Mac
+        # 3. T2 meridian event-sim routes to stationary_noesis_carbon_wsl2; astrolabe IBKR primary is stationary_noesis_win32
         t2_meridian = resolve_dual_machine_lane_plan("meridian", mesh_state="dual_mesh_docked")
         self.assertEqual(t2_meridian["selected_surface"], "stationary_noesis_carbon_wsl2")
         t2_astrolabe = resolve_dual_machine_lane_plan(
@@ -962,20 +962,46 @@ class TestMultiModelWorkflows(unittest.TestCase):
             mesh_state="dual_mesh_docked",
             local_orca_repo_id="00000000-0000-0000-0000-000000000002",
         )
-        self.assertEqual(t2_astrolabe["selected_surface"], "portable_mac_m5_max")
+        self.assertEqual(t2_astrolabe["selected_surface"], "stationary_noesis_win32")
+        t2_astrolabe_fo = resolve_dual_machine_lane_plan(
+            "astrolabe",
+            mesh_state="portable_roaming_battery",
+            local_orca_repo_id="00000000-0000-0000-0000-000000000002",
+        )
+        self.assertEqual(t2_astrolabe_fo["selected_surface"], "portable_mac_m5_max")
 
-        # 4. Single-Broker-Host Firewall (ADR-0020) hard-blocks active paper broker sockets on Noesis
+        # 4. Symmetric Single-Broker-Host Firewall (ADR-0028):
+        #    (a) Default primary stationary_noesis_win32 blocks dual local broker on portable Mac while mesh online
+        with self.assertRaises(PermissionError):
+            resolve_dual_machine_lane_plan(
+                "sota-mover-ranker",
+                workload="active_paper_broker",
+                requested_placement="local",
+                mesh_state="dual_mesh_docked",
+            )
+        #    (b) Explicit failover portable_mac_m5_max blocks dual broker on Noesis
         with self.assertRaises(PermissionError):
             resolve_dual_machine_lane_plan(
                 "sota-mover-ranker",
                 workload="active_paper_broker",
                 requested_placement="noesis",
+                active_broker_host="portable_mac_m5_max",
             )
 
         err_buf = io.StringIO()
         with mock.patch("sys.stderr", err_buf):
             rc_blocked = dml.main(
-                ["route", "--repo", "sota-mover-ranker", "--workload", "active_paper_broker", "--placement", "noesis"]
+                [
+                    "route",
+                    "--repo",
+                    "sota-mover-ranker",
+                    "--workload",
+                    "active_paper_broker",
+                    "--placement",
+                    "noesis",
+                    "--active-broker-host",
+                    "portable_mac_m5_max",
+                ]
             )
         self.assertEqual(rc_blocked, 2)
         self.assertEqual(json.loads(err_buf.getvalue())["reason"], "SINGLE_BROKER_HOST_FIREWALL")
@@ -1624,12 +1650,13 @@ class TestMultiModelWorkflows(unittest.TestCase):
             self.assertIn("--environment", env_mac["orca_worker_release_template"])
             self.assertNotIn("--on", env_mac["orca_worker_release_template"])
 
-        # 3. Broker-pinned repo (sota-mover-ranker) invoked ON Noesis emits --on 100.93.211.101 + Mac hub 4cf80c7f
+        # 3a. Failover Mac broker lease invoked ON Noesis emits --on 100.93.211.101 + Mac hub 4cf80c7f
         with mock.patch.object(dml, "is_running_on_noesis_host", return_value=True):
             for pl_mode in ("local", "auto"):
                 broker_plan = dml.resolve_dual_machine_lane_plan(
                     "sota-mover-ranker",
                     requested_placement=pl_mode,
+                    active_broker_host="portable_mac_m5_max",
                 )
                 self.assertEqual(broker_plan["selected_surface"], "portable_mac_m5_max")
                 self.assertEqual(broker_plan["orca_repo_selector"], "name:sota-mover-ranker")
@@ -1639,6 +1666,16 @@ class TestMultiModelWorkflows(unittest.TestCase):
                 )
                 self.assertIn("100.93.211.101", broker_plan["orca_worker_start_argv"])
                 self.assertIn("100.93.211.101", broker_plan["orca_folder_worktree_cmd"])
+
+        # 3b. Default Primary Workstation Noesis broker invoked ON Mac emits --on 100.110.115.22 + Noesis hub c4f93f9e
+        with mock.patch.object(dml, "is_running_on_noesis_host", return_value=False):
+            ws_plan = dml.resolve_dual_machine_lane_plan("sota-mover-ranker", requested_placement="auto")
+            self.assertEqual(ws_plan["selected_surface"], "stationary_noesis_win32")
+            self.assertEqual(
+                ws_plan["orca_parent_worktree_selector"],
+                "folder:c4f93f9e-a710-4599-ac95-892082b03ec8",
+            )
+            self.assertIn("100.110.115.22", ws_plan["orca_worker_start_argv"])
 
     def test_v3102_adr0026_nan_inf_fail_closed_decision_ns_wall_and_feed_key_bijection(self) -> None:
         from sota_mmw import cc_lead_hub as cch
@@ -1807,7 +1844,18 @@ class TestMultiModelWorkflows(unittest.TestCase):
             rc_m = dml.main(["merit", "--json"])
         self.assertEqual(rc_m, 0)
         cli_out = json.loads(buf.getvalue())
-        self.assertEqual(cli_out["adr"], "ADR-0027")
+        self.assertEqual(cli_out["adr"], "ADR-0028")
+        self.assertEqual(cli_out["primary_sovereign_host"], "stationary_noesis_win32")
+        self.assertEqual(cli_out["portable_cockpit_and_failover_host"], "portable_mac_m5_max")
+        for lane_id in (
+            "PAPER_P1_ALPACA_LOSSLESS_FOUNDATION",
+            "PAPER_P2_ALPACA_BALANCED_RANKER",
+            "PAPER_P3_ALPACA_AGGRESSIVE_LAB",
+            "PAPER_P4_IBKR_INSTITUTIONAL_4002",
+            "LIVE_L5_STAGE5_LOSSLESS",
+        ):
+            self.assertEqual(cli_out["lanes"][lane_id]["primary_surface"], "stationary_noesis_win32")
+            self.assertEqual(cli_out["lanes"][lane_id]["failover_surface"], "portable_mac_m5_max")
 
         wf20_src = (ROOT / "workflows" / "grand_merit_harness_workflow.py").read_text(encoding="utf-8")
         ns20: dict[str, object] = {

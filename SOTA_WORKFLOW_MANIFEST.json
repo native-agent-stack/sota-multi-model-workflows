@@ -41,7 +41,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 27,
+    "adrCount": 28,
     "records": [
       {
         "id": "ADR-0001",
@@ -459,6 +459,22 @@
           "https://github.com/native-agent-stack/sota-multi-model-workflows",
           "https://github.com/nautechsystems/nautilus_trader",
           "https://github.com/nkaz001/hftbacktest",
+          "https://github.com/stablyai/orca"
+        ]
+      },
+      {
+        "id": "ADR-0028",
+        "layer": "`L0..L13` x `T1..T5` x `H0..H7` (Stationary Workstation Primary Hosting & Symmetric Single-Broker-Host Firewall)",
+        "title": "`v3.10.4` Stationary Workstation (`Noesis`) Primary Always-On `24/5` Host for Main Framework Foundation & Trading Engine; Portable Mac Cockpit & Hot Failover",
+        "status": "Accepted",
+        "date": "2026-11-18",
+        "evidenceGrade": "`E4` (`28/28` ADRs, `pytest`, `ruff`, `ty`, `merge_gate.py`, `sota-lanes merit --json` & `WF20` verified, `gitleaks` `0` Leaks)",
+        "file": "docs/adr/ADR-0028-v3104-stationary-workstation-primary-host-and-portable-mac-failover.md",
+        "githubUrls": [
+          "https://github.com/native-agent-stack/sota-dynamic-trail-c",
+          "https://github.com/native-agent-stack/sota-harness-foundation",
+          "https://github.com/native-agent-stack/sota-mover-ranker",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
           "https://github.com/stablyai/orca"
         ]
       }

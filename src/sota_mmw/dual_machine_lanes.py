@@ -174,19 +174,22 @@ DUAL_MACHINE_SURFACES: dict[str, dict[str, Any]] = {
         "platform": "darwin-arm64",
         "tailscale_ip": "100.93.211.101",
         "orca_port": 6770,
-        "sovereign_paper_broker_host": True,
-        "paper_lanes": ("127.0.0.1:8787", "127.0.0.1:8799", "127.0.0.1:4002"),
+        "sovereign_paper_broker_host": False,
+        "portable_command_cockpit_and_failover": True,
+        "failover_paper_lanes": ("127.0.0.1:8787", "127.0.0.1:8799", "127.0.0.1:8797", "127.0.0.1:4002", "127.0.0.1:8798"),
         "workspace_roots": ("~/Documents/*", "~/sota-dynamic-trail-c", "~/canon"),
-        "role": "Sovereign single-broker paper host (:8787/:8799/:4002), interactive CC-Lead/AGY cockpit & roaming failover",
+        "role": "Portable command cockpit, interactive CC-Lead/AGY lead, read-only mirror of Noesis (100.110.115.22) & explicit single-host hot failover",
     },
     "stationary_noesis_win32": {
         "workstation": "AMD Threadripper (64 logical cores, 128 GB RAM) + NVIDIA GeForce RTX 4090 (24,564 MiB)",
         "platform": "win32",
         "tailscale_ip": "100.110.115.22",
         "orca_port": 6770,
-        "sovereign_paper_broker_host": False,
+        "sovereign_paper_broker_host": True,
+        "primary_framework_and_trading_engine": True,
+        "paper_lanes": ("127.0.0.1:8787", "127.0.0.1:8799", "127.0.0.1:8797", "127.0.0.1:4002", "127.0.0.1:8798"),
         "workspace_roots": ("C:/sota-workstation/* (18 repos)", "Z:/sota-data/prewall-lake (2.85 TB NVMe)"),
-        "role": "56-thread / RTX 4090 pre-wall CPCV/DSR sweeps, parked-terminal workers & Win32 CI parity",
+        "role": "Primary always-on 24/5 Sovereign Host for Main Framework Foundation, 4-Account Paper Farm + Stage-5 Live Trading Engine (:8787/:8799/:8797/:4002/:8798), 4K TradingView & 56c/RTX4090 CPCV sweeps",
     },
     "stationary_noesis_carbon_wsl2": {
         "workstation": "Noesis-Carbon (Linux 6.18.58.1-microsoft-standard-WSL2, native ext4)",
@@ -204,14 +207,14 @@ TRADING_LANES: dict[str, dict[str, Any]] = {
         "lane_id": "T1_live_24x5_alpaca_paper_and_guardian",
         "plane": "trading",
         "repos": ("sota-mover-ranker", "sota-dynamic-trail-c"),
-        "primary_surface": "portable_mac_m5_max",
+        "primary_surface": "stationary_noesis_win32",
         "failover_surface": "portable_mac_m5_max",
         "single_active_broker_host_only": True,
-        "allows_noesis_broker_socket": False,
+        "allows_noesis_broker_socket": True,
         "default_worker_trio": ("claude-opus-falsifier", "codex-astra-omx", "antigravity-carbon"),
         "invariants": (
-            "Strictly portable_mac_m5_max (:8787/:8799); PA... <=200 req/min; "
-            "ADR-0022 <=2.00% hard stop; sota-ranking-datafeeds.v3.8 (DF1..DF9, supersedes sota-research-feeds.v2)"
+            "Primary always-on stationary_noesis_win32 (:8787/:8799/:8797/:8798) with explicit single-host failover "
+            "portable_mac_m5_max; PA... 1,000 req/min; ADR-0022 <=2.00% hard stop; DF1..DF12 PIT"
         ),
     },
     "T2_ibkr_paper_4002_and_event_sim_parity": {
@@ -219,13 +222,13 @@ TRADING_LANES: dict[str, dict[str, Any]] = {
         "plane": "trading",
         "repos": ("astrolabe", "meridian"),
         "primary_surface": "stationary_noesis_carbon_wsl2",
-        "broker_surface": "portable_mac_m5_max",
+        "broker_surface": "stationary_noesis_win32",
         "failover_surface": "portable_mac_m5_max",
         "single_active_broker_host_only": True,
-        "allows_noesis_broker_socket": False,
+        "allows_noesis_broker_socket": True,
         "default_worker_trio": ("claude-opus-falsifier", "codex-astra-omx", "deepseek-dsh"),
         "invariants": (
-            "IBKR :4002 DU... paper gateway strictly portable_mac_m5_max (4001/7496 hard-refused); "
+            "IBKR :4002 DU... paper gateway primary on stationary_noesis_win32 (4001/7496 gated); "
             "NautilusTrader / RiskAdverseQueueModel -n 8 simulation on stationary_noesis_carbon_wsl2"
         ),
     },
@@ -237,7 +240,7 @@ TRADING_LANES: dict[str, dict[str, Any]] = {
         "companion_surface": "stationary_noesis_carbon_wsl2",
         "failover_surface": "portable_mac_m5_max",
         "single_active_broker_host_only": True,
-        "allows_noesis_broker_socket": False,
+        "allows_noesis_broker_socket": True,
         "default_worker_trio": ("claude-opus-falsifier", "codex-astra-omx", "deepseek-dsh"),
         "invariants": (
             "Pre-wall <=2026-10-15 CPCV/DSR/RTX 4090 sweeps on Z:/sota-data/prewall-lake "
@@ -251,18 +254,18 @@ HARNESS_LANES: dict[str, dict[str, Any]] = {
         "lane_id": "H1_sovereign_cc_lead_and_multi_runtime_hub",
         "plane": "harness",
         "repos": ("cc-sota-harness", "sota-harness-foundation", "sota-multi-model-workflows"),
-        "primary_surface": "portable_mac_m5_max",
-        "paired_surface": "stationary_noesis_win32",
+        "primary_surface": "stationary_noesis_win32",
+        "paired_surface": "portable_mac_m5_max",
         "failover_surface": "portable_mac_m5_max",
         "default_worker_trio": ("claude-sonnet-omc", "codex-astra-omx", "antigravity-carbon"),
-        "invariants": "Sovereign CC-Lead (OMC v2) + 16-workflow v3.9.0 AGY/Orca hub + cross-OS Win32/WSL2/macOS CI parity",
+        "invariants": "Stationary Noesis Main Framework Foundation + 20-workflow v3.10.4 AGY/Orca hub + Portable Mac cockpit parity",
     },
     "H2_cross_vendor_verifiers_and_shelf_lock": {
         "lane_id": "H2_cross_vendor_verifiers_and_shelf_lock",
         "plane": "harness",
         "repos": ("agy-sota-harness", "dsh-sota-harness", "dsh-plugin-landscape", "sota-upstream-shelf-lock"),
-        "primary_surface": "portable_mac_m5_max",
-        "paired_surface": "stationary_noesis_carbon_wsl2",
+        "primary_surface": "stationary_noesis_carbon_wsl2",
+        "paired_surface": "portable_mac_m5_max",
         "failover_surface": "portable_mac_m5_max",
         "default_worker_trio": ("antigravity-carbon", "codex-astra-omx", "deepseek-dsh"),
         "invariants": "18-repo 40-hex upstream SHA lock, 13/13 AGY probes, 10/10 DSH probes & MinTRL/QueueModel gates",
@@ -271,8 +274,8 @@ HARNESS_LANES: dict[str, dict[str, Any]] = {
         "lane_id": "H3_org_control_plane_and_provenance",
         "plane": "harness",
         "repos": ("native-agent-stack", ".github", "canon"),
-        "primary_surface": "portable_mac_m5_max",
-        "paired_surface": "stationary_noesis_win32",
+        "primary_surface": "stationary_noesis_win32",
+        "paired_surface": "portable_mac_m5_max",
         "failover_surface": "portable_mac_m5_max",
         "default_worker_trio": ("claude-sonnet-omc", "codex-astra-omx", "antigravity-carbon"),
         "invariants": "Umbrella v3.x lock, reusable SHA-pinned Org CI, 4-invariant sota-org-doctor & Canon provenance",
@@ -371,6 +374,7 @@ def resolve_dual_machine_lane_plan(
     requested_placement: str = "auto",
     local_orca_repo_id: str | None = None,
     active_broker_host_shield: bool = False,
+    active_broker_host: str = "stationary_noesis_win32",
 ) -> dict[str, Any]:
     """Deterministically resolve surface, Orca `worker-start` command, and >=3-vendor worker trio for `repo`."""
     lane = REPO_LANE_INDEX.get(repo)
@@ -378,28 +382,43 @@ def resolve_dual_machine_lane_plan(
         raise ValueError(f"Unknown ecosystem repository {repo!r}; valid={sorted(REPO_LANE_INDEX)}")
     if requested_placement not in ("auto", "local", "noesis"):
         raise ValueError(f"Invalid requested_placement {requested_placement!r}; expected auto|local|noesis")
+    if active_broker_host not in ("stationary_noesis_win32", "portable_mac_m5_max"):
+        raise ValueError(
+            f"Invalid active_broker_host {active_broker_host!r}; expected stationary_noesis_win32|portable_mac_m5_max"
+        )
 
     lane_id = str(lane["lane_id"])
     plane = str(lane["plane"])
-
-    # Hard Single-Broker-Host Firewall (ADR-0020): active paper broker sockets never run on Noesis
+    mesh_online = mesh_state in ("dual_mesh_docked", "dual_mesh_on_battery")
     is_broker_bound = workload == "active_paper_broker" or (
         lane_id == "T1_live_24x5_alpaca_paper_and_guardian" and workload == "default"
     )
-    if requested_placement == "noesis" and (workload == "active_paper_broker" or is_broker_bound):
-        raise PermissionError(
-            f"SINGLE_BROKER_HOST_FIREWALL: active paper broker workload on {repo!r} ({lane_id}) "
-            "is strictly pinned to portable_mac_m5_max (singleActiveBrokerHostOnly=True)"
-        )
+    is_ibkr_broker = repo == "astrolabe" and workload in ("default", "active_paper_broker")
 
-    mesh_online = mesh_state in ("dual_mesh_docked", "dual_mesh_on_battery")
-
-    if (
-        is_broker_bound
-        or (repo == "astrolabe" and workload in ("default", "active_paper_broker"))
-        or requested_placement == "local"
-        or not mesh_online
-    ):
+    # Symmetric Single-Broker-Host Firewall (ADR-0028): <=1 active broker host at any instant!
+    # Default primary: stationary_noesis_win32 (100.110.115.22); explicit failover: portable_mac_m5_max.
+    if is_broker_bound or is_ibkr_broker:
+        if active_broker_host == "stationary_noesis_win32" and mesh_online:
+            if requested_placement == "local":
+                raise PermissionError(
+                    f"SINGLE_BROKER_HOST_FIREWALL: active broker workload on {repo!r} ({lane_id}) "
+                    "is pinned to primary stationary_noesis_win32 while mesh is online (singleActiveBrokerHostOnly=True)"
+                )
+            selected_surface = "stationary_noesis_win32"
+            use_noesis = True
+        elif active_broker_host == "portable_mac_m5_max":
+            if requested_placement == "noesis":
+                raise PermissionError(
+                    f"SINGLE_BROKER_HOST_FIREWALL: active broker workload on {repo!r} ({lane_id}) "
+                    "is pinned to failover portable_mac_m5_max while Mac holds active lease (singleActiveBrokerHostOnly=True)"
+                )
+            selected_surface = "portable_mac_m5_max"
+            use_noesis = False
+        else:
+            # Workstation unreachable -> seamless portable Mac failover
+            selected_surface = "portable_mac_m5_max"
+            use_noesis = False
+    elif requested_placement == "local" or not mesh_online:
         selected_surface = "portable_mac_m5_max"
         use_noesis = False
     elif requested_placement == "noesis":
@@ -411,7 +430,7 @@ def resolve_dual_machine_lane_plan(
         else:
             selected_surface = "stationary_noesis_win32"
     else:
-        # requested_placement == "auto" and mesh_online
+        # requested_placement == "auto" and mesh_online -> Workstation hosts Main Framework Foundation & Sim
         if lane_id == "T2_ibkr_paper_4002_and_event_sim_parity" and (
             repo == "meridian" or workload == "event_sim_parity"
         ):
@@ -425,17 +444,20 @@ def resolve_dual_machine_lane_plan(
                 "stationary_noesis_carbon_wsl2" if workload == "wsl2_posix_gate" else "stationary_noesis_win32"
             )
             use_noesis = True
+        elif plane == "harness" and workload == "default":
+            selected_surface = str(lane.get("primary_surface") or "stationary_noesis_win32")
+            use_noesis = selected_surface != "portable_mac_m5_max"
         elif (mesh_state == "dual_mesh_on_battery" or active_broker_host_shield) and workload in (
             "heavy_test_sweep",
             "cross_os_ci_parity",
         ):
-            selected_surface = str(lane.get("paired_surface") or "stationary_noesis_carbon_wsl2")
+            selected_surface = str(lane.get("primary_surface") or "stationary_noesis_carbon_wsl2")
             use_noesis = True
         else:
             selected_surface = "portable_mac_m5_max"
             use_noesis = False
 
-    is_mac_pinned = is_broker_bound or (repo == "astrolabe" and workload in ("default", "active_paper_broker"))
+    is_mac_pinned = (is_broker_bound or is_ibkr_broker) and selected_surface == "portable_mac_m5_max"
     on_noesis_self = is_running_on_noesis_host()
     if is_mac_pinned:
         if on_noesis_self:
@@ -789,6 +811,11 @@ def main(argv: list[str] | None = None) -> int:
     p_rt.add_argument("--placement", default="auto", choices=("auto", "local", "noesis"))
     p_rt.add_argument("--mesh-state", default="")
     p_rt.add_argument("--active-broker-shield", action="store_true")
+    p_rt.add_argument(
+        "--active-broker-host",
+        default="stationary_noesis_win32",
+        choices=("stationary_noesis_win32", "portable_mac_m5_max"),
+    )
 
     p_dg = sub.add_parser("dag", help="Build a 3-stage persistent Beads (bd) + Orca (--deps / gate-create) wave DAG")
     p_dg.add_argument("--goal", default="Land v3.9.8 co-op convergence wave across leaf -> harness -> umbrella seal")
@@ -848,6 +875,7 @@ def main(argv: list[str] | None = None) -> int:
             mesh_state=eff_mesh,
             requested_placement=args.placement,
             active_broker_host_shield=bool(getattr(args, "active_broker_shield", False)),
+            active_broker_host=str(getattr(args, "active_broker_host", "stationary_noesis_win32")),
         )
     except PermissionError as exc:
         print(
