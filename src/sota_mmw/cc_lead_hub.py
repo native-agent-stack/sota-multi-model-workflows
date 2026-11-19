@@ -1,13 +1,13 @@
-"""Claude Code (`cc-lead` + `OMC` v2) Central Multi-Session & Multi-Runtime Worker Hub.
+"""Claude Code (`cc-lead` + `OMC` v2) Central Multi-Session & Multi-Runtime Worker Hub (`v3.10.8`).
 
 Positions Claude Code (`claude-fable-5-2` `xhigh` + `oh-my-claudecode` `OMC` runtime v2)
 as the sovereign architectural & goal orchestrator (`oneModelPerConversation = True`)
 dispatching isolated worktree and cross-session workers across:
 1. `omc ultragoal` + Claude `/goal` (durable `.omc/ultragoal/` multi-session ledger)
 2. `omc team` & `omc interop` (`OMC_RUNTIME_V2=1` multi-vendor tmux worktree swarms)
-3. `omc ask` & `omx exec` / `omx mission` (`gpt-6.2-astra` / `gpt-6.2-sol` / `gemini-4-carbon-high` / `grok-4.7` / `muse-spark-1.3`)
+3. `omc ask` & `omx exec` / `omx mission` (`gpt-6.2-astra` / `gpt-6.2-sol` / `gemini-4-neon-xhigh` / `gemini-4-carbon-high` / `muse-spark-1.3`)
 4. `orca orchestration worker-start` (`Mac M5 Max <-> Noesis 64c/128GB/RTX4090` supervised DAG workers, zero polling)
-5. Polyglot Open-Weights & Bus (`opencode`/`OMO` `claude-sonnet-5-5` non-GPT `Hephaestus`, `dsh` `deepseek-flash`, `pi`/`omp`, `goose`, `hcom`, SQLite WAL `sota-bus`)
+5. Polyglot Open-Weights & Bus (`opencode`/`OMO` `claude-sonnet-5-5` non-GPT `Hephaestus`, `dsh` `deepseek-flash`, `pi`/`omp`, `hcom`, SQLite WAL `sota-bus`)
 """
 
 from __future__ import annotations
@@ -88,7 +88,14 @@ QUALITY_DIRECTIVE_POWERHOUSE_FLEET: dict[str, dict[str, Any]] = {
     "google_deepmind_antigravity": {
         "vendor": "Google DeepMind",
         "benchmark_authority": "https://artificialanalysis.ai/models (Intelligence v5.0.1 #3 & #1 1M+ Context)",
-        "model": "gemini-4-carbon-high",
+        "model": "gemini-4-neon-xhigh",
+        "companion_models": (
+            "gemini-4-neon-high",
+            "gemini-pro-orchestrator-neon",
+            "gemini-4-carbon-high",
+            "gemini-4-hydrogen-xhigh",
+            "gemini-4-argon-high",
+        ),
         "runtimes": ("antigravity",),
         "default_effort": "high",
     },
@@ -119,11 +126,12 @@ ENHANCED_8_RUNTIME_SOTA_PROFILES: dict[str, dict[str, Any]] = {
         "sota_enhancements": ("PreToolUse_live_capital_firewall", "stdin_devnull_exec", "skip_git_repo_check"),
     },
     "antigravity": {
-        "lead_model": "gemini-4-carbon-high",
+        "lead_model": "gemini-4-neon-xhigh",
+        "companion_model": "gemini-4-carbon-high",
         "context_window": "1M+",
         "effort": "high",
         "mcps_verified": 4,
-        "sota_enhancements": ("native_run_workflow_19", "protobuf_safe_mcp", "8stage_convergence"),
+        "sota_enhancements": ("native_run_workflow_21", "protobuf_safe_mcp", "8stage_convergence"),
     },
     "deepseek-dsh": {
         "lead_model": "deepseek-flash",
@@ -144,19 +152,87 @@ ENHANCED_8_RUNTIME_SOTA_PROFILES: dict[str, dict[str, Any]] = {
         "mcps_verified": 4,
         "sota_enhancements": ("worker_role_routing", "cross_os_json_parity"),
     },
-    "goose": {
-        "lead_model": "explicit_honest_availability_probe",
+    "muse-critic": {
+        "lead_model": "muse-spark-1.3",
         "effort": "high",
         "mcps_verified": 4,
-        "sota_enhancements": ("honest_exit_127_shim_when_uninstalled", "aaif_mcp_recipe_contract"),
+        "sota_enhancements": ("independent_cross_vendor_critic", "orca_muse_worker"),
     },
     "orca": {
-        "lead_model": "stablyai/orca_v1.4.261_supervisor",
+        "lead_model": "stablyai/orca_v1.4.263_supervisor",
         "effort": "xhigh",
         "mcps_verified": 4,
         "sota_enhancements": ("cc-lead_automations", "worker_start_child_worktree", "zero_polling_6770"),
     },
 }
+
+ORCA_RUNTIME_WORKER_DEFAULTS: dict[str, dict[str, Any]] = {
+    "claude": {
+        "default_model": "claude-fable-5-2",
+        "worker_models": ("claude-fable-5-2", "claude-opus-5-5", "claude-sonnet-5-5"),
+        "default_effort": "xhigh",
+        "supports_cli_model_flag": True,
+        "extra_agent_args": "--model claude-fable-5-2 --effort xhigh",
+    },
+    "codex": {
+        "default_model": "gpt-6.2-astra",
+        "worker_models": ("gpt-6.2-astra", "gpt-6.2-sol"),
+        "default_effort": "xhigh",
+        "supports_cli_model_flag": True,
+        "extra_agent_args": "--model gpt-6.2-astra -c model_reasoning_effort=xhigh",
+    },
+    "antigravity": {
+        "default_model": "gemini-4-neon-xhigh",
+        "worker_models": ("gemini-4-neon-xhigh", "gemini-4-neon-high", "gemini-4-carbon-high"),
+        "default_effort": "high",
+        "supports_cli_model_flag": True,
+        "extra_agent_args": "--model gemini-4-neon-xhigh --effort high",
+    },
+    "gemini": {
+        "default_model": "gemini-4-neon-high",
+        "worker_models": ("gemini-4-neon-high", "gemini-4-carbon-high"),
+        "default_effort": "high",
+        "supports_cli_model_flag": False,
+        "extra_agent_args": "",
+    },
+    "opencode": {
+        "default_model": "anthropic/claude-sonnet-5-5",
+        "worker_models": ("anthropic/claude-sonnet-5-5", "deepseek/deepseek-flash"),
+        "default_effort": "high",
+        "supports_cli_model_flag": False,
+        "extra_agent_args": "",
+    },
+    "dsh": {
+        "default_model": "deepseek-flash",
+        "worker_models": ("deepseek-flash",),
+        "default_effort": "high",
+        "supports_cli_model_flag": False,
+        "extra_agent_args": "",
+    },
+    "omp": {
+        "default_model": "@worker",
+        "worker_models": ("@worker", "openai-codex/gpt-6.2-sol", "openai-codex/gpt-6.2-astra"),
+        "default_effort": "high",
+        "supports_cli_model_flag": True,
+        "extra_agent_args": "--model @worker --thinking high",
+    },
+    "pi": {
+        "default_model": "openai-codex/gpt-6.2-sol",
+        "worker_models": ("openai-codex/gpt-6.2-sol", "openai-codex/gpt-6.2-astra"),
+        "default_effort": "high",
+        "supports_cli_model_flag": True,
+        "extra_agent_args": "--model openai-codex/gpt-6.2-sol --thinking high",
+    },
+    "muse": {
+        "default_model": "muse-spark-1.3",
+        "worker_models": ("muse-spark-1.3",),
+        "default_effort": "high",
+        "supports_cli_model_flag": True,
+        "extra_agent_args": "--model muse-spark-1.3",
+    },
+}
+
+RETIRED_WORKER_KEYS: tuple[str, ...] = ("grok-regime", "goose-autonomous")
 
 CC_LEAD_CENTRAL_CONTRACT: dict[str, Any] = {
     "workspace_name": "cc-lead",
@@ -176,20 +252,29 @@ CC_LEAD_CENTRAL_CONTRACT: dict[str, Any] = {
         "OMC_MODEL_MEDIUM": "claude-sonnet-5-5",
         "OMC_MODEL_LOW": "claude-sonnet-5-5",
         "OMC_CODEX_DEFAULT_MODEL": "gpt-6.2-astra",
-        "OMC_ANTIGRAVITY_DEFAULT_MODEL": "gemini-4-carbon-high",
-        "OMC_GEMINI_DEFAULT_MODEL": "gemini-4-carbon-high",
-        "OMC_GROK_DEFAULT_MODEL": "grok-4.7",
+        "OMC_ANTIGRAVITY_DEFAULT_MODEL": "gemini-4-neon-xhigh",
+        "OMC_GEMINI_DEFAULT_MODEL": "gemini-4-neon-high",
         "OMC_JEV_MAX_EFFORT": "xhigh",
     },
     "quality_directive_powerhouse_fleet": QUALITY_DIRECTIVE_POWERHOUSE_FLEET,
+    "orca_runtime_worker_defaults": ORCA_RUNTIME_WORKER_DEFAULTS,
     "live_authenticated_worker_routes": ("cc-lead", "codex", "antigravity", "opencode", "dsh"),
     "live_authenticated_optional_routes": ("pi", "omp"),
     "superseded_legacy_routes": ("gemini-cli", "grok", "goose"),
     "optional_opt_in_routes": ("muse",),
-    "binary_present_user_auth_pending_routes": ("gemini-cli", "muse", "grok", "goose", "ccr"),
+    "binary_present_user_auth_pending_routes": ("gemini-cli", "muse", "ccr"),
 }
 
 RUNTIME_WORKER_ROSTER: dict[str, dict[str, str]] = {
+    "claude-fable-lead": {
+        "binary": "claude",
+        "orca_agent": "claude",
+        "omc_spec": "1:claude:architect",
+        "vendor": "anthropic",
+        "model": "claude-fable-5-2",
+        "effort": "xhigh",
+        "slot": "Sovereign cc-lead architecture, ADR sealing & lossless orchestration",
+    },
     "claude-sonnet-omc": {
         "binary": "claude",
         "orca_agent": "claude",
@@ -206,7 +291,7 @@ RUNTIME_WORKER_ROSTER: dict[str, dict[str, str]] = {
         "vendor": "anthropic",
         "model": "claude-opus-5-5",
         "effort": "high",
-        "slot": "Oracle / quant-falsifier HLZ/DSR/CPCV & dimensional audit",
+        "slot": "Oracle / quant-falsifier HLZ/DSR/CPCV & BugHunter red-team audit",
     },
     "codex-astra-omx": {
         "binary": "codex",
@@ -226,6 +311,15 @@ RUNTIME_WORKER_ROSTER: dict[str, dict[str, str]] = {
         "effort": "high",
         "slot": "High-throughput OMX mission & parallel test generation",
     },
+    "antigravity-neon": {
+        "binary": "agy",
+        "orca_agent": "antigravity",
+        "omc_spec": "1:antigravity:analyst",
+        "vendor": "google",
+        "model": "gemini-4-neon-xhigh",
+        "effort": "high",
+        "slot": "Flagship Google DeepMind orchestrator & multi-workflow verifier",
+    },
     "antigravity-carbon": {
         "binary": "agy",
         "orca_agent": "antigravity",
@@ -233,7 +327,7 @@ RUNTIME_WORKER_ROSTER: dict[str, dict[str, str]] = {
         "vendor": "google",
         "model": "gemini-4-carbon-high",
         "effort": "high",
-        "slot": "1M-context 18-clone upstream shelf, SEC EDGAR & run_workflow synthesis (agy supersedes legacy gemini OAuth)",
+        "slot": "1M-context 18-clone upstream shelf, SEC EDGAR & run_workflow synthesis",
     },
     "opencode-sonnet-omo": {
         "binary": "opencode",
@@ -246,21 +340,12 @@ RUNTIME_WORKER_ROSTER: dict[str, dict[str, str]] = {
     },
     "deepseek-dsh": {
         "binary": "dsh",
-        "orca_agent": "opencode",
+        "orca_agent": "dsh",
         "omc_spec": "1:antigravity:verifier",
         "vendor": "deepseek",
         "model": "deepseek-flash",
         "effort": "high",
         "slot": "Cost-efficient pre-wall (<=2026-10-15) batch evaluation & 10-layer DSH probes",
-    },
-    "grok-regime": {
-        "binary": "omc",
-        "orca_agent": "claude",
-        "omc_spec": "1:claude:analyst",
-        "vendor": "xai",
-        "model": "grok-4.7",
-        "effort": "high",
-        "slot": "Real-time macro/catalyst regime second-opinion via omc ask grok",
     },
     "muse-critic": {
         "binary": "omc",
@@ -269,7 +354,7 @@ RUNTIME_WORKER_ROSTER: dict[str, dict[str, str]] = {
         "vendor": "meta",
         "model": "muse-spark-1.3",
         "effort": "high",
-        "slot": "5th-vendor independent critic via omc ask muse & Orca muse worker",
+        "slot": "Independent cross-vendor critic via omc ask muse & Orca muse worker",
     },
     "pi-omp-worker": {
         "binary": "omp",
@@ -278,37 +363,44 @@ RUNTIME_WORKER_ROSTER: dict[str, dict[str, str]] = {
         "vendor": "openai",
         "model": "@worker",
         "effort": "high",
-        "slot": "Pi v1.5.2 / OMP v18.22.0 (@worker -> openai-codex/gpt-6.2-sol high) thinking runtime",
+        "slot": "OMP v18.22.0 (@worker -> openai-codex/gpt-6.2-sol high) thinking runtime",
     },
-    "goose-autonomous": {
-        "binary": "goose",
-        "orca_agent": "opencode",
-        "omc_spec": "1:claude:executor",
-        "vendor": "aaif-open",
-        "model": "goose-1.59",
+    "pi-worker": {
+        "binary": "pi",
+        "orca_agent": "pi",
+        "omc_spec": "1:codex:executor",
+        "vendor": "openai",
+        "model": "openai-codex/gpt-6.2-sol",
         "effort": "high",
-        "slot": "AAIF Goose autonomous MCP recipe & verification worker",
+        "slot": "Pi v1.5.2 (openai-codex/gpt-6.2-sol --thinking=high) worker runtime",
     },
 }
 
 TASK_CLASS_PROFILES: dict[str, dict[str, Any]] = {
     "lead_architecture_adr_and_spec": {
         "omc_team_spec": "1:claude:architect,1:codex:critic,1:antigravity:analyst",
-        "orca_workers": ("codex-astra-omx", "antigravity-carbon"),
+        "orca_workers": ("codex-astra-omx", "antigravity-neon"),
         "hephaestus_model": "claude-sonnet-5-5",
         "requires_prewall_lock": False,
         "requires_3vendor_stage3": False,
     },
     "parallel_worktree_implementation": {
         "omc_team_spec": "1:claude:executor,1:codex:test-engineer,1:antigravity:analyst,1:antigravity:verifier",
-        "orca_workers": ("claude-sonnet-omc", "codex-sol-omx", "antigravity-carbon", "pi-omp-worker"),
+        "orca_workers": ("claude-sonnet-omc", "codex-sol-omx", "antigravity-neon", "pi-omp-worker"),
         "hephaestus_model": "claude-sonnet-5-5",
         "requires_prewall_lock": False,
         "requires_3vendor_stage3": True,
     },
     "cross_family_adversarial_code_and_math_audit": {
         "omc_team_spec": "1:codex:critic,1:antigravity:security-reviewer,1:claude:verifier",
-        "orca_workers": ("codex-astra-omx", "antigravity-carbon", "muse-critic"),
+        "orca_workers": ("codex-astra-omx", "antigravity-neon", "muse-critic"),
+        "hephaestus_model": "claude-sonnet-5-5",
+        "requires_prewall_lock": False,
+        "requires_3vendor_stage3": True,
+    },
+    "redteam_skilleval_and_security_audit": {
+        "omc_team_spec": "1:claude:security-reviewer,1:codex:critic,1:antigravity:verifier",
+        "orca_workers": ("claude-opus-falsifier", "codex-astra-omx", "antigravity-neon"),
         "hephaestus_model": "claude-sonnet-5-5",
         "requires_prewall_lock": False,
         "requires_3vendor_stage3": True,
@@ -336,7 +428,7 @@ TASK_CLASS_PROFILES: dict[str, dict[str, Any]] = {
     },
     "orca_lead_e2e_research_convergence": {
         "omc_team_spec": "1:claude:architect,1:codex:critic,1:antigravity:analyst",
-        "orca_workers": ("codex-astra-omx", "antigravity-carbon", "deepseek-dsh", "pi-omp-worker"),
+        "orca_workers": ("codex-astra-omx", "antigravity-neon", "deepseek-dsh", "pi-omp-worker"),
         "hephaestus_model": "claude-sonnet-5-5",
         "requires_prewall_lock": True,
         "requires_3vendor_stage3": True,
@@ -397,7 +489,7 @@ def probe_cc_runtime_fleet() -> dict[str, Any]:
         "oh-my-openagent",
         "pi",
         "omp",
-        "goose",
+        "muse",
         "dsh",
         "hcom",
         "wt",
@@ -626,7 +718,6 @@ def build_cc_lead_execution_plan(
         "codex_critic_ask": f"omc ask codex --agent-prompt critic --prompt {quoted_brief}",
         "gemini_verifier_ask": f"omc ask gemini --agent-prompt verifier --prompt {quoted_brief}",
         "antigravity_shelf_ask": f"omc ask antigravity --agent-prompt analyst --prompt {quoted_brief}",
-        "grok_regime_ask": f"omc ask grok --agent-prompt analyst --prompt {quoted_brief}",
         "cursor_editor_ask": f"omc ask cursor --agent-prompt executor --prompt {quoted_brief}",
         "muse_fifth_vendor_ask": f"omc ask muse --agent-prompt critic --prompt {quoted_brief}",
         "omx_exec_worker": f"omx exec -c 'model=\"gpt-6.2-sol\"' {quoted_brief}",
@@ -651,7 +742,7 @@ def build_cc_lead_execution_plan(
             "--agent",
             meta["orca_agent"],
         ]
-        if meta["orca_agent"] in ("claude", "codex", "antigravity", "grok", "muse", "omp"):
+        if meta["orca_agent"] in ("claude", "codex", "antigravity", "muse", "omp", "pi"):
             argv.extend(["--model", meta["model"], "--effort", meta["effort"]])
         argv.extend(
             [
@@ -1136,7 +1227,6 @@ def build_multi_model_assign_envelope(
         "dsh",
         "opencode",
         "muse",
-        "grok",
         "antigravity",
         "cc-lead",
         "noesis-cc-lead",
@@ -1220,9 +1310,9 @@ def build_orca_lead_e2e_convergence_assignment(
     wt_name = f"e2e-convergence-{slug}"
 
     task_body = (
-        f"[Orca-Lead E2E Research Convergence Practice v3.10.0 | repo={repo} | surface={resolved_surface}] "
+        f"[Orca-Lead E2E Research Convergence Practice v3.10.8 | repo={repo} | surface={resolved_surface}] "
         f"{goal} Verify: (1) DF1..DF12 sota-symbol-ranking-datafeeds.v3.10; "
-        f"(2) 8-stage SOTA convergence (413+6 beyond-starred); "
+        f"(2) 8-stage SOTA convergence (415 starred + 8 beyond-starred + BugHunter/SkillEvaluator); "
         f"(3) sota-workflow run orca-lead-e2e-research-convergence --repo {repo} --json; "
         f"(4) ADR-0022 <=2.00% stop & singleActiveBrokerHostOnly."
     )
@@ -1353,7 +1443,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    p_st = sub.add_parser("status", help="Probe Claude Lead + OMC/OMX/Orca/OMO/Pi/Goose/DSH runtime worker fleet")
+    p_st = sub.add_parser("status", help="Probe Claude Lead + OMC/OMX/Orca/OMO/Pi/OMP/DSH/Muse runtime worker fleet")
     p_st.add_argument("--json", action="store_true", help="Emit JSON status")
 
     p_ln = sub.add_parser("lanes", help="Inspect Dual-Machine Trading Lanes (T1..T3) & Harness Lanes (H1..H3)")
@@ -1397,7 +1487,6 @@ def main(argv: list[str] | None = None) -> int:
             "dsh",
             "opencode",
             "muse",
-            "grok",
             "antigravity",
             "cc-lead",
             "noesis-cc-lead",
@@ -1534,6 +1623,8 @@ def main(argv: list[str] | None = None) -> int:
             "hlz_trials_n": trials_n,
             "hlz_next_t_hurdle": next_t,
             "worker_roster_count": len(RUNTIME_WORKER_ROSTER),
+            "retired_worker_keys": list(RETIRED_WORKER_KEYS),
+            "orca_runtime_worker_defaults": ORCA_RUNTIME_WORKER_DEFAULTS,
             "task_classes": sorted(TASK_CLASS_PROFILES),
         }
         print(json.dumps(out, indent=2))

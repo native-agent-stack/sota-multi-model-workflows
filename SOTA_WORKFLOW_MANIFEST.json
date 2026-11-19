@@ -1,8 +1,8 @@
 {
-  "schemaVersion": "3.10.0",
+  "schemaVersion": "3.10.8",
   "repository": "https://github.com/native-agent-stack/sota-multi-model-workflows",
   "visibility": "PUBLIC",
-  "workflowCount": 20,
+  "workflowCount": 21,
   "workflows": [
     "master-sota-harness",
     "org-compounding-promotion",
@@ -23,7 +23,8 @@
     "sota-skills-adr-and-orca-grand-workflow",
     "multi-model-omc-memory-assign",
     "orca-lead-e2e-research-convergence",
-    "grand-merit-harness"
+    "grand-merit-harness",
+    "redteam-skilleval-convergence-loop"
   ],
   "supportedHarnesses": [
     "antigravity",
@@ -31,7 +32,7 @@
     "openai-codex-omx",
     "opencode-omo",
     "pi-omp",
-    "goose",
+    "muse-critic",
     "deepseek-dsh",
     "orca"
   ],
@@ -41,7 +42,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 32,
+    "adrCount": 33,
     "records": [
       {
         "id": "ADR-0001",
@@ -544,6 +545,23 @@
           "https://github.com/steipete/peekaboo",
           "https://github.com/trycua/cua",
           "https://github.com/vercel-labs/agent-browser"
+        ]
+      },
+      {
+        "id": "ADR-0033",
+        "layer": "Multi-Model Orca Runtime Defaults, Red-Team & Skill Quality Gates (`L0\u2013L13` \u00d7 `P0\u2013P5` \u00d7 `T1\u2013T5` \u00d7 `H0\u2013H7`)",
+        "title": "`v3.10.8` Orca SOTA Worker Defaults, Red-Team BugHunter, 4-Tier SkillEvaluator, `60`-Skill & `415+8`-Starred Convergence Loop",
+        "status": "Accepted",
+        "date": "2026-11-19",
+        "evidenceGrade": "E4 (`ORCA_RUNTIME_WORKER_DEFAULTS`, Workflow `#21` `redteam-skilleval-convergence-loop`, `60/60` `SkillEvaluator` PASS, `415` starred + `8` beyond-starred convergence, `pytest` + `ruff` + `merge_gate.py` + `gitleaks` `0` Leaks)",
+        "file": "docs/adr/ADR-0033-v3108-orca-sota-worker-defaults-redteam-skilleval-and-415-starred-convergence-loop.md",
+        "githubUrls": [
+          "https://github.com/NVIDIA/SkillEvaluator",
+          "https://github.com/Tencent/LoopForge",
+          "https://github.com/elementalsouls/Claude-BugHunter",
+          "https://github.com/native-agent-stack/sota-harness-foundation",
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/stablyai/orca"
         ]
       }
     ]

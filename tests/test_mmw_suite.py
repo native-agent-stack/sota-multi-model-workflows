@@ -129,10 +129,10 @@ class TestMultiModelWorkflows(unittest.TestCase):
     def test_workflow_registry_ast_and_merge_gate(self) -> None:
         reg = json.loads((ROOT / "workflows" / "REGISTRY.json").read_text(encoding="utf-8"))
         manifest = json.loads((ROOT / "SOTA_WORKFLOW_MANIFEST.json").read_text(encoding="utf-8"))
-        self.assertEqual(reg["version"], "3.10.0")
-        self.assertEqual(manifest["schemaVersion"], "3.10.0")
-        self.assertEqual(len(reg["workflows"]), 20)
-        self.assertEqual(manifest["workflowCount"], 20)
+        self.assertEqual(reg["version"], "3.10.8")
+        self.assertEqual(manifest["schemaVersion"], "3.10.8")
+        self.assertEqual(len(reg["workflows"]), 21)
+        self.assertEqual(manifest["workflowCount"], 21)
         ids = [w["id"] for w in reg["workflows"]]
         self.assertEqual(ids, manifest["workflows"])
         self.assertIn("multi-model-ao-convergence", ids)
@@ -145,10 +145,11 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertIn("multi-model-omc-memory-assign", ids)
         self.assertIn("orca-lead-e2e-research-convergence", ids)
         self.assertIn("grand-merit-harness", ids)
+        self.assertIn("redteam-skilleval-convergence-loop", ids)
 
         expected_keys = {"id", "script_path", "skill", "agents", "args_schema", "when_to_use"}
         top_level_wf_files = sorted(p for p in (ROOT / "workflows").glob("*.py") if not p.name.startswith("_"))
-        self.assertEqual(len(top_level_wf_files), 20)
+        self.assertEqual(len(top_level_wf_files), 21)
 
         for wf in reg["workflows"]:
             self.assertEqual(set(wf.keys()), expected_keys)
@@ -666,12 +667,22 @@ class TestMultiModelWorkflows(unittest.TestCase):
             )
 
     def test_cc_lead_central_orchestrator_and_workflow_14(self) -> None:
+        from sota_mmw.cc_lead_hub import ORCA_RUNTIME_WORKER_DEFAULTS, RETIRED_WORKER_KEYS
+
         self.assertEqual(CC_LEAD_CENTRAL_CONTRACT["lead_runtime"], "claude")
         self.assertEqual(CC_LEAD_CENTRAL_CONTRACT["lead_model_id"], "claude-fable-5-2")
         self.assertTrue(CC_LEAD_CENTRAL_CONTRACT["one_model_per_conversation"])
-        self.assertEqual(len(RUNTIME_WORKER_ROSTER), 11)
+        self.assertEqual(len(RUNTIME_WORKER_ROSTER), 12)
         self.assertIn("pi-omp-worker", RUNTIME_WORKER_ROSTER)
-        self.assertIn("goose-autonomous", RUNTIME_WORKER_ROSTER)
+        self.assertIn("pi-worker", RUNTIME_WORKER_ROSTER)
+        self.assertIn("antigravity-neon", RUNTIME_WORKER_ROSTER)
+        self.assertIn("claude-fable-lead", RUNTIME_WORKER_ROSTER)
+        self.assertEqual(RUNTIME_WORKER_ROSTER["deepseek-dsh"]["orca_agent"], "dsh")
+        for retired_wk in RETIRED_WORKER_KEYS:
+            self.assertNotIn(retired_wk, RUNTIME_WORKER_ROSTER)
+        self.assertEqual(ORCA_RUNTIME_WORKER_DEFAULTS["antigravity"]["default_model"], "gemini-4-neon-xhigh")
+        self.assertEqual(ORCA_RUNTIME_WORKER_DEFAULTS["pi"]["default_model"], "openai-codex/gpt-6.2-sol")
+        self.assertEqual(ORCA_RUNTIME_WORKER_DEFAULTS["dsh"]["default_model"], "deepseek-flash")
 
         with tempfile.TemporaryDirectory() as td:
             db_file = Path(td) / "peer_bus.db"
@@ -850,9 +861,9 @@ class TestMultiModelWorkflows(unittest.TestCase):
             resolve_ecosystem_repo_dir,
         )
 
-        # 1. Every single one of the 20 canonical workflows must call kit.verify_workflow_research_convergence
+        # 1. Every single one of the 21 canonical workflows must call kit.verify_workflow_research_convergence
         wf_files = sorted((ROOT / "workflows").glob("*_workflow.py"))
-        self.assertEqual(len(wf_files), 20)
+        self.assertEqual(len(wf_files), 21)
         for wf_path in wf_files:
             txt = wf_path.read_text(encoding="utf-8")
             self.assertIn(
@@ -1217,11 +1228,11 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertEqual(st_v390["ecosystem_version"], "3.10.0")
         self.assertEqual(st_v390["latest_verified_transition"]["adr_id"], "ADR-0024")
 
-        # 2. T1..T5 x H0..H7 bijection (13 sub-lanes covering all 18 active repos) & 9-feed DF1..DF9 gate
+        self.assertEqual(dml.STAGE_AND_LAYER_SUBLANES["H1_ECOSYSTEM_UMBRELLA_LOCK"]["layer"], "L1")
         self.assertEqual(len(dml.STAGE_AND_LAYER_SUBLANES), 13)
         sublane_repos = {r for s in dml.STAGE_AND_LAYER_SUBLANES.values() for r in s["repos"]}
         self.assertEqual(sublane_repos, set(dml.REPO_LANE_INDEX.keys()))
-        self.assertEqual(len(dml.CANONICAL_SEVEN_MODEL_VENDORS), 6)
+        self.assertEqual(len(dml.CANONICAL_SEVEN_MODEL_VENDORS), 5)
 
         # 3. Live RTH active_broker_host_shield offloads docked heavy sweeps to Noesis
         unshielded = dml.resolve_dual_machine_lane_plan(
@@ -1287,9 +1298,9 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertIn("orca_supervised_worker", enacted["runtime_enactments"])
         self.assertIn("cc_lead_omc_team", enacted["runtime_enactments"])
         self.assertIn("codex_omx_exec", enacted["runtime_enactments"])
-        self.assertEqual(enacted["multi_model_fleet"]["runtime_workers_count"], 11)
+        self.assertEqual(enacted["multi_model_fleet"]["runtime_workers_count"], 12)
         self.assertEqual(enacted["multi_model_fleet"]["orchestration_frameworks_count"], 8)
-        self.assertEqual(enacted["multi_model_fleet"]["model_vendors_count"], 6)
+        self.assertEqual(enacted["multi_model_fleet"]["model_vendors_count"], 5)
 
         # Execute Grand Workflow #17 deterministically with mocked workflow primitives
         wf17_src = (ROOT / "workflows" / "sota_skills_adr_and_orca_grand_workflow.py").read_text(encoding="utf-8")
@@ -1375,7 +1386,7 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertTrue(all(len(n["depends_on"]) > 0 for n in stage3_nodes))
 
         st18 = nwe.build_grand_native_workflow_status()
-        self.assertEqual(st18["canonical_workflows_count"], 20)
+        self.assertEqual(st18["canonical_workflows_count"], 21)
 
         wf18_src = (ROOT / "workflows" / "multi_model_omc_memory_assign_workflow.py").read_text(encoding="utf-8")
         ns18: dict[str, object] = {
@@ -1565,8 +1576,8 @@ class TestMultiModelWorkflows(unittest.TestCase):
         adv = rcc.verify_advanced_sota_convergence_practice()
         self.assertTrue(adv["valid"])
         self.assertEqual(adv["stages_count"], 8)
-        self.assertEqual(adv["owner_starred_total_audited"], 413)
-        self.assertEqual(adv["beyond_starred_sota_count"], 6)
+        self.assertEqual(adv["owner_starred_total_audited"], 415)
+        self.assertEqual(adv["beyond_starred_sota_count"], 8)
         cv_st = cv.build_compounding_version_status()
         self.assertEqual(cv_st["symbol_ranking_v310_feeds_count"], 12)
 
@@ -2216,8 +2227,33 @@ class TestMultiModelWorkflows(unittest.TestCase):
             grand_st = nwe.build_grand_native_workflow_status(home=fake_home)
             self.assertEqual(grand_st["canonical_skills_total"], 46)
             self.assertEqual(grand_st["canonical_57_skills_total"], 57)
+            self.assertEqual(grand_st["canonical_60_skills_total"], 60)
             self.assertEqual(grand_st["domain_lanes_count"], 7)
             self.assertEqual(grand_st["canonical_lane_leads_count"], 10)
+
+    def test_v3108_adr0033_orca_worker_defaults_60_skills_and_workflow_21(self) -> None:
+        from sota_mmw import cc_lead_hub as cch
+        from sota_mmw import native_workflow_enactor as nwe
+
+        # 1. Zero retired grok/goose across active Orca defaults & worker roster
+        for retired in ("grok", "goose"):
+            self.assertNotIn(retired, cch.ORCA_RUNTIME_WORKER_DEFAULTS)
+        self.assertEqual(len(cch.ORCA_RUNTIME_WORKER_DEFAULTS), 9)
+        self.assertEqual(len(nwe.CANONICAL_60_SOTA_SKILLS), 60)
+
+        # 2. Execute Workflow #21 deterministically with mocked bus write
+        with mock.patch.dict("os.environ", {"SOTA_WORKFLOW_DRY_RUN": "1"}):
+            out21 = nwe.run_workflow_cli(
+                "redteam-skilleval-convergence-loop",
+                repo="sota-harness-foundation",
+                mode="deterministic",
+                dry_run=True,
+                workflows_dir=ROOT / "workflows",
+            )
+        self.assertTrue(out21["ok"])
+        self.assertTrue(out21["receipt"]["all_gates_passed"])
+        self.assertEqual(out21["receipt"]["stale_model_hits"], [])
+        self.assertEqual(out21["receipt"]["orca_runtime_defaults_count"], 9)
 
 
 if __name__ == "__main__":

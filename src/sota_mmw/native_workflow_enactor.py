@@ -151,6 +151,16 @@ EXTENDED_11_SOTA_SKILLS: tuple[str, ...] = (
 
 CANONICAL_57_SOTA_SKILLS: tuple[str, ...] = tuple(sorted(set(CANONICAL_46_SOTA_SKILLS) | set(EXTENDED_11_SOTA_SKILLS)))
 
+EXTENDED_3_REDTEAM_SKILLS: tuple[str, ...] = (
+    "sota-loopforge-convergence",
+    "sota-redteam-bughunter",
+    "sota-skill-evaluator",
+)
+
+CANONICAL_60_SOTA_SKILLS: tuple[str, ...] = tuple(
+    sorted(set(CANONICAL_57_SOTA_SKILLS) | set(EXTENDED_3_REDTEAM_SKILLS))
+)
+
 CANONICAL_14_LAYERS_MATRIX: dict[str, dict[str, Any]] = {
     "L0": {
         "name": "lean-global-charters-and-provisioning",
@@ -318,6 +328,8 @@ def probe_installed_sota_skills(home: Path | None = None) -> dict[str, Any]:
     missing_canonical = sorted(set(CANONICAL_46_SOTA_SKILLS) - set(present_canonical))
     present_57 = sorted(sk for sk in CANONICAL_57_SOTA_SKILLS if (agents_sk / sk / "SKILL.md").is_file())
     missing_57 = sorted(set(CANONICAL_57_SOTA_SKILLS) - set(present_57))
+    present_60 = sorted(sk for sk in CANONICAL_60_SOTA_SKILLS if (agents_sk / sk / "SKILL.md").is_file())
+    missing_60 = sorted(set(CANONICAL_60_SOTA_SKILLS) - set(present_60))
     mount_counts: dict[str, int] = {}
     for label, pdir in peer_mounts.items():
         if pdir.is_dir():
@@ -325,13 +337,18 @@ def probe_installed_sota_skills(home: Path | None = None) -> dict[str, Any]:
         else:
             mount_counts[label] = 0
     all_8_runtime_mounts_57_count: dict[str, int] = {}
+    all_8_runtime_mounts_60_count: dict[str, int] = {}
     for label, pdir in all_8_runtime_mounts.items():
         if pdir.is_dir():
             all_8_runtime_mounts_57_count[label] = sum(
                 1 for sk in CANONICAL_57_SOTA_SKILLS if (pdir / sk / "SKILL.md").is_file()
             )
+            all_8_runtime_mounts_60_count[label] = sum(
+                1 for sk in CANONICAL_60_SOTA_SKILLS if (pdir / sk / "SKILL.md").is_file()
+            )
         else:
             all_8_runtime_mounts_57_count[label] = 0
+            all_8_runtime_mounts_60_count[label] = 0
 
     return {
         "expected_count": len(CANONICAL_46_SOTA_SKILLS),
@@ -345,6 +362,11 @@ def probe_installed_sota_skills(home: Path | None = None) -> dict[str, Any]:
         "extended_57_missing_skills": missing_57,
         "all_57_present_in_canonical": len(missing_57) == 0,
         "all_8_runtime_mounts_57_count": all_8_runtime_mounts_57_count,
+        "canonical_60_expected_count": len(CANONICAL_60_SOTA_SKILLS),
+        "canonical_60_present_count": len(present_60),
+        "canonical_60_missing_skills": missing_60,
+        "all_60_present_in_canonical": len(missing_60) == 0,
+        "all_8_runtime_mounts_60_count": all_8_runtime_mounts_60_count,
     }
 
 
@@ -406,6 +428,8 @@ def select_workflow_and_skills(
 
     if workflow_id and workflow_id != "auto":
         chosen_wf = workflow_id
+    elif any(k in g_low for k in ("redteam", "red-team", "bughunter", "skilleval", "skill-evaluator", "loopforge")):
+        chosen_wf = "redteam-skilleval-convergence-loop"
     elif any(k in g_low for k in ("merit", "3 paper", "multi-paper", "lossless live", "stage-5 live", "p3")):
         chosen_wf = "grand-merit-harness"
     elif any(k in g_low for k in ("orca-lead", "orca lead", "e2e convergence", "df12", "symbol ranking")):
@@ -452,6 +476,7 @@ def select_workflow_and_skills(
         "multi-model-omc-memory-assign": "multi_model_omc_memory_assign_workflow.py",
         "orca-lead-e2e-research-convergence": "orca_lead_e2e_research_convergence_workflow.py",
         "grand-merit-harness": "grand_merit_harness_workflow.py",
+        "redteam-skilleval-convergence-loop": "redteam_skilleval_and_convergence_loop_workflow.py",
     }
     script_name = wf_script_map.get(chosen_wf, "sota_skills_adr_and_orca_grand_workflow.py")
 
@@ -514,7 +539,8 @@ def select_workflow_and_skills(
         "opencode_omo_hephaestus": f"opencode run {safe_goal}",
         "deepseek_dsh_prewall": f"dsh headless {safe_goal}",
         "pi_omp_role_worker": f"omp --model @worker --thinking=high -p {safe_goal}",
-        "goose_autonomous": f"goose run --text {safe_goal}",
+        "pi_worker": f"pi --model openai-codex/gpt-6.2-sol --thinking=high -p {safe_goal}",
+        "muse_critic": f"omc ask muse --agent-prompt critic --prompt {safe_goal}",
     }
 
     receipt_payload = json.dumps(
@@ -602,9 +628,10 @@ def build_grand_native_workflow_status(home: Path | None = None) -> dict[str, An
         "ecosystem_semver": DEFAULT_ECOSYSTEM_SEMVER,
         "ecosystem_lock_semver": _read_ecosystem_lock_semver(home=home),
         "workstation_surface": detect_workstation_surface(home=home),
-        "canonical_workflows_count": 20,
+        "canonical_workflows_count": 21,
         "canonical_skills_total": len(CANONICAL_46_SOTA_SKILLS),
         "canonical_57_skills_total": len(CANONICAL_57_SOTA_SKILLS),
+        "canonical_60_skills_total": len(CANONICAL_60_SOTA_SKILLS),
         "skills_status": skills_st,
         "layers_count": len(CANONICAL_14_LAYERS_MATRIX),
         "layers": {k: v["name"] for k, v in CANONICAL_14_LAYERS_MATRIX.items()},

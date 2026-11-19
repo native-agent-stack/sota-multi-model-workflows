@@ -534,7 +534,7 @@ ADVANCED_8STAGE_RESEARCH_CONVERGENCE_PRACTICE: tuple[dict[str, Any], ...] = (
     },
     {
         "stage_id": "S7_SINGLE_HOST_PAPER_BRACKET_EXECUTION",
-        "name": "Sovereign Paper-Only Autonomous Execution (Mac M5 Max Broker Lead)",
+        "name": "Sovereign Paper-Only Autonomous Execution (Stationary Noesis Primary ADR-0041 + Portable Mac M5 Max Failover)",
         "gate": "singleActiveBrokerHostOnly + ADR-0022 <= 2.00% initial stop + H096 15s <= 10bps collar",
     },
     {
@@ -545,7 +545,7 @@ ADVANCED_8STAGE_RESEARCH_CONVERGENCE_PRACTICE: tuple[dict[str, Any], ...] = (
 )
 
 STARRED_AND_BEYOND_SOTA_RESEARCH_STACK: dict[str, Any] = {
-    "owner_starred_total_audited": 413,
+    "owner_starred_total_audited": 415,
     "starred_anchors": (
         "nautechsystems/nautilus_trader",
         "nkaz001/hftbacktest",
@@ -560,6 +560,20 @@ STARRED_AND_BEYOND_SOTA_RESEARCH_STACK: dict[str, Any] = {
         "NVIDIA/SkillEvaluator",
         "elementalsouls/Claude-BugHunter",
         "parallel-web/parallel-search-evals",
+        "Tencent/LoopForge",
+        "NVIDIA/auto-ontology",
+        "NVIDIA/OpenShell",
+        "rlaope/oh-my-hermes",
+        "alvinunreal/oh-my-opencode-slim",
+        "backnotprop/plannotator",
+        "Nutlope/hallmark",
+        "mvschwarz/openrig",
+        "xerj-org/xerj",
+        "opendatalab/MinerU",
+        "cloudflare/security-audit-skill",
+        "tradermonty/claude-trading-skills",
+        "openbq-org/OpenBB",
+        "TraderAlice/OpenAlice",
     ),
     "beyond_starred_sota_additions": (
         "microsoft/RD-Agent",
@@ -568,6 +582,8 @@ STARRED_AND_BEYOND_SOTA_RESEARCH_STACK: dict[str, Any] = {
         "Nixtla/statsforecast",
         "stanfordnlp/dspy",
         "ADIA-Lab/MinTRL-MDE-PowerGate",
+        "trailofbits/skills",
+        "obra/superpowers",
     ),
 }
 
