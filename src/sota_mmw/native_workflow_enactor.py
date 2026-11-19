@@ -1,11 +1,11 @@
-"""Unified Native SOTA Workflow, 46-Skill, All-Layers (L0..L13) & 18-Repo ADR Enactment Engine (`v3.10.0`, `ADR-0018`).
+"""Unified Native SOTA Workflow, 60-Skill, All-Layers (L0..L13) & 18-Repo ADR Enactment Engine (`v3.10.8`, `ADR-0018`).
 
 Enacts SOTA Skills, 9-Feed `sota-ranking-datafeeds.v3.8` (`sota-research-feeds.v2` backward-compatible) Research
 Convergence, 4-Hash Compounding Versioning, MADR 4.0 ADR Governance across all 18 active repositories, and 11
 Multi-Model Runtime Workers (`17` CLI binaries, `8` orchestration frameworks, `7` model vendors) as a seamless native
 workflow across Antigravity (`run_workflow`), Dual-Machine Orca (`Mac M5 Max <-> Stationary Noesis 100.110.115.22` +
 `Noesis-Carbon` WSL2 `orca automations` & `worker-start`), Claude Code (`cc-lead` + `OMC v2`), Codex (`OMX`), OpenCode
-(`OMO`), DeepSeek (`DSH`), Pi/OMP (`@worker`), Goose, Muse, and Grok.
+(`OMO`), DeepSeek (`DSH`), Pi/OMP (`@worker`), and Muse.
 """
 
 from __future__ import annotations
@@ -177,7 +177,7 @@ CANONICAL_14_LAYERS_MATRIX: dict[str, dict[str, Any]] = {
         "repos": ("agy-sota-harness", "cc-sota-harness", "sota-harness-foundation"),
     },
     "L2": {
-        "name": "cross-peer-46-skills-and-mcp-mesh",
+        "name": "cross-peer-60-skills-and-mcp-mesh",
         "lane": "H2",
         "skills": ("sota-workflow", "orca-cli", "cc-lead-multi-runtime-orchestrator"),
         "workflows": ("sota-skills-adr-and-orca-grand-workflow", "cc-lead-multi-runtime-workers"),
@@ -198,7 +198,7 @@ CANONICAL_14_LAYERS_MATRIX: dict[str, dict[str, Any]] = {
         "repos": ("canon", ".github", "native-agent-stack", "meridian"),
     },
     "L5": {
-        "name": "native-18-workflow-dags-and-enactor",
+        "name": "native-21-workflow-dags-and-enactor",
         "lane": "H2",
         "skills": ("sota-workflow", "orchestration", "planning-with-files"),
         "workflows": (
@@ -256,14 +256,14 @@ CANONICAL_14_LAYERS_MATRIX: dict[str, dict[str, Any]] = {
         "repos": ("cc-sota-harness", "sota-harness-foundation", "sota-multi-model-workflows"),
     },
     "L11": {
-        "name": "cc-lead-11worker-17binary-multi-model-hub",
+        "name": "cc-lead-12worker-16binary-multi-model-hub",
         "lane": "H2",
         "skills": ("cc-lead-multi-runtime-orchestrator", "orchestration", "council-of-high-intelligence"),
         "workflows": ("cc-lead-multi-runtime-workers", "multi-model-ao-convergence"),
         "repos": ("cc-sota-harness", "sota-multi-model-workflows", "dsh-sota-harness"),
     },
     "L12": {
-        "name": "trading-and-harness-lanes-9feed-engines",
+        "name": "trading-and-harness-lanes-12feed-engines",
         "lane": "T1",
         "skills": (
             "microstructure-and-sec-catalyst-lab",
