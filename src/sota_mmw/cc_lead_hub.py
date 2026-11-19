@@ -178,8 +178,12 @@ ORCA_RUNTIME_WORKER_DEFAULTS: dict[str, dict[str, Any]] = {
         "default_model": "gpt-6.2-astra",
         "worker_models": ("gpt-6.2-astra", "gpt-6.2-sol"),
         "default_effort": "xhigh",
+        "supported_efforts": ("low", "medium", "high", "xhigh", "max", "ultra"),
+        "escalation_effort": "ultra",
+        "escalation_profile": "ultra",
         "supports_cli_model_flag": True,
         "extra_agent_args": "--model gpt-6.2-astra -c model_reasoning_effort=xhigh",
+        "escalation_extra_agent_args": "--model gpt-6.2-astra -c model_reasoning_effort=ultra",
     },
     "antigravity": {
         "default_model": "gemini-4-neon-xhigh",

@@ -2357,6 +2357,17 @@ class TestMultiModelWorkflows(unittest.TestCase):
         self.assertIn("21-Workflow", root_orca)
         self.assertNotIn("python3 ", root_orca)
 
+    def test_codex_ultra_escalation_effort_contract(self) -> None:
+        from sota_mmw.cc_lead_hub import ORCA_RUNTIME_WORKER_DEFAULTS
+
+        cx = ORCA_RUNTIME_WORKER_DEFAULTS["codex"]
+        self.assertEqual(cx["default_model"], "gpt-6.2-astra")
+        self.assertEqual(cx["default_effort"], "xhigh")
+        self.assertEqual(cx["escalation_effort"], "ultra")
+        self.assertEqual(cx["escalation_profile"], "ultra")
+        self.assertIn("ultra", cx["supported_efforts"])
+        self.assertIn("model_reasoning_effort=ultra", cx["escalation_extra_agent_args"])
+
 
 if __name__ == "__main__":
     unittest.main()
