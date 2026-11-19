@@ -48,7 +48,7 @@ CANONICAL_SEVEN_MODEL_VENDORS: tuple[str, ...] = (
     "Meta",
 )
 
-ORCA_LANE_HUBS: dict[str, dict[str, dict[str, str]]] = {
+ORCA_LANE_HUBS: dict[str, dict[str, Any]] = {
     "portable_mac_m5_max": {
         "trading": {
             "hub_name": "trading-lanes",
