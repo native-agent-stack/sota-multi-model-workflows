@@ -2412,8 +2412,13 @@ class TestMultiModelWorkflows(unittest.TestCase):
 
         drill = bcd.run_dec6_23x5_cutover_drill()
         self.assertTrue(drill["all_passed"])
-        self.assertEqual(drill["scenarios_total"], 10)
-        self.assertEqual(drill["scenarios_passed"], 10)
+        self.assertEqual(drill["scenarios_passed"], drill["scenarios_total"])
+        self.assertEqual(drill["scenarios_total"], len(drill["results"]))
+        cases = {row["scenario"]: row for row in drill["results"]}
+        self.assertFalse(cases["friday_close"]["approved"])
+        self.assertEqual(cases["sunday_boats_open"]["feed_route"], "BOATS")
+        self.assertEqual(cases["sunday_sip_open"]["feed_route"], "SIP_23X5")
+        self.assertFalse(cases["ibkr_day_expiry"]["approved"])
         self.assertEqual(len(drill["receipt_sha256"]), 64)
 
         nan_spread = bcd.evaluate_session_boundary_policy(
