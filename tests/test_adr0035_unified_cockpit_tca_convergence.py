@@ -90,25 +90,65 @@ class TestAdr0035UnifiedCockpitTcaConvergence(unittest.TestCase):
             )
             self.assertFalse(res_h["allowed"], msg=f"Host should be refused: {bad_host!r}")
 
-        # Live lane, ADR-0022 > 2%, NaN/Inf/10**400/bad strings return violations (never raise!)
+        # Live lane, ADR-0022 > 2%, NaN/Inf/10**400/10**5000/bad strings return violations (never raise!)
         res_live_lane = validate_paper_ticket_policy(
             PaperTicketPolicyCheck(**{**ok_req.__dict__, "account_lane": "STAGE5_LIVE"})
         )
         self.assertFalse(res_live_lane["allowed"])
+        self.assertIsNone(res_live_lane["normalized"])
         self.assertTrue(any(v.startswith("FORBIDDEN_LIVE_LANE:") for v in res_live_lane["violations"]))
 
-        for bad_num in (2.01, 0.0, -0.5, math.nan, math.inf, 10**400, "not-a-number", True):
+        huge_int = 10**5000
+        for bad_num in (2.01, 0.0, -0.5, math.nan, math.inf, 10**400, huge_int, "not-a-number", True):
             res_s = validate_paper_ticket_policy(
                 PaperTicketPolicyCheck(**{**ok_req.__dict__, "stop_distance_pct": bad_num})  # type: ignore[arg-type]
             )
             self.assertFalse(res_s["allowed"])
 
-        # Rule 612 tick quantization, float qty, oversized qty, oversized client_order_id, non-ASCII symbol
+        # Rule 612 tick quantization, extreme >=1e26 Decimal overflow guard, >4300-digit ints, trailing newline, explicit flags
+        for bad_px in (142.505, 1e26, 1e300, huge_int):
+            self.assertFalse(
+                validate_paper_ticket_policy(
+                    PaperTicketPolicyCheck(**{**ok_req.__dict__, "entry_limit_px": bad_px})  # type: ignore[arg-type]
+                )["allowed"]
+            )
         self.assertFalse(
-            validate_paper_ticket_policy(PaperTicketPolicyCheck(**{**ok_req.__dict__, "entry_limit_px": 142.505}))[
-                "allowed"
-            ]
+            validate_paper_ticket_policy(
+                PaperTicketPolicyCheck(
+                    **{
+                        **ok_req.__dict__,
+                        "target_port": huge_int,  # type: ignore[arg-type]
+                        "target_host": huge_int,  # type: ignore[arg-type]
+                        "account_lane": huge_int,  # type: ignore[arg-type]
+                        "client_order_id": "ok-id\n",
+                    }
+                )
+            )["allowed"]
         )
+        self.assertFalse(
+            validate_paper_ticket_policy(
+                PaperTicketPolicyCheck(
+                    account_lane="ALPACA_PAPER_P1",
+                    symbol="NVDA",
+                    side="buy",
+                    qty_shares=10,
+                    entry_limit_px=100.00,
+                    stop_distance_pct=1.0,
+                    target_port=8799,
+                    target_host="127.0.0.1",
+                    spread_bps=50.0,
+                    client_order_id="missing-flags-001",
+                )
+            )["allowed"]
+        )
+        self.assertFalse(
+            validate_paper_ticket_policy(
+                PaperTicketPolicyCheck(**{**ok_req.__dict__, "target_host": "\uff4cocalhost"})
+            )["allowed"]
+        )
+        self.assertEqual(res_ok["normalized"]["target_host"], "127.0.0.1")
+        self.assertEqual(res_ok["normalized"]["target_port"], 8799)
+
         self.assertTrue(
             validate_paper_ticket_policy(PaperTicketPolicyCheck(**{**ok_req.__dict__, "entry_limit_px": 0.5432}))[
                 "allowed"
@@ -210,6 +250,27 @@ class TestAdr0035UnifiedCockpitTcaConvergence(unittest.TestCase):
             self.assertTrue(good_audit["sovereign_local_first"])
             self.assertTrue(good_audit["zero_focus_steal"])
             self.assertTrue(good_audit["tv_launch_gated"])
+
+            # Stub containing BOTH good markers AND a hardcoded remote --app + extra ungated TV launch MUST fail
+            sneaky_wall = Path(td) / "sneaky_wall.ps1"
+            sneaky_wall.write_text(
+                'function Resolve-SotaEndpointUrl { $client.BeginConnect("127.0.0.1", $Port, $null, $null) }\n'
+                '"--app=$rankerUrl"\n'
+                '"--app=$blotterUrl"\n'
+                '"--app=http://100.93.211.101:8787"\n'
+                'Start-Process explorer.exe "TradingView.Desktop"\n'
+                "if ($MoveTradingViewToWall -and $hasDistinctWall) {\n"
+                "    if ($wallScreen.DeviceName -ne $mainWorkScreen.DeviceName) {\n"
+                "        [SotaWallWin32]::ShowWindowAsync($tv.MainWindowHandle, 4)\n"
+                "        [SotaWallWin32]::SetWindowPos($tv.MainWindowHandle, [IntPtr]::Zero, 0, 0, 100, 100, 0x0014)\n"
+                "    }\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            sneaky_audit = audit_noesis_wall_sovereign_routing(sneaky_wall)
+            self.assertFalse(sneaky_audit["sovereign_local_first"])
+            self.assertFalse(sneaky_audit["tv_launch_gated"])
+            self.assertFalse(sneaky_audit["zero_focus_steal"])
 
 
 if __name__ == "__main__":

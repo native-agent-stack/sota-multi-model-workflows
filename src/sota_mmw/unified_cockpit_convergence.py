@@ -4,7 +4,7 @@ Canonical cross-repo convergence contract (`ADR-0035`, `sota.unified-cockpit-tca
 1. Plane 1: Unified `DF1..DF12` PIT data & telemetry bus (`:8787`, `:8799`, `:8797`, `:8794`, `:4002`).
 2. Plane 2: Single-host paper-only OMS/EMS firewall (`ALPACA_PAPER_P1..P3`, `IBKR_PAPER_P4`), unconditionally
    hard-refusing live capital routes (`4001`, `7496`, `8796`, `8798`, live broker host, non-loopback hosts),
-   enforcing `ADR-0022 <= 2.00%` stops, `DF5` SEC dilution blocks, `BOATS <= 35.0 bps` overnight spread caps,
+   enforcing `ADR-0022 <= 2.00%` stops, explicit `DF5` SEC dilution & `BOATS <= 35.0 bps` flags,
    bounded idempotent `client_order_id`, and NMS Rule 612 tick-increment quantization.
 3. Plane 3: Modular OSS cockpit (`@perspective-dev@5.9.2` local WASM grid + `Lightweight Charts` broker-confirmed
    fill/stop/trail markers + live `+1s/+10s/+60s/+300s` Implementation Shortfall & markout TCA).
@@ -50,8 +50,9 @@ FORBIDDEN_LIVE_BROKER_HOST = "api." + "alpaca" + ".markets"
 MAX_ADR0022_STOP_PCT = 2.0
 MAX_OVERNIGHT_BOATS_SPREAD_BPS = 35.0
 MAX_QTY_SHARES = 1_000_000
-SYMBOL_ASCII_RE = re.compile(r"^[A-Z][A-Z0-9.-]{0,9}$")
-CLIENT_ORDER_ID_RE = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
+MAX_ENTRY_LIMIT_PX = 1_000_000.0
+SYMBOL_ASCII_RE = re.compile(r"^[A-Z][A-Z0-9.-]{0,9}\Z")
+CLIENT_ORDER_ID_RE = re.compile(r"^[A-Za-z0-9._-]{1,64}\Z")
 EMBEDDED_PORT_RE = re.compile(r":(\d{2,5})(?:/|$)")
 REQUIRED_PERSPECTIVE_RELPATHS: tuple[str, ...] = (
     "client/dist/cdn/perspective.js",
@@ -63,6 +64,24 @@ REQUIRED_PERSPECTIVE_RELPATHS: tuple[str, ...] = (
     "viewer-datagrid/dist/cdn/perspective-viewer-datagrid.js",
     "viewer-charts/dist/cdn/perspective-viewer-charts.js",
 )
+
+
+def _safe_str(value: Any, *, max_len: int = 128) -> str:
+    """Convert any arbitrary input to a bounded string without raising on >4300-digit ints."""
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value[:max_len]
+    if isinstance(value, bool):
+        return "True" if value else "False"
+    if isinstance(value, int):
+        if value.bit_length() > 128:
+            return f"<oversized_int:bits={value.bit_length()}>"
+        return str(value)
+    try:
+        return str(value)[:max_len]
+    except (TypeError, ValueError, OverflowError):
+        return f"<unprintable:{type(value).__name__}>"
 
 
 def _safe_finite_float(value: Any) -> float | None:
@@ -82,14 +101,16 @@ def _safe_strict_int(value: Any) -> int | None:
 
 
 def _is_rule612_quantized(price: float) -> bool:
+    if not math.isfinite(price) or price <= 0.0 or price > MAX_ENTRY_LIMIT_PX:
+        return False
     try:
         dec = Decimal(str(price))
-    except (InvalidOperation, ValueError):
+        if not dec.is_finite() or dec <= 0:
+            return False
+        tick = Decimal("0.01") if dec >= Decimal("1.00") else Decimal("0.0001")
+        return (dec % tick) == 0
+    except (InvalidOperation, ValueError, ArithmeticError):
         return False
-    if not dec.is_finite() or dec <= 0:
-        return False
-    tick = Decimal("0.01") if dec >= Decimal("1.00") else Decimal("0.0001")
-    return (dec % tick) == 0
 
 
 def _normalize_host_ascii(raw_host: str) -> str:
@@ -137,8 +158,8 @@ class PaperTicketPolicyCheck:
     target_port: int | None = None
     target_host: str = "127.0.0.1"
     spread_bps: float = 5.0
-    is_overnight_boats: bool = False
-    sec_dilution_blocked: bool = False
+    is_overnight_boats: bool | None = None
+    sec_dilution_blocked: bool | None = None
     client_order_id: str = ""
 
 
@@ -146,13 +167,15 @@ def validate_paper_ticket_policy(req: PaperTicketPolicyCheck) -> dict[str, Any]:
     """Fail-closed policy validator for 1-click OSS cockpit paper tickets. Never raises on bad input."""
     violations: list[str] = []
 
-    lane_norm = str(req.account_lane or "").strip().upper()
+    lane_norm = _safe_str(req.account_lane).strip().upper()
     if lane_norm not in ALLOWED_PAPER_LANES:
         violations.append(f"PAPER_LANE_NOT_ALLOWLISTED:{lane_norm or 'EMPTY'}")
     if any(tok in lane_norm for tok in FORBIDDEN_LIVE_LANE_TOKENS):
         violations.append(f"FORBIDDEN_LIVE_LANE:{lane_norm}")
 
-    raw_host = "" if req.target_host is None else str(req.target_host)
+    raw_host = req.target_host if isinstance(req.target_host, str) else _safe_str(req.target_host)
+    if not isinstance(req.target_host, str) or not raw_host.isascii():
+        violations.append("TARGET_HOST_MUST_BE_ASCII_STR")
     norm_host = _normalize_host_ascii(raw_host)
 
     # Detect embedded live ports or URL syntax inside target_host before strict allowlist check.
@@ -191,13 +214,14 @@ def validate_paper_ticket_policy(req: PaperTicketPolicyCheck) -> dict[str, Any]:
         if strict_port in FORBIDDEN_LIVE_PORTS:
             violations.append(f"FORBIDDEN_LIVE_PORT:{strict_port}")
         if strict_port not in ALLOWED_PAPER_PORTS:
-            violations.append(f"PAPER_PORT_NOT_ALLOWLISTED:{strict_port}")
+            violations.append(f"PAPER_PORT_NOT_ALLOWLISTED:{_safe_str(strict_port)}")
 
-    sym_norm = "" if req.symbol is None else str(req.symbol).strip().upper()
-    if not SYMBOL_ASCII_RE.match(sym_norm):
+    raw_sym = req.symbol if isinstance(req.symbol, str) else ""
+    sym_norm = raw_sym.strip().upper() if raw_sym.isascii() else ""
+    if not raw_sym or not raw_sym.isascii() or not SYMBOL_ASCII_RE.fullmatch(sym_norm):
         violations.append("INVALID_SYMBOL")
 
-    side_norm = "" if req.side is None else str(req.side).strip().lower()
+    side_norm = _safe_str(req.side).strip().lower()
     if side_norm not in ("buy", "sell", "long", "short"):
         violations.append(f"INVALID_SIDE:{side_norm or 'EMPTY'}")
 
@@ -206,19 +230,19 @@ def validate_paper_ticket_policy(req: PaperTicketPolicyCheck) -> dict[str, Any]:
         violations.append("INVALID_QTY_SHARES")
 
     entry_px = _safe_finite_float(req.entry_limit_px)
-    if entry_px is None or entry_px <= 0.0:
+    if entry_px is None or entry_px <= 0.0 or entry_px > MAX_ENTRY_LIMIT_PX:
         violations.append("INVALID_ENTRY_LIMIT_PX")
     elif not _is_rule612_quantized(entry_px):
         violations.append("RULE612_TICK_QUANTIZATION_VIOLATION")
 
     stop_pct = _safe_finite_float(req.stop_distance_pct)
     if stop_pct is None or not (0.0 < stop_pct <= MAX_ADR0022_STOP_PCT):
-        violations.append(f"ADR0022_STOP_PCT_VIOLATION:{req.stop_distance_pct}")
+        violations.append(f"ADR0022_STOP_PCT_VIOLATION:{_safe_str(req.stop_distance_pct)}")
 
     if not isinstance(req.is_overnight_boats, bool):
-        violations.append("INVALID_OVERNIGHT_BOATS_FLAG")
+        violations.append("MISSING_OR_INVALID_OVERNIGHT_BOATS_FLAG")
     if not isinstance(req.sec_dilution_blocked, bool):
-        violations.append("INVALID_SEC_DILUTION_FLAG")
+        violations.append("MISSING_OR_INVALID_SEC_DILUTION_FLAG")
 
     spread_val = _safe_finite_float(req.spread_bps)
     if spread_val is None or spread_val < 0.0:
@@ -229,15 +253,36 @@ def validate_paper_ticket_policy(req: PaperTicketPolicyCheck) -> dict[str, Any]:
     if req.sec_dilution_blocked is True and side_norm in ("buy", "long"):
         violations.append("DF5_SEC_DILUTION_BLOCKS_LONG")
 
-    coid = "" if req.client_order_id is None else str(req.client_order_id).strip()
-    if not CLIENT_ORDER_ID_RE.match(coid):
+    raw_coid = req.client_order_id if isinstance(req.client_order_id, str) else ""
+    if not raw_coid or raw_coid != raw_coid.strip() or not CLIENT_ORDER_ID_RE.fullmatch(raw_coid):
         violations.append("INVALID_CLIENT_ORDER_ID")
+
+    allowed = len(violations) == 0
+    normalized = (
+        {
+            "account_lane": lane_norm,
+            "target_host": host_only,
+            "target_port": strict_port,
+            "symbol": sym_norm,
+            "side": side_norm,
+            "qty_shares": strict_qty,
+            "entry_limit_px": entry_px,
+            "stop_distance_pct": stop_pct,
+            "spread_bps": spread_val,
+            "is_overnight_boats": req.is_overnight_boats,
+            "sec_dilution_blocked": req.sec_dilution_blocked,
+            "client_order_id": raw_coid,
+        }
+        if allowed
+        else None
+    )
 
     return {
         "schema_version": UNIFIED_COCKPIT_TCA_SCHEMA_VERSION,
-        "allowed": len(violations) == 0,
+        "allowed": allowed,
         "paper_only_enforced": True,
         "violations": violations,
+        "normalized": normalized,
         "contract_sha256": compute_unified_cockpit_contract_sha256(),
     }
 
@@ -326,7 +371,6 @@ def _strip_ps1_comments(script_text: str) -> list[str]:
             continue
         if not line or line.startswith("#"):
             continue
-        # Strip inline # comments outside quotes (conservative split when not inside quotes).
         code_part = re.split(r"(?<!['\"])\s+#", line, maxsplit=1)[0].strip()
         if code_part:
             active.append(code_part)
@@ -334,7 +378,7 @@ def _strip_ps1_comments(script_text: str) -> list[str]:
 
 
 def audit_noesis_wall_sovereign_routing(wall_script_path: Path | None = None) -> dict[str, Any]:
-    """Structurally audit the Noesis 4K wall script (active code only, ignoring comments)."""
+    """Structurally audit the Noesis 4K wall script (active code only; requires presence AND absence checks)."""
     target = wall_script_path or (Path.home() / ".agents" / "bin" / "sota-noesis-4k-wall.ps1")
     if not target.is_file():
         return {
@@ -348,10 +392,12 @@ def audit_noesis_wall_sovereign_routing(wall_script_path: Path | None = None) ->
 
     has_resolver_fn = bool(re.search(r"(?i)\bfunction\s+Resolve-SotaEndpointUrl\b", active_code))
     probes_loopback = bool(re.search(r'BeginConnect\(\s*"127\.0\.0\.1"', active_code))
+    # Absence check: zero hardcoded remote --app=http://... URLs anywhere in active code.
+    has_hardcoded_remote_app = bool(re.search(r"--app=https?://(?!127\.0\.0\.1|localhost)", active_code, re.IGNORECASE))
     uses_resolved_apps = (
         bool(re.search(r"--app=\$rankerUrl\b", active_code))
         and bool(re.search(r"--app=\$blotterUrl\b", active_code))
-        and not bool(re.search(r"--app=http://100\.", active_code))
+        and not has_hardcoded_remote_app
     )
     sovereign_local_first = has_resolver_fn and probes_loopback and uses_resolved_apps
 
@@ -360,11 +406,24 @@ def audit_noesis_wall_sovereign_routing(wall_script_path: Path | None = None) ->
     has_distinct_wall_guard = bool(
         re.search(r"\$wallScreen\.DeviceName\s*-ne\s*\$mainWorkScreen\.DeviceName", active_code)
     )
-    # Ensure TradingView Desktop is only launched when -MoveTradingViewToWall is set on a distinct wall monitor.
-    tv_launch_match = re.search(r"TradingView\.Desktop", active_code)
-    tv_launch_gated = (not tv_launch_match) or bool(
-        re.search(r"if\s*\([^)]*\$MoveTradingViewToWall[^)]*\)\s*\{[^}]*TradingView\.Desktop", active_code, re.DOTALL)
-    )
+
+    # Track brace depth of `$MoveTradingViewToWall` if-block to prove EVERY TradingView.Desktop launch is gated.
+    tv_occurrences = 0
+    ungated_tv_occurrences = 0
+    brace_depth = 0
+    tv_gate_depth: int | None = None
+    for line in active_lines:
+        if tv_gate_depth is None and re.search(r"if\s*\([^)]*\$MoveTradingViewToWall[^)]*\)", line):
+            tv_gate_depth = brace_depth + 1
+        if "TradingView.Desktop" in line:
+            tv_occurrences += 1
+            if tv_gate_depth is None or brace_depth < tv_gate_depth:
+                ungated_tv_occurrences += 1
+        brace_depth += line.count("{") - line.count("}")
+        if tv_gate_depth is not None and brace_depth < tv_gate_depth:
+            tv_gate_depth = None
+
+    tv_launch_gated = (tv_occurrences == 0) or (ungated_tv_occurrences == 0)
     zero_focus_steal = has_noactivate_show and has_noactivate_pos and has_distinct_wall_guard and tv_launch_gated
 
     return {
