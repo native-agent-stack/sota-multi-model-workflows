@@ -1,12 +1,41 @@
+# Every tracked implementation file maps to a pinned SOTA upstream in UPSTREAM.md (`install`, `integrate`, or `build-on`).
+# Enforced fail-closed by `scripts/merge_gate.py` (`ADR-0037`) and `tests/test_upstream_map_gate.py`.
+
+[shelf_pins]
+"alpaca-py" = "c42add7c0a7026e2ead3ed64e76f4def2b99fda4"
+"alpaca-mcp-server" = "63cc4278d87b31f3ed4efcfaa55624095c6d7be8"
+"nautilus_trader" = "da6b57aefdd62b44f675e434ffcfefca7f4025dd"
+"nautilus-alpaca" = "59685d56631b981018a189b5ced1a7000a50bfbd"
+"polars" = "7f902bd3ffd27ff82d14278a09a295ff2f7aed92"
+"duckdb" = "d54cbbe3df17e8e5ce68312f483b4155836112aa"
+"edgartools" = "574c2bd15f6c629bceef03b6550ea8ac8abf3473"
+"ml4t-diagnostic" = "19e76072e64a18c9ba56130e4a7bcc0bc871f57e"
+"skfolio" = "90e3fb907fab39d244d899f3caf4e9676889309c"
+"hftbacktest" = "5f3ec40b2afb764e0fea112f941ed85523ef4e88"
+"ib_async" = "ab629f34c1823ea4c1542f32f07377208a86bdfd"
+"perspective" = "0264ec13cd28ef4a2a136c8ef021c3c112bc8990"
+"lightweight-charts" = "c29c51e1e5bc61981da5832c97797cb8283d120f"
+"quantstats" = "d1a214fb906e76f974f45cdccf923b601c67a756"
+"vectorbt" = "a52a984b631624bb9daf41cb19f532fe559cf0ef"
+"pandera" = "02b375ab43f39f8c5c5108695c1791fa04f99a26"
+"exchange_calendars" = "dbe38b1f6887434bbdd1a7d2df6ff8f1742a048a"
+"statsmodels" = "278ff9950636cdd4939b4055e339a8e681d79cab"
+
 [areas]
-"src/sota_mmw/__init__.py" = { upstream = "cpython-stdlib", how = "integrate", feature = "package exports" }
-"src/sota_mmw/promotion_gate.py" = { upstream = "ml4t-diagnostic", how = "build-on", feature = "5-stage Sim->Backtest->Paper->FineTune->Alpaca/IBKR promotion validator" }
-"src/sota_mmw/peer_bus_schema.py" = { upstream = "cpython-stdlib", how = "build-on", feature = "SQLite WAL cross-peer leases, messages, and SHA-256 hypothesis ledger" }
-"src/sota_mmw/ao_lifecycle.py" = { upstream = "agent-orchestrator", how = "build-on", feature = "8-slot multi-model AO worktree isolation, cross-vendor review, and bounded CI reaction gate" }
-"src/sota_mmw/cc_lead_hub.py" = { upstream = "orca", how = "build-on", feature = "Claude Code (OMC v2) 5-channel runtime worker hub, 11-worker roster, and --on 100.110.115.22 Orca dispatch" }
-"src/sota_mmw/dual_machine_lanes.py" = { upstream = "orca", how = "build-on", feature = "Dual-Machine Trading Lanes (T1..T3), Harness Lanes (H1..H3), 8-framework matrix, and Orca folder lane hubs" }
-"src/sota_mmw/compounding_versioning.py" = { upstream = "ml4t-diagnostic", how = "build-on", feature = "9-feed DF1..DF9 sota-ranking-datafeeds.v3.8 PIT contract, 4-hash SemVer lineage & two-track promotion ledger" }
-"src/sota_mmw/research_convergence_contract.py" = { upstream = "edgartools", how = "build-on", feature = "7-feed sota-research-feeds.v2 PIT contract, 4 strategy archetypes, and ADR-0004 3-tier SHA convergence verifier" }
-"workflows/*" = { upstream = "antigravity-sdk", how = "build-on", feature = "16 self-bootstrapping multi-model, dual-machine lanes, ranking-datafeeds & compounding-versioning workflow DAGs" }
-"scripts/*" = { upstream = "cpython-stdlib", how = "build-on", feature = "MADR 4.0 catalog verifier and zero-leak merge gate" }
-"orca.yaml" = { upstream = "orca", how = "integrate", feature = "Cross-OS Mac M5 Max + Noesis Win32/WSL2 workspace setup & default tabs" }
+"src/sota_mmw/__init__.py" = { upstream = "cpython-stdlib", how = "integrate", feature = "package exports", why = "expose workflow and orchestration governance contracts" }
+"src/sota_mmw/promotion_gate.py" = { upstream = "ml4t-diagnostic", how = "build-on", feature = "5-stage Sim->Backtest->Paper->FineTune->Alpaca/IBKR promotion validator", why = "enforce HLZ, DSR, CPCV, and ADR-0022 stop gates across workflows" }
+"src/sota_mmw/peer_bus_schema.py" = { upstream = "cpython-stdlib", how = "build-on", feature = "SQLite WAL cross-peer leases, messages, and SHA-256 hypothesis ledger", why = "coordinate concurrent multi-runtime agents without file collisions" }
+"src/sota_mmw/peer_bus_mcp_server.py" = { upstream = "hcom", how = "build-on", feature = "JSON-RPC 2.0 MCP peer-bus server exposing leases, handovers, and HLZ ledger", why = "let every runtime query peer state and preregister trials deterministically" }
+"src/sota_mmw/ao_lifecycle.py" = { upstream = "agent-orchestrator", how = "build-on", feature = "8-slot multi-model AO worktree isolation, cross-vendor review, and bounded CI reaction gate", why = "govern multi-vendor build/falsify/verify loops cleanly" }
+"src/sota_mmw/cc_lead_hub.py" = { upstream = "orca", how = "build-on", feature = "Claude Code (OMC v2) 5-channel runtime worker hub, 11-worker roster, and --on 100.110.115.22 Orca dispatch", why = "dispatch heterogeneous workers across Mac M5 Max and Stationary Noesis" }
+"src/sota_mmw/dual_machine_lanes.py" = { upstream = "orca", how = "build-on", feature = "Dual-Machine Trading Lanes (T1..T3), Harness Lanes (H1..H3), 8-framework matrix, and Orca folder lane hubs", why = "maintain deterministic 3-surface lane routing and singleActiveBrokerHostOnly" }
+"src/sota_mmw/boats_23x5_cutover_drill.py" = { upstream = "alpaca-py", how = "build-on", feature = "2026-12-06 23/5 SIP cutover drill and BOATS overnight session boundary verifier", why = "verify zero gap or pause-window order leakage during 23/5 cutover" }
+"src/sota_mmw/merit_promotion_harness.py" = { upstream = "nautilus_trader", how = "build-on", feature = "Stage-1..Stage-5 merit ladder, paper quarantine, and proven-P1 live gate contract", why = "prevent unproven strategies from escalating beyond paper lanes" }
+"src/sota_mmw/native_workflow_enactor.py" = { upstream = "antigravity-sdk", how = "build-on", feature = "Cross-runtime sota-workflow CLI enactor across 21 canonical workflow DAGs", why = "allow any runtime or Orca automation to run schema-typed workflows" }
+"src/sota_mmw/compounding_versioning.py" = { upstream = "ml4t-diagnostic", how = "build-on", feature = "9-feed DF1..DF9 sota-ranking-datafeeds.v3.8 PIT contract, 4-hash SemVer lineage & two-track promotion ledger", why = "bind SemVer bumps cryptographically to lake, shelf, contract, and HLZ state" }
+"src/sota_mmw/research_convergence_contract.py" = { upstream = "edgartools", how = "build-on", feature = "7-feed sota-research-feeds.v2 PIT contract, 4 strategy archetypes, and ADR-0004 3-tier SHA convergence verifier", why = "enforce point-in-time SEC acceptanceDateTime and pre-wall invariants" }
+"src/sota_mmw/symbol_ranking_datafeeds.py" = { upstream = "polars", how = "build-on", feature = "12-feed DF1..DF12 bitemporal symbol ranking datafeed contract and 6-route validation", why = "unify own-history ToD RVOL, bitemporal ts_recv_ns, and EB separation" }
+"src/sota_mmw/unified_cockpit_convergence.py" = { upstream = "nautilus_trader", how = "build-on", feature = "Unified OSS Perspective TCA cockpit and paper-ticket convergence contract", why = "keep cockpit projections aligned across P1..P4 without live leaks" }
+"workflows/*" = { upstream = "antigravity-sdk", how = "build-on", feature = "21 self-bootstrapping multi-model, dual-machine lanes, ranking-datafeeds & compounding-versioning workflow DAGs", why = "orchestrate parallel cross-vendor research, falsification, and verification" }
+"scripts/*" = { upstream = "cpython-stdlib", how = "build-on", feature = "MADR 4.0 catalog verifier and ADR-0037 upstream-map + zero-leak merge gate", why = "block orphan code, shelf drift, missing ADR evidence, or leaks before merge" }
+"orca.yaml" = { upstream = "orca", how = "integrate", feature = "Cross-OS Mac M5 Max + Noesis Win32/WSL2 workspace setup & default tabs", why = "bootstrap isolated Orca worktrees identically on Darwin and Win32" }

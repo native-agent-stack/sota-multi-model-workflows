@@ -42,7 +42,7 @@
     "catalogPath": "docs/adr/CATALOG.md",
     "generatorScript": "scripts/architecture_catalog.py",
     "revisitThresholdDays": 45,
-    "adrCount": 36,
+    "adrCount": 37,
     "records": [
       {
         "id": "ADR-0001",
@@ -612,6 +612,19 @@
           "https://github.com/native-agent-stack/sota-dynamic-trail-c",
           "https://github.com/native-agent-stack/sota-mover-ranker",
           "https://github.com/native-agent-stack/sota-multi-model-workflows"
+        ]
+      },
+      {
+        "id": "ADR-0037",
+        "layer": "Workflow Repository Provenance & Hard Upstream-Source Firewall (`PROTECTIVE_FILTER_OR_GOVERNANCE`, `standalone_alpha_claim = False`)",
+        "title": "Fail-Closed `upstream-map.toml`, 18-Pin Shelf Parity & ADR-Evidence Enforcement in `scripts/merge_gate.py`",
+        "status": "Accepted",
+        "date": "2026-11-20",
+        "evidenceGrade": "E4 (`scripts/merge_gate.py`, `upstream-map.toml`, `tests/test_upstream_map_gate.py`, `pytest`, `ruff`, `architecture_catalog.py --check`, `merge_gate.py`, `gitleaks 0`)",
+        "file": "docs/adr/ADR-0037-hard-upstream-map-and-adr-evidence-merge-gate.md",
+        "githubUrls": [
+          "https://github.com/native-agent-stack/sota-multi-model-workflows",
+          "https://github.com/native-agent-stack/sota-upstream-shelf-lock"
         ]
       }
     ]
