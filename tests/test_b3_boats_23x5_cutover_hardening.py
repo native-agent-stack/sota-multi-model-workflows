@@ -3,6 +3,7 @@
 import datetime as dt
 import sys
 import unittest
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -222,7 +223,7 @@ class TestCutover(unittest.TestCase):
             ("spread_bps", "NON_FINITE_OR_NEGATIVE_SPREAD_BPS"),
             ("stop_pct", "ADR0022_STOP_CAP_VIOLATION"),
         ]:
-            for bad in (None, "1", True, float("nan"), float("inf"), -float("inf"), 10**400, -1, []):
+            for bad in (None, "1", True, float("nan"), float("inf"), -float("inf"), 10**400, Decimal("1e26"), -1, []):
                 with self.subTest(field=field, bad=bad):
                     result = evaluate("2026-12-06T22:00:00-05:00", **{field: bad})
                     self.assertIn(violation, result["violations"])
@@ -248,7 +249,10 @@ class TestCutover(unittest.TestCase):
                 {"active_guardian": False},
                 {"active_guardian": "true"},
                 {"order_type": "MKT", "active_guardian": False},
-                *({"limit_price": price} for price in (None, "10", 0, -1, True, float("inf"), float("nan"), 10**400)),
+                *(
+                    {"limit_price": price}
+                    for price in (None, "10", 0, -1, True, float("inf"), float("nan"), 10**400, Decimal("1e26"))
+                ),
             ):
                 with self.subTest(time=time, override=overrides):
                     self.assertFalse(evaluate(instant, **overrides)["approved"])
@@ -278,6 +282,65 @@ class TestCutover(unittest.TestCase):
                         self.assertEqual((result["approved"], bool(result["warnings"])), (approved, warned))
         for stop in (0, 2.0001):
             self.assertFalse(evaluate("2026-12-07T10:00-05:00", stop_pct=stop)["approved"])
+
+    def test_rth_limit_price(self):
+        instant = "2026-12-07T10:00-05:00"
+        unpriced = evaluate(instant, order_type=" lmt ", limit_price=None)
+        self.assertFalse(unpriced["approved"])
+        self.assertEqual(unpriced["violations"], ["LMT_REQUIRES_POSITIVE_LIMIT_PRICE"])
+        self.assertTrue(evaluate(instant, order_type="MKT", limit_price=None)["approved"])
+        for order_type in ("LMT", "MKT"):
+            for label, price in [
+                ("nan", float("nan")),
+                ("inf", float("inf")),
+                ("negative inf", -float("inf")),
+                ("zero", 0),
+                ("negative", -1),
+                ("numeric string", "10"),
+                ("nan string", "NaN"),
+                ("bool", True),
+                ("list", []),
+                ("float overflow", 10**400),
+                ("oversized integer", 10**5000),
+                ("decimal", Decimal("1e26")),
+            ]:
+                with self.subTest(order_type=order_type, price=label):
+                    result = evaluate(instant, order_type=order_type, limit_price=price)
+                    self.assertFalse(result["approved"])
+                    self.assertEqual(result["violations"], ["INVALID_LIMIT_PRICE"])
+
+    def test_rth_order_types_and_symbol_count(self):
+        instant = "2026-12-07T10:00-05:00"
+        for order_type in (" lmt ", "mkt", "STP", "stp_lmt"):
+            with self.subTest(order_type=order_type):
+                self.assertTrue(evaluate(instant, order_type=order_type)["approved"])
+        self.assertEqual(evaluate(instant, order_type="BOGUS")["violations"], ["INVALID_ORDER_TYPE"])
+        for label, count, valid in [
+            ("upper bound", 1_000_000, True),
+            ("above upper bound", 1_000_001, False),
+            ("oversized integer", 10**5000, False),
+        ]:
+            with self.subTest(count=label):
+                result = evaluate(instant, symbol_count=count)
+                self.assertEqual(result["approved"], valid)
+                self.assertEqual(result["violations"], [] if valid else ["INVALID_SYMBOL_COUNT"])
+
+    def test_boats_venue_cap_with_larger_paper_subscription(self):
+        with patch.dict(drill.OVERNIGHT_SYMBOL_CAP_BY_PORT, {8799: 12}):
+            for instant, options in [
+                ("2026-12-13T20:59-05:00", {}),
+                ("2026-12-07T22:00-05:00", {"dec6_235_sip_enabled": False}),
+                ("2026-12-07T22:00-05:00", {"overnight_feed": "BOATS"}),
+            ]:
+                with self.subTest(instant=instant, options=options):
+                    self.assertTrue(evaluate(instant, symbol_count=8, **options)["approved"])
+                    result = evaluate(instant, symbol_count=9, **options)
+                    self.assertEqual(result["session_segment"], "OVERNIGHT_BOATS")
+                    self.assertFalse(result["approved"])
+                    self.assertEqual(result["violations"], ["OVERNIGHT_SYMBOL_CAP_EXCEEDED:MAX_8"])
+            sip = evaluate("2026-12-07T22:00-05:00", symbol_count=12)
+            self.assertEqual(sip["session_segment"], "OVERNIGHT_23X5_SIP")
+            self.assertTrue(sip["approved"])
 
     def test_subscription_cap_tracks_paper_lane_across_feed_changes(self):
         self.assertEqual(set(drill.OVERNIGHT_SYMBOL_CAP_BY_PORT), cockpit.ALLOWED_PAPER_PORTS)

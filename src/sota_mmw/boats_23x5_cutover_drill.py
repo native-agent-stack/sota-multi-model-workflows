@@ -25,6 +25,8 @@ ADR0022_MAX_STOP_PCT = cockpit.MAX_ADR0022_STOP_PCT
 MAX_OVERNIGHT_SPREAD_BPS = cockpit.MAX_OVERNIGHT_BOATS_SPREAD_BPS
 DEC6_CUTOVER_DATE = dt.date(2026, 12, 6)
 SIP_CUTOVER_UTC = dt.datetime(2026, 12, 7, 2, tzinfo=dt.UTC)
+ALLOWED_ORDER_TYPES = frozenset({"LMT", "MKT", "STP", "STP_LMT"})
+MAX_SYMBOL_COUNT = 1_000_000  # Input sanity ceiling; overnight venue and subscription limits apply separately.
 MAX_BOATS_SYMBOLS = 8
 PAPER_TARGET_SPREAD_BPS = 28.0
 # fromisoformat also accepts arbitrary separators and normalizes overflowed
@@ -189,23 +191,29 @@ def evaluate_session_boundary_policy(
     stop = _finite_number(stop_pct)
     if stop is None or not 0 < stop <= ADR0022_MAX_STOP_PCT:
         violations.append("ADR0022_STOP_CAP_VIOLATION")
-    if type(symbol_count) is not int or symbol_count <= 0:
+    if type(symbol_count) is not int or not 1 <= symbol_count <= MAX_SYMBOL_COUNT:
         violations.append("INVALID_SYMBOL_COUNT")
     if type(active_guardian) is not bool:
         violations.append("INVALID_ACTIVE_GUARDIAN")
-    if not isinstance(order_type, str) or not order_type.strip():
+    normalized_order_type = order_type.strip().upper() if isinstance(order_type, str) else ""
+    if normalized_order_type not in ALLOWED_ORDER_TYPES:
         violations.append("INVALID_ORDER_TYPE")
 
     overnight = session.segment in ("OVERNIGHT_BOATS", "OVERNIGHT_23X5_SIP")
-    if overnight or session.segment in ("PRE_MARKET", "AFTER_HOURS"):
-        profile = "OVERNIGHT" if overnight else "EXTENDED"
-        if not isinstance(order_type, str) or order_type.strip().upper() != "LMT":
-            violations.append(f"{profile}_REQUIRES_LMT_ONLY")
-        price = _finite_number(limit_price)
-        if price is None or price <= 0:
+    extended = overnight or session.segment in ("PRE_MARKET", "AFTER_HOURS")
+    profile = "OVERNIGHT" if overnight else "EXTENDED"
+    if extended and normalized_order_type != "LMT":
+        violations.append(f"{profile}_REQUIRES_LMT_ONLY")
+    price = _finite_number(limit_price)
+    if price is None or price <= 0:
+        if extended:
             violations.append("EXTENDED_REQUIRES_POSITIVE_LIMIT_PRICE")
-        if active_guardian is not True:
-            violations.append(f"{profile}_REQUIRES_ACTIVE_GUARDIAN")
+        elif limit_price is not None:
+            violations.append("INVALID_LIMIT_PRICE")
+        elif normalized_order_type == "LMT":
+            violations.append("LMT_REQUIRES_POSITIVE_LIMIT_PRICE")
+    if extended and active_guardian is not True:
+        violations.append(f"{profile}_REQUIRES_ACTIVE_GUARDIAN")
     if overnight:
         if (
             type(broker_port) is int
@@ -223,7 +231,7 @@ def evaluate_session_boundary_policy(
             if cap is None:
                 violations.append("MISSING_OVERNIGHT_SUBSCRIPTION_CAP")
             elif type(symbol_count) is int:
-                if et is not None and et < SIP_CUTOVER_UTC:
+                if session.segment == "OVERNIGHT_BOATS":
                     cap = min(MAX_BOATS_SYMBOLS, cap)
                 if symbol_count > cap:
                     violations.append(f"OVERNIGHT_SYMBOL_CAP_EXCEEDED:MAX_{cap}")
