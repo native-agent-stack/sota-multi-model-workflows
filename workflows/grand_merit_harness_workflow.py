@@ -71,10 +71,12 @@ merit_proofs = {
             sim_engine_verified=True,
             prewall_net_1x_bps=18.5,
             prewall_net_2x_bps=11.0,
-            closed_roundtrips=6,
+            closed_roundtrips=18,
+            p1_closed_roundtrips=18,
             distinct_paper_accounts=("PAPER_P1_ALPACA_LOSSLESS_FOUNDATION",),
             eb_expectancy_r=0.22,
             profit_factor=1.45,
+            lossless_foundation_verified=True,
         )
     ),
     "multi_paper_merit_full_live": evaluate_merit_ladder(
@@ -86,6 +88,7 @@ merit_proofs = {
             prewall_net_1x_bps=21.0,
             prewall_net_2x_bps=13.5,
             closed_roundtrips=38,
+            p1_closed_roundtrips=20,
             distinct_paper_accounts=(
                 "PAPER_P1_ALPACA_LOSSLESS_FOUNDATION",
                 "PAPER_P2_ALPACA_BALANCED_RANKER",
@@ -94,6 +97,7 @@ merit_proofs = {
             eb_expectancy_r=0.31,
             profit_factor=1.62,
             realized_slippage_bps=1.8,
+            lossless_foundation_verified=True,
         )
     ),
     "negative_eb_blocked_from_live": evaluate_merit_ladder(

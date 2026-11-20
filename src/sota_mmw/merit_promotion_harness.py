@@ -20,6 +20,97 @@ from typing import Any
 from sota_mmw.promotion_gate import MAX_STOP_ADR0022_PCT, STUDY_WALL_DATE
 
 MERIT_HARNESS_SCHEMA_VERSION = "sota-grand-merit-harness.v1"
+POST_ANT_ERA_ID = "POST_ANT_WHOLE_MARKET_MERIT"
+ACTIVE_MARKET_TARGETS_SCHEMA = "sota.active-market-targets.v1"
+STRATEGY_CONTRACT_SCHEMA_V2 = "sota.strategy-contract.v2"
+
+POST_ANT_CONCENTRATED_SOTA_STRATEGIES: frozenset[str] = frozenset(
+    {
+        "BJZZ_SUBPENNY_INST_DARK_SWEEP",
+        "VIX_SPIKE_AND_CRUSH_REGIME_SURFER",
+        "ZARATTINI_2024_5M_ORB",
+        "ZARATTINI_2025_NOISE_VWAP",
+        "H090_TIGHT_SPREAD_HIGH_OFI_PASSIVE_BID",
+        "H01_PRE_TRAVEL_POCKET_PIVOT",
+        "H08_FIRST_HAND_CATALYST_IGNITION",
+    }
+)
+
+POST_ANT_QUARANTINED_STRATEGIES: frozenset[str] = frozenset(
+    {
+        "SOTA_DUAL_CLIMAX_STOP_AND_REVERSE",
+        "POST_VIX_REVERSAL",
+        "POST_VIX_REVERSAL_MAJOR_GROWTH_THRUST",
+        "SOTA_DUAL_EXTREME_BALANCE_BREAK_EARLY",
+        "BLIND_WAVE2_REENTRY",
+        "RAPID_WAVE2_REENTRY_STRESS",
+        "FLOW_VELOCITY_CAPITAL_RECYCLE",
+    }
+)
+
+
+def is_post_ant_strategy_quarantined(strategy_id: str) -> bool:
+    """Canonical ADR-0064 quarantine predicate matching exact IDs and family variants."""
+    sid = str(strategy_id or "").strip().upper()
+    if sid in POST_ANT_QUARANTINED_STRATEGIES:
+        return True
+    return sid.startswith("POST_VIX_REVERSAL") or "FLOW_VELOCITY_CAPITAL_RECYCLE" in sid
+
+
+POST_ANT_VALID_SESSIONS: frozenset[str] = frozenset({"PRE_MARKET", "RTH_CORE", "POST_CLOSE", "OVERNIGHT_BOATS"})
+
+POST_ANT_STRATEGY_CONTRACTS_V2: dict[str, dict[str, Any]] = {
+    "BJZZ_SUBPENNY_INST_DARK_SWEEP": {
+        "allowed_sessions": frozenset({"PRE_MARKET", "RTH_CORE", "POST_CLOSE", "OVERNIGHT_BOATS"}),
+        "max_spread_bps": 28.0,
+        "spread_strict_lt": False,
+        "max_stop_pct": 1.60,
+        "allowed_symbols": None,
+    },
+    "VIX_SPIKE_AND_CRUSH_REGIME_SURFER": {
+        "allowed_sessions": frozenset({"PRE_MARKET", "RTH_CORE", "POST_CLOSE"}),
+        "max_spread_bps": 18.0,
+        "spread_strict_lt": False,
+        "max_stop_pct": 1.25,
+        "allowed_symbols": frozenset({"SPY", "QQQ", "IWM", "UVXY", "VXX", "SVIX", "VIXY"}),
+    },
+    "ZARATTINI_2024_5M_ORB": {
+        "allowed_sessions": frozenset({"RTH_CORE"}),
+        "max_spread_bps": 25.0,
+        "spread_strict_lt": False,
+        "max_stop_pct": 1.60,
+        "allowed_symbols": None,
+    },
+    "ZARATTINI_2025_NOISE_VWAP": {
+        "allowed_sessions": frozenset({"RTH_CORE"}),
+        "max_spread_bps": 3.0,
+        "spread_strict_lt": True,
+        "max_stop_pct": 0.50,
+        "allowed_symbols": frozenset({"SPY", "QQQ", "IWM"}),
+    },
+    "H090_TIGHT_SPREAD_HIGH_OFI_PASSIVE_BID": {
+        "allowed_sessions": frozenset({"RTH_CORE"}),
+        "max_spread_bps": 10.0,
+        "spread_strict_lt": False,
+        "max_stop_pct": 1.25,
+        "allowed_symbols": None,
+    },
+    "H01_PRE_TRAVEL_POCKET_PIVOT": {
+        "allowed_sessions": frozenset({"PRE_MARKET", "RTH_CORE", "POST_CLOSE", "OVERNIGHT_BOATS"}),
+        "max_spread_bps": 28.0,
+        "spread_strict_lt": False,
+        "max_stop_pct": 1.60,
+        "allowed_symbols": None,
+    },
+    "H08_FIRST_HAND_CATALYST_IGNITION": {
+        "allowed_sessions": frozenset({"PRE_MARKET", "RTH_CORE", "POST_CLOSE", "OVERNIGHT_BOATS"}),
+        "max_spread_bps": 28.0,
+        "spread_strict_lt": False,
+        "max_stop_pct": 1.60,
+        "allowed_symbols": None,
+    },
+}
+
 
 LOSSLESS_FOUNDATION_INVARIANTS: tuple[str, ...] = (
     "PAPER_MERIT_PROVENANCE_NO_NEGATIVE_EB",
@@ -267,22 +358,58 @@ class MeritStrategyEvidence:
     distinct_paper_accounts: tuple[str, ...] = ()
     eb_expectancy_r: float = 0.0
     profit_factor: float = 1.0
-    realized_slippage_bps: float = 0.0
+    realized_slippage_bps: float | None = None
     adr0022_breaches: int = 0
     tuning_regime: str = "NEUTRAL"
-    lossless_foundation_verified: bool = True
+    lossless_foundation_verified: bool = False
+    p1_closed_roundtrips: int | None = None
+
+
+VALID_PAPER_ACCOUNT_IDS: frozenset[str] = frozenset(
+    k for k, v in GRAND_MERIT_EXECUTION_LANES.items() if v["tier"] == "PAPER_FARM"
+)
+
+
+def _is_nonneg_int(val: Any) -> bool:
+    return not isinstance(val, bool) and isinstance(val, int) and val >= 0
 
 
 def evaluate_merit_ladder(ev: MeritStrategyEvidence) -> dict[str, Any]:
     """Deterministically place a strategy across Sim (NEVER GATED) -> 4-Paper Farm (NEVER GATED) -> Stage-5 Live (PROVEN ONLY)."""
     reasons: list[str] = []
-    end_d = dt.date.fromisoformat(ev.study_end_date)
-    if end_d > STUDY_WALL_DATE:
-        reasons.append(f"PREWALL_VIOLATION:{ev.study_end_date}>{STUDY_WALL_DATE.isoformat()}")
+    if not isinstance(ev.strategy_id, str) or not ev.strategy_id.strip():
+        reasons.append("MISSING_STRATEGY_ID")
+    if not isinstance(ev.study_end_date, str) or not ev.study_end_date.strip():
+        reasons.append("INVALID_STUDY_END_DATE")
+    else:
+        try:
+            end_d = dt.date.fromisoformat(ev.study_end_date.strip())
+            if end_d > STUDY_WALL_DATE:
+                reasons.append(f"PREWALL_VIOLATION:{ev.study_end_date}>{STUDY_WALL_DATE.isoformat()}")
+        except ValueError:
+            reasons.append(f"INVALID_STUDY_END_DATE:{ev.study_end_date}")
+    if not isinstance(ev.sim_engine_verified, bool) or not isinstance(ev.lossless_foundation_verified, bool):
+        reasons.append("INVALID_BOOLEAN_VERIFICATION_FLAG")
+    if not _is_nonneg_int(ev.closed_roundtrips):
+        reasons.append(f"INVALID_CLOSED_ROUNDTRIPS:{ev.closed_roundtrips!r}")
+    if not _is_nonneg_int(ev.adr0022_breaches):
+        reasons.append(f"INVALID_ADR0022_BREACHES:{ev.adr0022_breaches!r}")
+    elif ev.adr0022_breaches > 0:
+        reasons.append(f"ADR0022_REALIZED_BREACHES:{ev.adr0022_breaches}")
+    if ev.p1_closed_roundtrips is not None:
+        if not _is_nonneg_int(ev.p1_closed_roundtrips):
+            reasons.append(f"INVALID_P1_CLOSED_ROUNDTRIPS:{ev.p1_closed_roundtrips!r}")
+        elif _is_nonneg_int(ev.closed_roundtrips) and ev.p1_closed_roundtrips > ev.closed_roundtrips:
+            reasons.append(f"P1_ROUNDTRIPS_EXCEED_TOTAL:{ev.p1_closed_roundtrips}>{ev.closed_roundtrips}")
     if not _finite(ev.max_stop_pct) or ev.max_stop_pct <= 0.0 or ev.max_stop_pct > MAX_STOP_ADR0022_PCT:
         reasons.append(f"ADR0022_STOP_VIOLATION:{ev.max_stop_pct}")
-    if ev.adr0022_breaches > 0:
-        reasons.append(f"ADR0022_REALIZED_BREACHES:{ev.adr0022_breaches}")
+    else:
+        norm_check = str(ev.strategy_id or "").strip().upper()
+        strat_contract = POST_ANT_STRATEGY_CONTRACTS_V2.get(norm_check)
+        if strat_contract is not None and ev.max_stop_pct > float(strat_contract["max_stop_pct"]):
+            reasons.append(
+                f"STRATEGY_STOP_CEILING_EXCEEDED:{norm_check}:{ev.max_stop_pct}>{strat_contract['max_stop_pct']}"
+            )
     if not all(
         _finite(v)
         for v in (
@@ -290,10 +417,23 @@ def evaluate_merit_ladder(ev: MeritStrategyEvidence) -> dict[str, Any]:
             ev.prewall_net_2x_bps,
             ev.eb_expectancy_r,
             ev.profit_factor,
-            ev.realized_slippage_bps,
         )
     ):
         reasons.append("NON_FINITE_METRIC")
+    if ev.realized_slippage_bps is not None and not _finite(ev.realized_slippage_bps):
+        reasons.append("NON_FINITE_METRIC")
+
+    acct_set: set[str] = set()
+    if isinstance(ev.distinct_paper_accounts, (str, bytes)) or not isinstance(
+        ev.distinct_paper_accounts, (tuple, list, set, frozenset)
+    ):
+        reasons.append("INVALID_PAPER_ACCOUNTS_COLLECTION")
+    else:
+        for raw_acct in ev.distinct_paper_accounts:
+            if not isinstance(raw_acct, str) or raw_acct.strip() not in VALID_PAPER_ACCOUNT_IDS:
+                reasons.append(f"INVALID_PAPER_ACCOUNT_ID:{raw_acct!r}")
+            else:
+                acct_set.add(raw_acct.strip())
 
     if reasons:
         return {
@@ -304,6 +444,20 @@ def evaluate_merit_ladder(ev: MeritStrategyEvidence) -> dict[str, Any]:
             "live_notional_scale": 0.0,
             "gating_policy": "SAFETY_REJECTED",
             "reasons": reasons,
+        }
+
+    # ADR-0036 / ADR-0064: quarantined noisy/negative-expectancy strategies & family variants
+    # are NEVER eligible for active Paper or Stage-5 Live (runs BEFORE Full-Auto & Canary!).
+    norm_sid = str(ev.strategy_id or "").strip().upper()
+    if is_post_ant_strategy_quarantined(norm_sid):
+        return {
+            "strategy_id": ev.strategy_id,
+            "assigned_lanes": [],
+            "merit_tier": "QUARANTINED_ADR0064_BLOCKED",
+            "live_8798_allowed": False,
+            "live_notional_scale": 0.0,
+            "gating_policy": "QUARANTINED_OUT_OF_ACTIVE_PAPER_AND_LIVE",
+            "reasons": [f"QUARANTINED_ADR0064:{norm_sid}"],
         }
 
     # Probation / Negative EB stays strictly in Sim/Aggressive Paper Lab, NEVER promoted to Live!
@@ -322,7 +476,7 @@ def evaluate_merit_ladder(ev: MeritStrategyEvidence) -> dict[str, Any]:
             "reasons": [f"PROBATION_OR_NEGATIVE_EB(regime={ev.tuning_regime},eb_r={ev.eb_expectancy_r:+.2f}R)"],
         }
 
-    if not ev.sim_engine_verified or ev.prewall_net_1x_bps <= 0.0:
+    if ev.sim_engine_verified is not True or ev.prewall_net_1x_bps <= 0.0:
         return {
             "strategy_id": ev.strategy_id,
             "assigned_lanes": ["S1_PREWALL_BACKTEST_FACTORY", "S2_EVENT_SIM_MICROSTRUCTURE"],
@@ -333,18 +487,28 @@ def evaluate_merit_ladder(ev: MeritStrategyEvidence) -> dict[str, Any]:
             "reasons": ["AWAITING_SIM_VERIFICATION_OR_POSITIVE_1X"],
         }
 
-    acct_set = set(ev.distinct_paper_accounts)
     has_p1_foundation = "PAPER_P1_ALPACA_LOSSLESS_FOUNDATION" in acct_set
+    # Strict proven P1 roundtrip attribution (unattributed mixed ledgers yield 0 proven P1 trades on BOTH live tiers!)
+    if ev.p1_closed_roundtrips is not None:
+        proven_p1_roundtrips = ev.p1_closed_roundtrips
+    elif acct_set == {"PAPER_P1_ALPACA_LOSSLESS_FOUNDATION"}:
+        proven_p1_roundtrips = ev.closed_roundtrips
+    else:
+        proven_p1_roundtrips = 0
 
-    # Full Stage-5 Lossless Live Graduation (1.00x fully automated, zero manual per-trade clicks!)
+    # Full Stage-5 Lossless Live Graduation (1.00x fully automated; requires explicit lossless proof, slippage, P1>=15 & non-P1>=1!)
+    non_p1_roundtrips = ev.closed_roundtrips - proven_p1_roundtrips
     if (
-        ev.lossless_foundation_verified
+        ev.lossless_foundation_verified is True
         and ev.prewall_net_2x_bps > 0.0
         and ev.closed_roundtrips >= 30
         and len(acct_set) >= 2
         and has_p1_foundation
+        and proven_p1_roundtrips >= 15
+        and non_p1_roundtrips >= 1
         and ev.eb_expectancy_r >= 0.20
         and ev.profit_factor >= 1.35
+        and ev.realized_slippage_bps is not None
         and ev.realized_slippage_bps <= 3.0
     ):
         return {
@@ -364,14 +528,13 @@ def evaluate_merit_ladder(ev: MeritStrategyEvidence) -> dict[str, Any]:
             ],
         }
 
-    # Stage-5 Lossless Foundation Canary (0.10x automated on :8798 for Lossless Foundation seed strategies verified at 2x cost)
+    # Stage-5 Lossless Foundation Canary (0.10x automated on :8798; ZERO strategies bypass proven P1 roundtrips!)
     if (
-        ev.lossless_foundation_verified
+        ev.lossless_foundation_verified is True
         and ev.prewall_net_2x_bps > 0.0
-        and (
-            ev.strategy_id in LOSSLESS_FOUNDATION_SEED_STRATEGIES
-            or (has_p1_foundation and ev.closed_roundtrips >= 15 and ev.eb_expectancy_r >= 0.12)
-        )
+        and has_p1_foundation
+        and proven_p1_roundtrips >= 15
+        and ev.eb_expectancy_r >= 0.12
     ):
         return {
             "strategy_id": ev.strategy_id,
@@ -386,7 +549,7 @@ def evaluate_merit_ladder(ev: MeritStrategyEvidence) -> dict[str, Any]:
             "live_notional_scale": 0.10,
             "gating_policy": "LOSSLESS_FOUNDATION_CANARY_AUTO_ACCUMULATING_MERIT",
             "reasons": [
-                f"LOSSLESS_FOUNDATION_SEED_OR_P1_PROVEN(2x_bps={ev.prewall_net_2x_bps:+.1f},n={ev.closed_roundtrips})"
+                f"P1_PROVEN_CANARY(2x_bps={ev.prewall_net_2x_bps:+.1f},p1_n={proven_p1_roundtrips},eb={ev.eb_expectancy_r:+.2f}R)"
             ],
         }
 
@@ -430,6 +593,13 @@ def build_grand_merit_harness_manifest() -> dict[str, Any]:
         "ok": True,
         "schema_version": MERIT_HARNESS_SCHEMA_VERSION,
         "adr": "ADR-0028",
+        "post_ant_consolidation_adr": "ADR-0036",
+        "era": POST_ANT_ERA_ID,
+        "ecosystem_version": "3.11.1",
+        "active_market_targets_schema": ACTIVE_MARKET_TARGETS_SCHEMA,
+        "strategy_contract_schema": STRATEGY_CONTRACT_SCHEMA_V2,
+        "post_ant_concentrated_sota_strategies": sorted(POST_ANT_CONCENTRATED_SOTA_STRATEGIES),
+        "post_ant_quarantined_strategies": sorted(POST_ANT_QUARANTINED_STRATEGIES),
         "primary_sovereign_host": "stationary_noesis_win32",
         "portable_cockpit_and_failover_host": "portable_mac_m5_max",
         "single_active_broker_host_only": True,
@@ -462,3 +632,99 @@ def build_grand_merit_harness_manifest() -> dict[str, Any]:
     raw_hash = hashlib.sha256(json.dumps(payload, sort_keys=True, default=list).encode()).hexdigest()
     payload["harness_sha256"] = raw_hash
     return payload
+
+
+def evaluate_post_ant_symbol_merit_admission(
+    *,
+    symbol: str,
+    strategy_id: str,
+    merit_score: float,
+    df_pillars_manifested: int,
+    spread_bps: float,
+    sec_dilution_clean: bool = False,
+    max_stop_pct: float = 1.60,
+    session_mode: str = "RTH_CORE",
+) -> dict[str, Any]:
+    """Symbol-agnostic Post-ANT admission gate binding any manifested DF1..DF12 equity to lossless Paper/Merit lanes."""
+    sym = str(symbol or "").strip().upper()
+    sid = str(strategy_id or "").strip().upper()
+    sess = str(session_mode or "").strip().upper()
+    if not sym or not sym.replace(".", "").isalnum():
+        raise ValueError(f"Invalid symbol: {symbol!r}")
+    if sess not in POST_ANT_VALID_SESSIONS:
+        raise ValueError(f"Unsupported session_mode: {session_mode!r}")
+    if isinstance(df_pillars_manifested, bool) or not isinstance(df_pillars_manifested, int):
+        raise TypeError("df_pillars_manifested must be an int")
+    if not isinstance(sec_dilution_clean, bool):
+        raise TypeError("sec_dilution_clean must be a bool")
+    if not (_finite(merit_score) and _finite(spread_bps) and _finite(max_stop_pct)):
+        raise ValueError("merit_score, spread_bps, and max_stop_pct must be finite non-bool numbers")
+
+    reasons: list[str] = []
+    contract = POST_ANT_STRATEGY_CONTRACTS_V2.get(sid)
+    if is_post_ant_strategy_quarantined(sid):
+        reasons.append(f"QUARANTINED_ADR0064:{sid}")
+    elif contract is None:
+        reasons.append(f"NON_ACTIVE_SOTA_STRATEGY:{sid}")
+    else:
+        if sess not in contract["allowed_sessions"]:
+            reasons.append(f"STRATEGY_SESSION_NOT_ALLOWED:{sid}:{sess}")
+        allowed_syms = contract["allowed_symbols"]
+        if allowed_syms is not None and sym not in allowed_syms:
+            reasons.append(f"STRATEGY_SYMBOL_NOT_ALLOWED:{sid}:{sym}")
+        c_max_spr = float(contract["max_spread_bps"])
+        if spread_bps > 0.0 and (
+            (contract["spread_strict_lt"] and spread_bps >= c_max_spr)
+            or (not contract["spread_strict_lt"] and spread_bps > c_max_spr)
+        ):
+            reasons.append(f"STRATEGY_SPREAD_EXCEEDS_CONTRACT:{sid}:{spread_bps}>{c_max_spr}")
+        c_max_stop = float(contract["max_stop_pct"])
+        if 0.0 < max_stop_pct <= MAX_STOP_ADR0022_PCT and max_stop_pct > c_max_stop:
+            reasons.append(f"STRATEGY_STOP_EXCEEDS_CONTRACT:{sid}:{max_stop_pct}>{c_max_stop}")
+
+    if not sec_dilution_clean:
+        reasons.append("SEC_90D_DILUTION_UNVERIFIED_OR_BLOCKED")
+    if max_stop_pct <= 0.0 or max_stop_pct > MAX_STOP_ADR0022_PCT:
+        reasons.append(f"ADR0022_STOP_OUT_OF_BOUNDS:{max_stop_pct}")
+    if spread_bps <= 0.0 or spread_bps > 35.0:
+        reasons.append(f"SPREAD_OUT_OF_BOATS_CAP:{spread_bps}")
+    if df_pillars_manifested < 0 or df_pillars_manifested > 6:
+        reasons.append(f"INVALID_DF_PILLARS_COUNT:{df_pillars_manifested}")
+    elif df_pillars_manifested < 3:
+        reasons.append(f"INSUFFICIENT_DF_PILLARS:{df_pillars_manifested}")
+
+    if reasons:
+        tier = "REJECTED"
+        lanes: list[str] = []
+    elif merit_score >= 58.0 and spread_bps <= 15.0 and df_pillars_manifested >= 4:
+        tier = "MERIT_TIER_1_CORE"
+        lanes = [
+            "PAPER_P1_ALPACA_LOSSLESS_FOUNDATION",
+            "PAPER_P2_ALPACA_BALANCED_RANKER",
+            "PAPER_P3_ALPACA_AGGRESSIVE_LAB",
+            "PAPER_P4_IBKR_INSTITUTIONAL_4002",
+        ]
+    elif merit_score >= 38.0 and spread_bps <= 35.0 and df_pillars_manifested >= 3:
+        tier = "MERIT_TIER_2_ACTIVE"
+        lanes = [
+            "PAPER_P2_ALPACA_BALANCED_RANKER",
+            "PAPER_P3_ALPACA_AGGRESSIVE_LAB",
+            "PAPER_P4_IBKR_INSTITUTIONAL_4002",
+        ]
+    else:
+        tier = "WATCH_ONLY"
+        lanes = []
+
+    return {
+        "era": POST_ANT_ERA_ID,
+        "symbol": sym,
+        "strategy_id": sid,
+        "merit_tier": tier,
+        "admitted": tier in ("MERIT_TIER_1_CORE", "MERIT_TIER_2_ACTIVE"),
+        "assigned_paper_lanes": lanes,
+        "rejection_reasons": reasons,
+        "take_profit_cap_enabled": False,
+        "adr0022_max_stop_pct": MAX_STOP_ADR0022_PCT,
+        "promotion_track": "PROTECTIVE_FILTER_OR_GOVERNANCE",
+        "standalone_alpha_claim": False,
+    }

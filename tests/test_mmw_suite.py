@@ -1840,8 +1840,8 @@ class TestMultiModelWorkflows(unittest.TestCase):
         )
         self.assertFalse(neg["live_8798_allowed"])
 
-        # 4. Lossless Foundation Seed enters Stage-5 Live Canary 10%
-        canary = mph.evaluate_merit_ladder(
+        # 4. Lossless Foundation Seed requires proven P1 paper roundtrips (ADR-0036: zero-roundtrip live canary DENIED!)
+        zero_rt_seed = mph.evaluate_merit_ladder(
             mph.MeritStrategyEvidence(
                 strategy_id="LARGE_CAP_4X_IPO_PRECURSOR_BASKET",
                 study_end_date="2026-10-15",
@@ -1851,11 +1851,29 @@ class TestMultiModelWorkflows(unittest.TestCase):
                 prewall_net_2x_bps=10.5,
             )
         )
+        self.assertFalse(zero_rt_seed["live_8798_allowed"])
+        self.assertEqual(zero_rt_seed["merit_tier"], "PAPER_P3_AGGRESSIVE_CRUCIBLE")
+
+        canary = mph.evaluate_merit_ladder(
+            mph.MeritStrategyEvidence(
+                strategy_id="LARGE_CAP_4X_IPO_PRECURSOR_BASKET",
+                study_end_date="2026-10-15",
+                max_stop_pct=0.85,
+                sim_engine_verified=True,
+                prewall_net_1x_bps=18.0,
+                prewall_net_2x_bps=10.5,
+                closed_roundtrips=18,
+                p1_closed_roundtrips=18,
+                distinct_paper_accounts=("PAPER_P1_ALPACA_LOSSLESS_FOUNDATION",),
+                eb_expectancy_r=0.16,
+                lossless_foundation_verified=True,
+            )
+        )
         self.assertEqual(canary["merit_tier"], "STAGE5_LOSSLESS_FOUNDATION_CANARY_10PCT")
         self.assertTrue(canary["live_8798_allowed"])
         self.assertEqual(canary["live_notional_scale"], 0.10)
 
-        # 5. Multi-paper certified (n>=30, >=2 accounts incl. P1, EB>=0.20, PF>=1.35, slip<=3bps) -> 1.00x Full Live
+        # 5. Multi-paper certified (n>=30, p1>=15, >=2 accounts incl. P1, EB>=0.20, PF>=1.35, slip<=3bps) -> 1.00x Live
         full = mph.evaluate_merit_ladder(
             mph.MeritStrategyEvidence(
                 strategy_id="MEGA_CAP_NEAR_LOSSLESS_ORB",
@@ -1865,10 +1883,12 @@ class TestMultiModelWorkflows(unittest.TestCase):
                 prewall_net_1x_bps=22.0,
                 prewall_net_2x_bps=14.0,
                 closed_roundtrips=36,
+                p1_closed_roundtrips=18,
                 distinct_paper_accounts=("PAPER_P1_ALPACA_LOSSLESS_FOUNDATION", "PAPER_P2_ALPACA_BALANCED_RANKER"),
                 eb_expectancy_r=0.28,
                 profit_factor=1.55,
                 realized_slippage_bps=1.9,
+                lossless_foundation_verified=True,
             )
         )
         self.assertEqual(full["merit_tier"], "STAGE5_LOSSLESS_LIVE_FULL_AUTO")
