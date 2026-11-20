@@ -76,7 +76,8 @@ for agent_id, spec in ORCA_RUNTIME_WORKER_DEFAULTS.items():
             stale_hits.append(f"orca_default:{agent_id}:{bad}")
 
 # Locate sota-harness-foundation redteam_and_skill_eval contract if present on disk
-foundation_src = resolve_ecosystem_repo_dir("sota-harness-foundation") / "src"
+foundation_root = resolve_ecosystem_repo_dir("sota-harness-foundation")
+foundation_src = foundation_root / "src"
 if foundation_src.is_dir() and str(foundation_src) not in sys.path:
     sys.path.insert(0, str(foundation_src))
 
@@ -89,12 +90,36 @@ skill_eval_summary: dict[str, Any] = {
 }
 redteam_probe: dict[str, Any] = {"available": False, "passed": True, "p0_count": 0, "p1_count": 0}
 
-try:
-    from cc_sota_harness.redteam_and_skill_eval import (
-        evaluate_skill_corpus,
-        run_redteam_firewall_audit,
-    )
 
+def _load_redteam_and_skill_eval_inprocess() -> tuple[Any, Any] | None:
+    try:
+        from cc_sota_harness.redteam_and_skill_eval import (
+            evaluate_skill_corpus,
+            run_redteam_firewall_audit,
+        )
+
+        return evaluate_skill_corpus, run_redteam_firewall_audit
+    except ImportError:
+        pass
+    mod_path = foundation_src / "cc_sota_harness" / "redteam_and_skill_eval.py"
+    if not mod_path.is_file():
+        return None
+    try:
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("_sota_redteam_and_skill_eval", mod_path)
+        if spec is None or spec.loader is None:
+            return None
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.evaluate_skill_corpus, mod.run_redteam_firewall_audit
+    except ImportError:
+        return None
+
+
+_inproc = _load_redteam_and_skill_eval_inprocess()
+if _inproc is not None:
+    evaluate_skill_corpus, run_redteam_firewall_audit = _inproc
     if skills_root.is_dir():
         corpus = evaluate_skill_corpus(skills_root)
         skill_eval_summary = {
@@ -122,8 +147,58 @@ try:
         "vulnerability_classes_catalog_count": int(rt["vulnerability_classes_catalog_count"]),
         "audit_sha256": str(rt["audit_sha256"]),
     }
-except ImportError:
-    pass
+else:
+    import subprocess
+
+    venv_py = next(
+        (
+            cand
+            for cand in (
+                foundation_root / ".venv" / "bin" / "python",
+                foundation_root / ".venv" / "Scripts" / "python.exe",
+            )
+            if cand.is_file()
+        ),
+        None,
+    )
+    if venv_py is not None and foundation_src.is_dir():
+        probe_code = (
+            "import json, sys; from pathlib import Path; "
+            "sys.path.insert(0, sys.argv[1]); "
+            "from cc_sota_harness.redteam_and_skill_eval import evaluate_skill_corpus, run_redteam_firewall_audit; "
+            "sr = Path(sys.argv[2]); "
+            "se = {'available': False, 'all_passed': True, 'skills_evaluated': 0, 'failed_skills': []}; "
+            "corpus = evaluate_skill_corpus(sr) if sr.is_dir() else None; "
+            "se = ({'available': True, 'all_passed': bool(corpus['all_passed']), "
+            "'skills_evaluated': int(corpus['skills_evaluated']), 'passed_count': int(corpus['passed_count']), "
+            "'failed_skills': list(corpus['failed_skills']), "
+            "'overlap_warnings_count': len(corpus['overlap_warnings']), "
+            "'report_sha256': str(corpus['report_sha256'])} if corpus else se); "
+            "rt = run_redteam_firewall_audit(sys.argv[3], context=sys.argv[4], hard_stop_pct=1.75, "
+            "ts_event_ns=1_792_074_600_000_000_000, ts_recv_ns=1_792_074_600_005_000_000, "
+            "decision_ns=1_792_074_600_010_000_000); "
+            "rp = {'available': True, 'passed': bool(rt['passed']), 'p0_count': int(rt['p0_count']), "
+            "'p1_count': int(rt['p1_count']), "
+            "'vulnerability_classes_catalog_count': int(rt['vulnerability_classes_catalog_count']), "
+            "'audit_sha256': str(rt['audit_sha256'])}; "
+            "print(json.dumps({'skill_eval_summary': se, 'redteam_probe': rp}))"
+        )
+        proc = subprocess.run(
+            [str(venv_py), "-c", probe_code, str(foundation_src), str(skills_root), goal, f"workflow21:{repo}"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=25,
+        )
+        if proc.returncode == 0 and proc.stdout.strip():
+            try:
+                parsed = json.loads(proc.stdout.strip().splitlines()[-1])
+                if isinstance(parsed.get("skill_eval_summary"), dict):
+                    skill_eval_summary = parsed["skill_eval_summary"]
+                if isinstance(parsed.get("redteam_probe"), dict):
+                    redteam_probe = parsed["redteam_probe"]
+            except json.JSONDecodeError:
+                pass
 
 header = (
     f"[v3.10.8 Workflow #21 RedTeam+SkillEval Convergence | repo={repo} | "
