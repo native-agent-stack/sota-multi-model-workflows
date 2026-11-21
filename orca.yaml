@@ -13,3 +13,5 @@ defaultTabs:
     command: uv run python -m sota_mmw.dual_machine_lanes status --json
   - title: 21-Workflow Suite & Pytest
     command: uv run pytest -q
+  - title: Tier-0 Merge Gate
+    command: uv run python scripts/merge_gate.py
